@@ -7,6 +7,52 @@
  * @module json-to-csv
  */
 
+const {
+  ValidationError,
+  SecurityError,
+  FileSystemError,
+  LimitError,
+  ConfigurationError,
+  safeExecute
+} = require('./errors');
+
+/**
+ * Validates input data and options
+ * @private
+ */
+function validateInput(data, options) {
+  // Validate data
+  if (!Array.isArray(data)) {
+    throw new ValidationError('Input data must be an array');
+  }
+  
+  // Validate options
+  if (options && typeof options !== 'object') {
+    throw new ConfigurationError('Options must be an object');
+  }
+  
+  // Validate delimiter
+  if (options?.delimiter && typeof options.delimiter !== 'string') {
+    throw new ConfigurationError('Delimiter must be a string');
+  }
+  
+  if (options?.delimiter && options.delimiter.length !== 1) {
+    throw new ConfigurationError('Delimiter must be a single character');
+  }
+  
+  // Validate renameMap
+  if (options?.renameMap && typeof options.renameMap !== 'object') {
+    throw new ConfigurationError('renameMap must be an object');
+  }
+  
+  // Validate maxRecords
+  if (options?.maxRecords && (typeof options.maxRecords !== 'number' || options.maxRecords <= 0)) {
+    throw new ConfigurationError('maxRecords must be a positive number');
+  }
+  
+  return true;
+}
+
 /**
  * Converts JSON data to CSV format
  * 
@@ -33,114 +79,120 @@
  * });
  */
 function jsonToCsv(data, options = {}) {
-  // Ensure options is an object
-  const opts = options && typeof options === 'object' ? options : {};
-  
-  const {
-    delimiter = ';',
-    includeHeaders = true,
-    renameMap = {},
-    template = {},
-    maxRecords = 1000000
-  } = opts;
+  return safeExecute(() => {
+    // Validate input
+    validateInput(data, options);
+    
+    const opts = options && typeof options === 'object' ? options : {};
+    
+    const {
+      delimiter = ';',
+      includeHeaders = true,
+      renameMap = {},
+      template = {},
+      maxRecords = 1000000
+    } = opts;
 
-  // Input validation
-  if (!Array.isArray(data)) {
-    throw new TypeError('Input data must be an array');
-  }
-  
-  if (data.length === 0) {
-    return '';
-  }
-
-  // Limit data size to prevent OOM
-  if (data.length > maxRecords) {
-    throw new Error(`Data size exceeds maximum limit of ${maxRecords} records`);
-  }
-
-  // Get all unique keys from all objects
-  const allKeys = new Set();
-  data.forEach(item => {
-    if (item && typeof item === 'object') {
-      Object.keys(item).forEach(key => allKeys.add(key));
-    }
-  });
-  
-  // Convert Set to Array
-  const originalKeys = Array.from(allKeys);
-  
-  // Apply rename map to create header names
-  const headers = originalKeys.map(key => renameMap[key] || key);
-  
-  // Create a reverse mapping from new header to original key
-  const reverseRenameMap = {};
-  originalKeys.forEach((key, index) => {
-    reverseRenameMap[headers[index]] = key;
-  });
-
-  // Apply template ordering if provided
-  let finalHeaders = headers;
-  if (Object.keys(template).length > 0) {
-    // Create template headers with renaming applied
-    const templateHeaders = Object.keys(template).map(key => renameMap[key] || key);
-    const extraHeaders = headers.filter(h => !templateHeaders.includes(h));
-    finalHeaders = [...templateHeaders, ...extraHeaders];
-  }
-
-  // Escape CSV value with CSV injection protection
-  const escapeValue = (value) => {
-    if (value === null || value === undefined || value === '') {
+    // Handle empty data
+    if (data.length === 0) {
       return '';
     }
-    
-    const stringValue = String(value);
-    
-    // CSV Injection protection - escape formulas
-    let escapedValue = stringValue;
-    if (/^[=+\-@]/.test(stringValue)) {
-      // Prepend single quote to prevent formula execution in Excel
-      escapedValue = "'" + stringValue;
-    }
-    
-    // Check if value needs escaping (contains delimiter, quotes, or newlines)
-    if (
-      escapedValue.includes(delimiter) ||
-      escapedValue.includes('"') ||
-      escapedValue.includes('\n') ||
-      escapedValue.includes('\r')
-    ) {
-      // Escape double quotes by doubling them
-      return `"${escapedValue.replace(/"/g, '""')}"`;
-    }
-    
-    return escapedValue;
-  };
 
-  // Build CSV rows
-  const rows = [];
-  
-  // Add headers row if requested
-  if (includeHeaders && finalHeaders.length > 0) {
-    rows.push(finalHeaders.join(delimiter));
-  }
-  
-  // Add data rows
-  for (const item of data) {
-    if (!item || typeof item !== 'object') {
-      continue;
+    // Limit data size to prevent OOM
+    if (data.length > maxRecords) {
+      throw new LimitError(
+        `Data size exceeds maximum limit of ${maxRecords} records`,
+        maxRecords,
+        data.length
+      );
+    }
+
+    // Get all unique keys from all objects
+    const allKeys = new Set();
+    data.forEach((item, index) => {
+      if (!item || typeof item !== 'object') {
+        console.warn(`[jtcsv] Warning: Item at index ${index} is not an object, skipping`);
+        return;
+      }
+      Object.keys(item).forEach(key => allKeys.add(key));
+    });
+    
+    // Convert Set to Array
+    const originalKeys = Array.from(allKeys);
+    
+    // Apply rename map to create header names
+    const headers = originalKeys.map(key => renameMap[key] || key);
+    
+    // Create a reverse mapping from new header to original key
+    const reverseRenameMap = {};
+    originalKeys.forEach((key, index) => {
+      reverseRenameMap[headers[index]] = key;
+    });
+
+    // Apply template ordering if provided
+    let finalHeaders = headers;
+    if (Object.keys(template).length > 0) {
+      // Create template headers with renaming applied
+      const templateHeaders = Object.keys(template).map(key => renameMap[key] || key);
+      const extraHeaders = headers.filter(h => !templateHeaders.includes(h));
+      finalHeaders = [...templateHeaders, ...extraHeaders];
+    }
+
+    // Escape CSV value with CSV injection protection
+    const escapeValue = (value) => {
+      if (value === null || value === undefined || value === '') {
+        return '';
+      }
+      
+      const stringValue = String(value);
+      
+      // CSV Injection protection - escape formulas
+      let escapedValue = stringValue;
+      if (/^[=+\-@]/.test(stringValue)) {
+        // Prepend single quote to prevent formula execution in Excel
+        escapedValue = "'" + stringValue;
+      }
+      
+      // Check if value needs escaping (contains delimiter, quotes, or newlines)
+      if (
+        escapedValue.includes(delimiter) ||
+        escapedValue.includes('"') ||
+        escapedValue.includes('\n') ||
+        escapedValue.includes('\r')
+      ) {
+        // Escape double quotes by doubling them
+        return `"${escapedValue.replace(/"/g, '""')}"`;
+      }
+      
+      return escapedValue;
+    };
+
+    // Build CSV rows
+    const rows = [];
+    
+    // Add headers row if requested
+    if (includeHeaders && finalHeaders.length > 0) {
+      rows.push(finalHeaders.join(delimiter));
     }
     
-    const row = finalHeaders.map(header => {
-      // Get the original key for this header
-      const originalKey = reverseRenameMap[header] || header;
-      const value = item[originalKey];
-      return escapeValue(value);
-    }).join(delimiter);
+    // Add data rows
+    for (const item of data) {
+      if (!item || typeof item !== 'object') {
+        continue;
+      }
+      
+      const row = finalHeaders.map(header => {
+        // Get the original key for this header
+        const originalKey = reverseRenameMap[header] || header;
+        const value = item[originalKey];
+        return escapeValue(value);
+      }).join(delimiter);
+      
+      rows.push(row);
+    }
     
-    rows.push(row);
-  }
-  
-  return rows.join('\n');
+    return rows.join('\n');
+  }, 'PARSE_FAILED', { function: 'jsonToCsv' });
 }
 
 /**
@@ -252,12 +304,12 @@ function validateFilePath(filePath) {
   
   // Basic validation
   if (typeof filePath !== 'string' || filePath.trim() === '') {
-    throw new Error('File path must be a non-empty string');
+    throw new ValidationError('File path must be a non-empty string');
   }
   
   // Ensure file has .csv extension
   if (!filePath.toLowerCase().endsWith('.csv')) {
-    throw new Error('File must have .csv extension');
+    throw new ValidationError('File must have .csv extension');
   }
   
   // Get absolute path and check for traversal
@@ -269,8 +321,8 @@ function validateFilePath(filePath) {
   if (normalizedPath.includes('..') || 
       /\\\.\.\\|\/\.\.\//.test(filePath) ||
       filePath.startsWith('..') ||
-            filePath.includes('/..')) {
-    throw new Error('Invalid file path: Directory traversal detected');
+      filePath.includes('/..')) {
+    throw new SecurityError('Directory traversal detected in file path');
   }
   
   return absolutePath;
@@ -293,22 +345,42 @@ function validateFilePath(filePath) {
  * });
  */
 async function saveAsCsv(data, filePath, options = {}) {
-  const fs = require('fs').promises;
-  
-  // Validate file path
-  const safePath = validateFilePath(filePath);
-  
-  const csvContent = jsonToCsv(data, options);
-  
-  try {
-    await fs.writeFile(safePath, csvContent, 'utf8');
-    // eslint-disable-next-line no-console
-    console.log(`✅ CSV файл успешно создан: ${safePath}`);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(`❌ Ошибка при записи CSV файла: ${error.message}`);
-    throw error;
-  }
+  return safeExecute(async () => {
+    const fs = require('fs').promises;
+    
+    // Validate file path
+    const safePath = validateFilePath(filePath);
+    
+    // Convert data to CSV
+    const csvContent = jsonToCsv(data, options);
+    
+    try {
+      // Ensure directory exists
+      const dir = require('path').dirname(safePath);
+      await fs.mkdir(dir, { recursive: true });
+      
+      // Write file
+      await fs.writeFile(safePath, csvContent, 'utf8');
+      
+      if (process.env.NODE_ENV !== 'test') {
+        console.log(`✅ CSV file successfully created: ${safePath}`);
+      }
+      
+      return safePath;
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw new FileSystemError(`Directory does not exist: ${dir}`, error);
+      }
+      if (error.code === 'EACCES') {
+        throw new FileSystemError(`Permission denied: ${safePath}`, error);
+      }
+      if (error.code === 'ENOSPC') {
+        throw new FileSystemError(`No space left on device: ${safePath}`, error);
+      }
+      
+      throw new FileSystemError(`Failed to write CSV file: ${error.message}`, error);
+    }
+  }, 'FILE_SYSTEM_ERROR', { function: 'saveAsCsv' });
 }
 
 // Export the main functions
