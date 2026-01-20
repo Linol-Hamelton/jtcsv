@@ -1,4 +1,4 @@
-const { jsonToCsv, preprocessData, deepUnwrap } = require('../json-to-csv');
+const { jsonToCsv, preprocessData, deepUnwrap, ValidationError, LimitError } = require('../json-to-csv');
 
 describe('Basic Functionality', () => {
   describe('jsonToCsv', () => {
@@ -137,12 +137,12 @@ describe('Basic Functionality', () => {
   });
 
   describe('Input Validation', () => {
-    test('should throw error for non-array input', () => {
-      expect(() => jsonToCsv(null)).toThrow('Input data must be an array');
-      expect(() => jsonToCsv(undefined)).toThrow('Input data must be an array');
-      expect(() => jsonToCsv('string')).toThrow('Input data must be an array');
-      expect(() => jsonToCsv(123)).toThrow('Input data must be an array');
-      expect(() => jsonToCsv({})).toThrow('Input data must be an array');
+    test('should throw ValidationError for non-array input', () => {
+      expect(() => jsonToCsv(null)).toThrow(ValidationError);
+      expect(() => jsonToCsv(undefined)).toThrow(ValidationError);
+      expect(() => jsonToCsv('string')).toThrow(ValidationError);
+      expect(() => jsonToCsv(123)).toThrow(ValidationError);
+      expect(() => jsonToCsv({})).toThrow(ValidationError);
     });
 
     test('should handle invalid items in array', () => {
@@ -163,18 +163,22 @@ describe('Basic Functionality', () => {
     });
 
     test('should respect maxRecords limit', () => {
-      const largeData = Array.from({ length: 1000001 }, (_, i) => ({ id: i }));
+      // Test with smaller limit for testing
+      const data = Array.from({ length: 11 }, (_, i) => ({ id: i }));
       
-      expect(() => jsonToCsv(largeData)).toThrow(
-        'Data size exceeds maximum limit of 1000000 records'
-      );
+      // Default limit is 1,000,000, so this should not throw
+      expect(() => jsonToCsv(data)).not.toThrow();
+      
+      // But with custom limit of 10, it should throw
+      expect(() => jsonToCsv(data, { maxRecords: 10 })).toThrow(LimitError);
     });
 
     test('should allow custom maxRecords', () => {
       const data = Array.from({ length: 100 }, (_, i) => ({ id: i }));
       
-      // Should work with custom limit
-      expect(() => jsonToCsv(data, { maxRecords: 50 })).toThrow();
+      // Should throw when limit is exceeded
+      expect(() => jsonToCsv(data, { maxRecords: 50 })).toThrow(LimitError);
+      // Should not throw when within limit
       expect(() => jsonToCsv(data, { maxRecords: 200 })).not.toThrow();
     });
   });

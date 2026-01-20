@@ -1,4 +1,4 @@
-const { jsonToCsv, preprocessData, deepUnwrap, saveAsCsv } = require('../json-to-csv');
+const { jsonToCsv, preprocessData, deepUnwrap, saveAsCsv, ValidationError, SecurityError } = require('../json-to-csv');
 
 describe('Critical Bug Fixes', () => {
   describe('BUG #1: Circular references in deepUnwrap', () => {
@@ -113,7 +113,7 @@ describe('Critical Bug Fixes', () => {
       
       await expect(saveAsCsv(data, maliciousPath))
         .rejects
-        .toThrow(/Directory traversal detected/);
+        .toThrow(SecurityError);
     });
 
     test('should prevent directory traversal attacks', async () => {
@@ -129,19 +129,19 @@ describe('Critical Bug Fixes', () => {
       for (const path of traversalPaths) {
         await expect(saveAsCsv(data, path))
           .rejects
-          .toThrow(/Directory traversal detected/);
+          .toThrow(SecurityError);
       }
     });
   });
 
   describe('Input Validation', () => {
     test('should validate input types', () => {
-      // Should throw TypeError for non-array input
-      expect(() => jsonToCsv(null)).toThrow('Input data must be an array');
-      expect(() => jsonToCsv(undefined)).toThrow('Input data must be an array');
-      expect(() => jsonToCsv('string')).toThrow('Input data must be an array');
-      expect(() => jsonToCsv(123)).toThrow('Input data must be an array');
-      expect(() => jsonToCsv({})).toThrow('Input data must be an array');
+      // Should throw ValidationError for non-array input
+      expect(() => jsonToCsv(null)).toThrow(ValidationError);
+      expect(() => jsonToCsv(undefined)).toThrow(ValidationError);
+      expect(() => jsonToCsv('string')).toThrow(ValidationError);
+      expect(() => jsonToCsv(123)).toThrow(ValidationError);
+      expect(() => jsonToCsv({})).toThrow(ValidationError);
       
       // Empty array should return empty string
       expect(jsonToCsv([])).toBe('');
