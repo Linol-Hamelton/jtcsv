@@ -1,0 +1,61 @@
+# Development and test files
+*.test.js
+*.spec.js
+test*
+example*
+debug*
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation (except README.md)
+CHANGELOG.md
+CONTRIBUTING.md
+
+# Build artifacts
+build/
+dist/
+
+# Coverage directory
+coverage/
+
+# Node modules
+node_modules/
+
+# Lock files
+package-lock.json
+yarn.lock
+
+# TypeScript files
+*.ts
+*.tsbuildinfo
+
+# Source maps
+*.map
