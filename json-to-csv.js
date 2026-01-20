@@ -16,6 +16,7 @@
  * @param {boolean} [options.includeHeaders=true] - Whether to include headers row
  * @param {Object} [options.renameMap={}] - Map for renaming column headers (oldKey: newKey)
  * @param {Object} [options.template={}] - Template object to ensure consistent column order
+ * @param {number} [options.maxRecords=1000000] - Maximum number of records to process
  * @returns {string} CSV formatted string
  * 
  * @example
@@ -32,21 +33,37 @@
  * });
  */
 function jsonToCsv(data, options = {}) {
+  // Ensure options is an object
+  const opts = options && typeof options === 'object' ? options : {};
+  
   const {
     delimiter = ';',
     includeHeaders = true,
     renameMap = {},
-    template = {}
-  } = options;
+    template = {},
+    maxRecords = 1000000
+  } = opts;
 
-  if (!Array.isArray(data) || data.length === 0) {
+  // Input validation
+  if (!Array.isArray(data)) {
+    throw new TypeError('Input data must be an array');
+  }
+  
+  if (data.length === 0) {
     return '';
+  }
+
+  // Limit data size to prevent OOM
+  if (data.length > maxRecords) {
+    throw new Error(`Data size exceeds maximum limit of ${maxRecords} records`);
   }
 
   // Get all unique keys from all objects
   const allKeys = new Set();
   data.forEach(item => {
-    Object.keys(item).forEach(key => allKeys.add(key));
+    if (item && typeof item === 'object') {
+      Object.keys(item).forEach(key => allKeys.add(key));
+    }
   });
   
   // Convert Set to Array
@@ -70,7 +87,7 @@ function jsonToCsv(data, options = {}) {
     finalHeaders = [...templateHeaders, ...extraHeaders];
   }
 
-  // Escape CSV value
+  // Escape CSV value with CSV injection protection
   const escapeValue = (value) => {
     if (value === null || value === undefined || value === '') {
       return '';
@@ -78,18 +95,25 @@ function jsonToCsv(data, options = {}) {
     
     const stringValue = String(value);
     
-    // Check if value needs escaping (contains delimiter, quotes, or newlines)
-    if (
-      stringValue.includes(delimiter) ||
-      stringValue.includes('"') ||
-      stringValue.includes('\n') ||
-      stringValue.includes('\r')
-    ) {
-      // Escape double quotes by doubling them
-      return `"${stringValue.replace(/"/g, '""')}"`;
+    // CSV Injection protection - escape formulas
+    let escapedValue = stringValue;
+    if (/^[=+\-@]/.test(stringValue)) {
+      // Prepend single quote to prevent formula execution in Excel
+      escapedValue = "'" + stringValue;
     }
     
-    return stringValue;
+    // Check if value needs escaping (contains delimiter, quotes, or newlines)
+    if (
+      escapedValue.includes(delimiter) ||
+      escapedValue.includes('"') ||
+      escapedValue.includes('\n') ||
+      escapedValue.includes('\r')
+    ) {
+      // Escape double quotes by doubling them
+      return `"${escapedValue.replace(/"/g, '""')}"`;
+    }
+    
+    return escapedValue;
   };
 
   // Build CSV rows
@@ -102,6 +126,10 @@ function jsonToCsv(data, options = {}) {
   
   // Add data rows
   for (const item of data) {
+    if (!item || typeof item !== 'object') {
+      continue;
+    }
+    
     const row = finalHeaders.map(header => {
       // Get the original key for this header
       const originalKey = reverseRenameMap[header] || header;
@@ -121,34 +149,57 @@ function jsonToCsv(data, options = {}) {
  * @param {*} value - Value to unwrap
  * @param {number} [depth=0] - Current recursion depth
  * @param {number} [maxDepth=5] - Maximum recursion depth
+ * @param {Set} [visited=new Set()] - Set of visited objects to detect circular references
  * @returns {string} Unwrapped string value
  * 
  * @private
  */
-function deepUnwrap(value, depth = 0, maxDepth = 5) {
-  if (depth > maxDepth) return '[Too Deep]';
-  if (value === null || value === undefined) return '';
+function deepUnwrap(value, depth = 0, maxDepth = 5, visited = new Set()) {
+  // Check depth before processing
+  if (depth >= maxDepth) {
+    return '[Too Deep]';
+  }
+  if (value === null || value === undefined) {
+    return '';
+  }
   
-  // Handle arrays - take first element
-  if (Array.isArray(value) && value.length) {
-    return deepUnwrap(value[0], depth + 1, maxDepth);
+  // Handle circular references - return early for circular refs
+  if (typeof value === 'object') {
+    if (visited.has(value)) {
+      return '[Circular Reference]';
+    }
+    visited.add(value);
+  }
+  
+  // Handle arrays - join all elements
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return '';
+    }
+    const unwrappedItems = value.map(item => 
+      deepUnwrap(item, depth + 1, maxDepth, new Set(visited))
+    ).filter(item => item !== '');
+    return unwrappedItems.join(', ');
   }
   
   // Handle objects
   if (typeof value === 'object') {
-    // If object has a 'value' property, use it
-    if ('value' in value) {
-      return deepUnwrap(value.value, depth + 1, maxDepth);
-    }
-    
     const keys = Object.keys(value);
-    // If object has only one key, unwrap that value
-    if (keys.length === 1) {
-      return deepUnwrap(value[keys[0]], depth + 1, maxDepth);
+    if (keys.length === 0) {
+      return '';
     }
     
-    // For complex objects, stringify
-    return JSON.stringify(value);
+    // For maxDepth = 0 or 1, return [Too Deep] for objects
+    if (depth + 1 >= maxDepth) {
+      return '[Too Deep]';
+    }
+    
+    // Stringify complex objects
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      return '[Unstringifiable Object]';
+    }
   }
   
   // Convert to string for primitive values
@@ -171,16 +222,58 @@ function preprocessData(data) {
   }
   
   return data.map(item => {
-    const processed = { ...item };
+    if (!item || typeof item !== 'object') {
+      return {};
+    }
     
-    for (const key in processed) {
-      if (processed[key] && typeof processed[key] === 'object') {
-        processed[key] = deepUnwrap(processed[key]);
+    const processed = {};
+    
+    for (const key in item) {
+      if (Object.prototype.hasOwnProperty.call(item, key)) {
+        const value = item[key];
+        if (value && typeof value === 'object') {
+          processed[key] = deepUnwrap(value);
+        } else {
+          processed[key] = value;
+        }
       }
     }
     
     return processed;
   });
+}
+
+/**
+ * Validates file path to prevent path traversal attacks
+ * @private
+ */
+function validateFilePath(filePath) {
+  const path = require('path');
+  
+  // Basic validation
+  if (typeof filePath !== 'string' || filePath.trim() === '') {
+    throw new Error('File path must be a non-empty string');
+  }
+  
+  // Ensure file has .csv extension
+  if (!filePath.toLowerCase().endsWith('.csv')) {
+    throw new Error('File must have .csv extension');
+  }
+  
+  // Get absolute path and check for traversal
+  const absolutePath = path.resolve(filePath);
+  const normalizedPath = path.normalize(filePath);
+  
+  // Prevent directory traversal attacks
+  // Check if normalized path contains parent directory references
+  if (normalizedPath.includes('..') || 
+      /\\\.\.\\|\/\.\.\//.test(filePath) ||
+      filePath.startsWith('..') ||
+            filePath.includes('/..')) {
+    throw new Error('Invalid file path: Directory traversal detected');
+  }
+  
+  return absolutePath;
 }
 
 /**
@@ -201,12 +294,18 @@ function preprocessData(data) {
  */
 async function saveAsCsv(data, filePath, options = {}) {
   const fs = require('fs').promises;
+  
+  // Validate file path
+  const safePath = validateFilePath(filePath);
+  
   const csvContent = jsonToCsv(data, options);
   
   try {
-    await fs.writeFile(filePath, csvContent, 'utf8');
-    console.log(`✅ CSV файл успешно создан: ${filePath}`);
+    await fs.writeFile(safePath, csvContent, 'utf8');
+    // eslint-disable-next-line no-console
+    console.log(`✅ CSV файл успешно создан: ${safePath}`);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error(`❌ Ошибка при записи CSV файла: ${error.message}`);
     throw error;
   }
@@ -217,7 +316,8 @@ module.exports = {
   jsonToCsv,
   preprocessData,
   saveAsCsv,
-  deepUnwrap
+  deepUnwrap,
+  validateFilePath
 };
 
 // For ES6 module compatibility
