@@ -63,7 +63,7 @@ describe('Edge Cases Coverage Tests', () => {
       ];
       
       const template = { email: '', name: '', id: '' }; // Reverse order
-      const result = jsonToCsv(data, { template });
+      const result = jsonToCsv(data, { template, rfc4180Compliant: false });
       
       const lines = result.split('\n');
       expect(lines[0]).toBe('email;name;id');
@@ -77,7 +77,7 @@ describe('Edge Cases Coverage Tests', () => {
       
       const renameMap = { id: 'ID', name: 'Full Name' };
       const template = { name: '', id: '' }; // Specific order
-      const result = jsonToCsv(data, { renameMap, template });
+      const result = jsonToCsv(data, { renameMap, template, rfc4180Compliant: false });
       
       const lines = result.split('\n');
       expect(lines[0]).toBe('Full Name;ID');
@@ -178,7 +178,7 @@ describe('Edge Cases Coverage Tests', () => {
         }));
     });
 
-    test('should log success message in non-test environment', async () => {
+    test('should not log to console in non-test environment', async () => {
       // Temporarily set NODE_ENV to something other than 'test'
       const originalNodeEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
@@ -195,9 +195,9 @@ describe('Edge Cases Coverage Tests', () => {
         
         await index.saveAsCsv([{ id: 1 }], 'test.csv');
         
-        expect(consoleLogSpy).toHaveBeenCalledWith(
-          expect.stringContaining('CSV file successfully created:')
-        );
+        // The saveAsCsv function should not log to console by design
+        // It should return the path instead (clean API without side effects)
+        expect(consoleLogSpy).not.toHaveBeenCalled();
         
         consoleLogSpy.mockRestore();
       } finally {

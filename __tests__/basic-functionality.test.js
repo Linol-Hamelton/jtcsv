@@ -26,7 +26,7 @@ describe('Basic Functionality', () => {
 
     test('should use custom delimiter', () => {
       const data = [{ a: 1, b: 2 }];
-      const csv = jsonToCsv(data, { delimiter: '|' });
+      const csv = jsonToCsv(data, { delimiter: '|', rfc4180Compliant: false });
       
       expect(csv).toBe('a|b\n1|2');
     });
