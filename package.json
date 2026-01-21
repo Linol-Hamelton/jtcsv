@@ -1,2 +1,87 @@
-{"name":"jtcsv","version":"1.0.0","description":"The simplest JSON to CSV converter for Node.js - Zero dependencies, 2KB package with Excel support and security features","main":"index.js","types":"index.d.ts","scripts":{"test":"jest","test:coverage":"jest --coverage","test:watch":"jest --watch","lint": "eslint index.js json-to-csv.js csv-to-json.js errors.js",
-    "lint:all": "eslint .","security-check":"npm audit","prepublishOnly": "npm test && eslint index.js json-to-csv.js csv-to-json.js errors.js"},"keywords":["json","csv","converter","json-to-csv","json2csv","export","excel","data","transform","nodejs","javascript","simple","lightweight","zero-dependencies","security","utf8","cyrillic","typescript"],"author":"Ruslan Fomenko","license":"MIT","repository":{"type":"git","url":"https://github.com/Linol-Hamelton/jtcsv.git"},"bugs":{"url":"https://github.com/Linol-Hamelton/jtcsv/issues"},"homepage":"https://github.com/Linol-Hamelton/jtcsv#readme","engines":{"node":">=12.0.0"},"files":["index.js","json-to-csv.js","csv-to-json.js","errors.js","index.d.ts"],"devDependencies":{"jest":"^29.0.0","eslint":"^8.0.0"}}
+{
+  "name": "jtcsv",
+  "version": "1.1.0",
+  "description": "Complete JSON↔CSV converter for Node.js with streaming, security, TUI, and TypeScript support - Zero dependencies",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "bin": {
+    "jtcsv": "./bin/jtcsv.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js",
+    "lint:all": "eslint .",
+    "security-check": "npm audit",
+    "prepublishOnly": "npm test && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js",
+    "tui": "node cli-tui.js",
+    "cli": "node bin/jtcsv.js"
+  },
+  "keywords": [
+    "json",
+    "csv",
+    "converter",
+    "json-to-csv",
+    "csv-to-json",
+    "json2csv",
+    "csv2json",
+    "export",
+    "import",
+    "excel",
+    "data",
+    "transform",
+    "nodejs",
+    "javascript",
+    "simple",
+    "lightweight",
+    "zero-dependencies",
+    "security",
+    "streaming",
+    "utf8",
+    "cyrillic",
+    "typescript",
+    "bidirectional",
+    "cli",
+    "tui",
+    "terminal",
+    "interface",
+    "gui",
+    "tool",
+    "utility"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Linol-Hamelton/jtcsv.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv#readme",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "files": [
+    "index.js",
+    "json-to-csv.js",
+    "csv-to-json.js",
+    "errors.js",
+    "stream-json-to-csv.js",
+    "stream-csv-to-json.js",
+    "json-save.js",
+    "index.d.ts",
+    "bin/",
+    "cli-tui.js"
+  ],
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0"
+  },
+  "optionalDependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0"
+  }
+}
+

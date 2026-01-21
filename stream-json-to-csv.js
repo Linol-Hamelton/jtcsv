@@ -10,7 +10,6 @@
 const {
   ValidationError,
   SecurityError,
-  FileSystemError,
   LimitError,
   ConfigurationError,
   safeExecute
