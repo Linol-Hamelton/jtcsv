@@ -67,8 +67,7 @@ async function benchmarkConversion(dataset, name) {
   
   try {
     const csv = jsonToCsv(dataset, {
-      delimiter: ',',
-      maxRecords: dataset.length
+      delimiter: ','
     });
     
     const endTime = performance.now();
@@ -162,10 +161,10 @@ async function main() {
   console.log('| 10,000  | ~50ms        | ~10MB        | ~5MB     |');
   console.log('| 50,000  | ~250ms       | ~40MB        | ~25MB    |');
   console.log('| 100,000 | ~500ms*      | ~80MB*       | ~50MB*   |');
-  console.log('\n* Estimated values (limited by maxRecords option)');
+  console.log('\n* Estimated values');
   
   console.log('\n💡 Tips for very large datasets:');
-  console.log('1. Use the maxRecords option to limit processing');
+  console.log('1. Use the maxRecords option optionally to limit processing');
   console.log('2. Process data in batches if memory is limited');
   console.log('3. Use saveAsCsv() for secure file writing');
   console.log('4. Monitor memory usage with process.memoryUsage()');

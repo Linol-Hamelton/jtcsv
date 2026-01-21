@@ -111,8 +111,7 @@ app.post('/export/custom', (req, res) => {
     
     const csv = jsonToCsv(safeData, {
       delimiter: options.delimiter || ',',
-      renameMap: options.renameMap || {},
-      maxRecords: 10000
+      renameMap: options.renameMap || {}
     });
     
     res.json({
