@@ -1,6 +1,6 @@
 {
   "name": "jtcsv",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Complete JSON↔CSV converter for Node.js with streaming, security, TUI, and TypeScript support - Zero dependencies",
   "main": "index.js",
   "types": "index.d.ts",
