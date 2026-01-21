@@ -17,10 +17,11 @@ module.exports = {
   deepUnwrap: jsonToCsvModule.deepUnwrap,
   validateFilePath: jsonToCsvModule.validateFilePath,
   
-  // CSV to JSON functions
+    // CSV to JSON functions
   csvToJson: csvToJsonModule.csvToJson,
   readCsvAsJson: csvToJsonModule.readCsvAsJson,
   readCsvAsJsonSync: csvToJsonModule.readCsvAsJsonSync,
+  autoDetectDelimiter: csvToJsonModule.autoDetectDelimiter,
 
   // JSON save functions
   saveAsJson: jsonSaveModule.saveAsJson,

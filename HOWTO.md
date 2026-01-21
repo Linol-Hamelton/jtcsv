@@ -260,9 +260,7 @@ async function safeExport(data, userInput) {
     const safePath = `./exports/${safeFilename}`;
     
     // saveAsCsv validates paths automatically
-    await saveAsCsv(data, safePath, {
-      maxRecords: 10000 // Limit for safety
-    });
+    await saveAsCsv(data, safePath);
     
     console.log('✅ File saved safely');
   } catch (error) {
@@ -299,9 +297,9 @@ function validateAndConvert(userData) {
     console.warn('⚠️ Suspicious content detected');
   }
   
-  // Convert with safety limits
+  // Convert with optional safety limits
   return jsonToCsv(userData, {
-    maxRecords: Math.min(userData.length, 50000)
+    maxRecords: userData.length > 50000 ? 50000 : undefined
   });
 }
 ```
@@ -312,7 +310,7 @@ function validateAndConvert(userData) {
 2. **Streaming**: Use streams for file I/O with large datasets
 3. **Memory Monitoring**: Check `process.memoryUsage()` during conversion
 4. **Limit Fields**: Only include necessary fields in output
-5. **Use maxRecords**: Prevent accidental processing of huge datasets
+5. **Use maxRecords optionally**: Set limits to prevent accidental processing of huge datasets
 
 ## Common Use Cases
 

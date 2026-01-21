@@ -11,7 +11,7 @@ declare module 'jtcsv' {
     renameMap?: Record<string, string>;
     /** Template for guaranteed column order */
     template?: Record<string, any>;
-    /** Maximum number of records to process (default: 1,000,000) */
+    /** Maximum number of records to process (optional, no limit by default) */
     maxRecords?: number;
     /** Prevent CSV injection attacks by escaping formulas (default: true) */
     preventCsvInjection?: boolean;
@@ -26,8 +26,12 @@ declare module 'jtcsv' {
 
   // CSV to JSON interfaces
   export interface CsvToJsonOptions {
-    /** CSV delimiter (default: ';') */
+    /** CSV delimiter (default: auto-detected) */
     delimiter?: string;
+    /** Auto-detect delimiter if not specified (default: true) */
+    autoDetect?: boolean;
+    /** Candidate delimiters for auto-detection (default: [';', ',', '\t', '|']) */
+    candidates?: string[];
     /** Whether CSV has headers row (default: true) */
     hasHeaders?: boolean;
     /** Map for renaming column headers { newKey: oldKey } */
@@ -38,7 +42,7 @@ declare module 'jtcsv' {
     parseNumbers?: boolean;
     /** Parse boolean values (default: false) */
     parseBooleans?: boolean;
-    /** Maximum number of rows to process (default: 1,000,000) */
+    /** Maximum number of rows to process (optional, no limit by default) */
     maxRows?: number;
   }
 
@@ -209,6 +213,17 @@ declare module 'jtcsv' {
     filePath: string, 
     options?: CsvToJsonOptions
   ): Record<string, any>[];
+
+  /**
+   * Auto-detect CSV delimiter from content
+   * @param csv CSV content string
+   * @param candidates Candidate delimiters to test (default: [';', ',', '\t', '|'])
+   * @returns Detected delimiter
+   */
+  export function autoDetectDelimiter(
+    csv: string,
+    candidates?: string[]
+  ): string;
 
   /**
    * Save data as JSON file with security validation

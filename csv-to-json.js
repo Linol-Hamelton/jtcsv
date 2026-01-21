@@ -32,13 +32,23 @@ function validateCsvInput(csv, options) {
     throw new ConfigurationError('Options must be an object');
   }
   
-  // Validate delimiter
+    // Validate delimiter
   if (options?.delimiter && typeof options.delimiter !== 'string') {
     throw new ConfigurationError('Delimiter must be a string');
   }
   
   if (options?.delimiter && options.delimiter.length !== 1) {
     throw new ConfigurationError('Delimiter must be a single character');
+  }
+  
+  // Validate autoDetect
+  if (options?.autoDetect !== undefined && typeof options.autoDetect !== 'boolean') {
+    throw new ConfigurationError('autoDetect must be a boolean');
+  }
+  
+  // Validate candidates
+  if (options?.candidates && !Array.isArray(options.candidates)) {
+    throw new ConfigurationError('candidates must be an array');
   }
   
   // Validate maxRows
@@ -184,21 +194,69 @@ function parseCsvValue(value, options) {
     return null;
   }
   
-  return result;
+    return result;
+}
+
+/**
+ * Auto-detect CSV delimiter from content
+ * @private
+ */
+function autoDetectDelimiter(csv, candidates = [';', ',', '\t', '|']) {
+  if (!csv || typeof csv !== 'string') {
+    return ';'; // default
+  }
+
+  const lines = csv.split('\n').filter(line => line.trim().length > 0);
+  
+  if (lines.length === 0) {
+    return ';'; // default
+  }
+
+  // Use first non-empty line for detection
+  const firstLine = lines[0];
+  
+  const counts = {};
+  candidates.forEach(delim => {
+    // Escape special regex characters
+    const escapedDelim = delim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedDelim, 'g');
+    const matches = firstLine.match(regex);
+    counts[delim] = matches ? matches.length : 0;
+  });
+
+  // Find delimiter with maximum count
+  let maxCount = -1;
+  let detectedDelimiter = ';'; // default
+  
+  for (const [delim, count] of Object.entries(counts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      detectedDelimiter = delim;
+    }
+  }
+
+  // If no delimiter found or tie, return default
+  if (maxCount === 0) {
+    return ';'; // default
+  }
+
+  return detectedDelimiter;
 }
 
 /**
  * Converts CSV string to JSON array
  * 
- * @param {string} csv - CSV string to convert
+  * @param {string} csv - CSV string to convert
  * @param {Object} [options] - Configuration options
- * @param {string} [options.delimiter=';'] - CSV delimiter character
+ * @param {string} [options.delimiter] - CSV delimiter character (default: auto-detected)
+ * @param {boolean} [options.autoDetect=true] - Auto-detect delimiter if not specified
+ * @param {Array} [options.candidates=[';', ',', '\t', '|']] - Candidate delimiters for auto-detection
  * @param {boolean} [options.hasHeaders=true] - Whether CSV has headers row
  * @param {Object} [options.renameMap={}] - Map for renaming column headers (newKey: oldKey)
  * @param {boolean} [options.trim=true] - Trim whitespace from values
  * @param {boolean} [options.parseNumbers=false] - Parse numeric values
  * @param {boolean} [options.parseBooleans=false] - Parse boolean values
- * @param {number} [options.maxRows=1000000] - Maximum number of rows to process
+ * @param {number} [options.maxRows] - Maximum number of rows to process (optional, no limit by default)
  * @returns {Array<Object>} JSON array
  * 
  * @example
@@ -217,15 +275,24 @@ function csvToJson(csv, options = {}) {
     
     const opts = options && typeof options === 'object' ? options : {};
     
-    const {
-      delimiter = ';',
+        const {
+      delimiter,
+      autoDetect = true,
+      candidates = [';', ',', '\t', '|'],
       hasHeaders = true,
       renameMap = {},
       trim = true,
       parseNumbers = false,
       parseBooleans = false,
-      maxRows = 1000000
+      maxRows
     } = opts;
+
+        // Determine delimiter
+    let finalDelimiter = delimiter;
+    if (!finalDelimiter && autoDetect) {
+      finalDelimiter = autoDetectDelimiter(csv, candidates);
+    }
+    finalDelimiter = finalDelimiter || ';'; // fallback
 
     // Handle empty CSV
     if (csv.trim() === '') {
@@ -278,12 +345,22 @@ function csvToJson(csv, options = {}) {
       throw new ParsingError('Unclosed quotes in CSV', lines.length);
     }
     
-    if (lines.length === 0) {
+        if (lines.length === 0) {
       return [];
     }
 
-    // Limit rows to prevent OOM
-    if (lines.length > maxRows) {
+    // Show warning for large datasets (optional limit)
+    if (lines.length > 1000000 && !maxRows && process.env.NODE_ENV !== 'test') {
+      console.warn(
+        '⚠️ Warning: Processing >1M records in memory may be slow.\n' +
+        '💡 Consider using createCsvToJsonStream() for better performance with large files.\n' +
+        '📊 Current size: ' + lines.length.toLocaleString() + ' rows\n' +
+        '🔧 Tip: Use { maxRows: N } option to set a custom limit if needed.'
+      );
+    }
+
+    // Apply optional row limit if specified
+    if (maxRows && lines.length > maxRows) {
       throw new LimitError(
         `CSV size exceeds maximum limit of ${maxRows} rows`,
         maxRows,
@@ -294,10 +371,10 @@ function csvToJson(csv, options = {}) {
     let headers = [];
     let startIndex = 0;
     
-    // Parse headers if present
+        // Parse headers if present
     if (hasHeaders && lines.length > 0) {
       try {
-        headers = parseCsvLine(lines[0], 1, delimiter).map(header => {
+        headers = parseCsvLine(lines[0], 1, finalDelimiter).map(header => {
           const trimmed = trim ? header.trim() : header;
           // Apply rename map
           return renameMap[trimmed] || trimmed;
@@ -310,9 +387,9 @@ function csvToJson(csv, options = {}) {
         throw error;
       }
     } else {
-      // Generate numeric headers from first line
+            // Generate numeric headers from first line
       try {
-        const firstLineFields = parseCsvLine(lines[0], 1, delimiter);
+        const firstLineFields = parseCsvLine(lines[0], 1, finalDelimiter);
         headers = firstLineFields.map((_, index) => `column${index + 1}`);
       } catch (error) {
         if (error instanceof ParsingError) {
@@ -334,7 +411,7 @@ function csvToJson(csv, options = {}) {
       }
       
       try {
-        const fields = parseCsvLine(line, i + 1, delimiter);
+        const fields = parseCsvLine(line, i + 1, finalDelimiter);
         
         // Handle mismatched field count
         const row = {};
@@ -483,7 +560,8 @@ function readCsvAsJsonSync(filePath, options = {}) {
 module.exports = {
   csvToJson,
   readCsvAsJson,
-  readCsvAsJsonSync
+  readCsvAsJsonSync,
+  autoDetectDelimiter
 };
 
 // For ES6 module compatibility

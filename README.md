@@ -24,11 +24,23 @@ console.log(csv);
 ```javascript
 const { csvToJson } = require('jtcsv');
 
+// Auto-detect delimiter (no need to specify)
 const csv = 'id,name\\n1,John\\n2,Jane';
-const json = csvToJson(csv, { delimiter: ',' });
+const json = csvToJson(csv); // Automatically detects comma delimiter
 
 console.log(json);
 // Output: [{id: '1', name: 'John'}, {id: '2', name: 'Jane'}]
+
+// Works with any delimiter
+const csvSemicolon = 'id;name;email\\n1;John;john@example.com';
+const json2 = csvToJson(csvSemicolon); // Automatically detects semicolon
+
+// Disable auto-detect if needed
+const csvCustom = 'id|name|age\\n1|John|30';
+const json3 = csvToJson(csvCustom, { 
+  delimiter: '|', 
+  autoDetect: false 
+});
 ```
 
 ## 📦 Installation
@@ -103,8 +115,7 @@ const fs = require('fs');
 // Process 1GB JSON file without loading into memory
 const jsonStream = fs.createReadStream('./large-data.jsonl', 'utf8');
 await saveJsonStreamAsCsv(jsonStream, './output.csv', {
-  delimiter: ',',
-  maxRecords: 1000000
+  delimiter: ','
 });
 ```
 
@@ -137,22 +148,41 @@ Convert JSON array to CSV string.
 **Options:**
 - `delimiter` (default: ';') - CSV delimiter character
 - `includeHeaders` (default: true) - Include headers row
-- `renameMap` - Rename column headers `{ oldKey: newKey }`
-- `template` - Ensure consistent column order
-- `maxRecords` (default: 1,000,000) - Maximum records to process
-- `preventCsvInjection` (default: true) - Escape Excel formulas
-- `rfc4180Compliant` (default: true) - RFC 4180 compliance
+  - `renameMap` - Rename column headers `{ oldKey: newKey }`
+  - `template` - Ensure consistent column order
+  - `maxRecords` (optional) - Maximum records to process (no limit by default)
+  - `preventCsvInjection` (default: true) - Escape Excel formulas
+  - `rfc4180Compliant` (default: true) - RFC 4180 compliance
 
 #### `csvToJson(csv, options)`
 Convert CSV string to JSON array.
 
 **Options:**
-- `delimiter` (default: ';') - CSV delimiter character
+- `delimiter` (default: auto-detected) - CSV delimiter character
+- `autoDetect` (default: true) - Auto-detect delimiter if not specified
+- `candidates` (default: [';', ',', '\t', '|']) - Candidate delimiters for auto-detection
 - `hasHeaders` (default: true) - CSV has headers row
 - `renameMap` - Rename column headers `{ newKey: oldKey }`
 - `parseNumbers` (default: false) - Parse numeric values
 - `parseBooleans` (default: false) - Parse boolean values
-- `maxRows` (default: 1,000,000) - Maximum rows to process
+- `maxRows` (optional) - Maximum rows to process (no limit by default)
+
+#### `autoDetectDelimiter(csv, candidates)`
+Auto-detect CSV delimiter from content.
+
+**Parameters:**
+- `csv` - CSV content string
+- `candidates` (optional) - Array of candidate delimiters (default: [';', ',', '\t', '|'])
+
+**Returns:** Detected delimiter string
+
+**Example:**
+```javascript
+const { autoDetectDelimiter } = require('jtcsv');
+
+const delimiter = autoDetectDelimiter('id,name,age\\n1,John,30');
+console.log(delimiter); // Output: ','
+```
 
 #### `saveAsCsv(data, filePath, options)`
 Save JSON data as CSV file with security validation.
@@ -227,7 +257,7 @@ jsonToCsv(largeArray, { maxRecords: 100 }); // throws LimitError if >100 records
 ## 📈 Performance
 
 ### Memory Efficiency
-- **In-memory**: Up to 1 million records (configurable)
+- **In-memory**: Unlimited records (with performance warning for >1M)
 - **Streaming**: Unlimited size with constant memory
 - **Zero-copy**: Efficient buffer management
 
@@ -386,6 +416,7 @@ MIT © Ruslan Fomenko
 | **JSON→CSV** | ✅ | ✅ | ✅ | ❌ |
 | **CSV→JSON** | ✅ | ✅ | ✅ | ✅ |
 | **Streaming** | ✅ | ❌ | ✅ | ✅ |
+| **Auto-detect Delimiter** | ✅ | ❌ | ✅ | ❌ |
 | **CSV Injection Protection** | ✅ | ❌ | ⚠️ | ❌ |
 | **TypeScript** | ✅ | ✅ | ✅ | ❌ |
 | **RFC 4180** | ✅ | ✅ | ✅ | ✅ |

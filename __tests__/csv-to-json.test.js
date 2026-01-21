@@ -134,7 +134,7 @@ describe('CSV to JSON Functions', () => {
       expect(() => csvToJson({})).toThrow(ValidationError);
     });
 
-    test('should respect maxRows limit', () => {
+        test('should respect maxRows limit when specified', () => {
       // Create CSV with 11 rows (10 data rows + header)
       const rows = ['id;name'];
       for (let i = 1; i <= 11; i++) {
@@ -149,6 +149,87 @@ describe('CSV to JSON Functions', () => {
       // Should not throw when within limit
       expect(() => csvToJson(csv, { delimiter: ';', maxRows: 20 }))
         .not.toThrow();
+      
+      // Should not throw when no limit specified (default unlimited)
+      expect(() => csvToJson(csv, { delimiter: ';' }))
+        .not.toThrow();
+    });
+
+        test('should process large CSV without limit by default', () => {
+      // Create CSV with 100 rows (1 header + 99 data rows) to test no default limit
+      const rows = ['id;name'];
+      for (let i = 1; i <= 99; i++) { // Use 99 data rows for test
+        rows.push(`${i};User${i}`);
+      }
+      const csv = rows.join('\n');
+      
+      // Should process without error (no default limit)
+      const result = csvToJson(csv, { delimiter: ';' });
+      expect(result.length).toBe(99); // 99 data rows
+        });
+
+    test('should auto-detect comma delimiter', () => {
+      const csv = 'id,name,email\n1,John,john@example.com\n2,Jane,jane@example.com';
+      const result = csvToJson(csv); // No delimiter specified
+      
+      expect(result[0]).toEqual({ id: '1', name: 'John', email: 'john@example.com' });
+      expect(result[1]).toEqual({ id: '2', name: 'Jane', email: 'jane@example.com' });
+    });
+
+    test('should auto-detect semicolon delimiter', () => {
+      const csv = 'id;name;email\n1;John;john@example.com\n2;Jane;jane@example.com';
+      const result = csvToJson(csv); // No delimiter specified
+      
+      expect(result[0]).toEqual({ id: '1', name: 'John', email: 'john@example.com' });
+      expect(result[1]).toEqual({ id: '2', name: 'Jane', email: 'jane@example.com' });
+    });
+
+    test('should auto-detect tab delimiter', () => {
+      const csv = 'id\tname\temail\n1\tJohn\tjohn@example.com\n2\tJane\tjane@example.com';
+      const result = csvToJson(csv); // No delimiter specified
+      
+      expect(result[0]).toEqual({ id: '1', name: 'John', email: 'john@example.com' });
+      expect(result[1]).toEqual({ id: '2', name: 'Jane', email: 'jane@example.com' });
+    });
+
+    test('should use specified delimiter when provided', () => {
+      const csv = 'id,name,email\n1,John,john@example.com';
+      const result = csvToJson(csv, { delimiter: ';' }); // Wrong delimiter specified
+      
+      // Should parse incorrectly because we specified wrong delimiter
+      expect(result[0]).toEqual({ 'id,name,email': '1,John,john@example.com' });
+    });
+
+    test('should respect autoDetect=false option', () => {
+      const csv = 'id,name,email\n1,John,john@example.com';
+      const result = csvToJson(csv, { 
+        delimiter: ';', 
+        autoDetect: false 
+      });
+      
+      // Should use specified delimiter even though it's wrong
+      expect(result[0]).toEqual({ 'id,name,email': '1,John,john@example.com' });
+    });
+
+    test('should use custom candidates for auto-detection', () => {
+      const csv = 'id|name|email\n1|John|john@example.com';
+      const result = csvToJson(csv, { 
+        candidates: ['|', '#', '~'] 
+      });
+      
+      expect(result[0]).toEqual({ id: '1', name: 'John', email: 'john@example.com' });
+    });
+
+    test('autoDetectDelimiter function should work independently', () => {
+      const { autoDetectDelimiter } = require('../index');
+      
+      expect(autoDetectDelimiter('a,b,c')).toBe(',');
+      expect(autoDetectDelimiter('a;b;c')).toBe(';');
+      expect(autoDetectDelimiter('a\tb\tc')).toBe('\t');
+      expect(autoDetectDelimiter('a|b|c')).toBe('|');
+      
+      // Test with custom candidates
+      expect(autoDetectDelimiter('a#b#c', ['#', '@'])).toBe('#');
     });
   });
 

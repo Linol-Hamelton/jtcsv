@@ -68,8 +68,8 @@ ${color('OPTIONS:', 'bright')}
   ${color('--parse-numbers', 'cyan')}      Parse numeric values in CSV
   ${color('--parse-booleans', 'cyan')}     Parse boolean values in CSV
   ${color('--no-injection-protection', 'cyan')}  Disable CSV injection protection
-  ${color('--max-records=', 'cyan')}N      Maximum records to process (default: 1000000)
-  ${color('--max-rows=', 'cyan')}N         Maximum rows to process (default: 1000000)
+  ${color('--max-records=', 'cyan')}N      Maximum records to process (optional, no limit by default)
+  ${color('--max-rows=', 'cyan')}N         Maximum rows to process (optional, no limit by default)
   ${color('--pretty', 'cyan')}             Pretty print JSON output
   ${color('--silent', 'cyan')}             Suppress all output except errors
   ${color('--verbose', 'cyan')}            Show detailed progress information
@@ -239,8 +239,8 @@ function parseOptions(args) {
     parseNumbers: false,
     parseBooleans: false,
     preventCsvInjection: true,
-    maxRecords: 1000000,
-    maxRows: 1000000,
+    maxRecords: undefined,
+    maxRows: undefined,
     pretty: false,
     silent: false,
     verbose: false

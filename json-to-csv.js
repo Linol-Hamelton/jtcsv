@@ -73,8 +73,8 @@ function validateInput(data, options) {
  * @param {string} [options.delimiter=';'] - CSV delimiter character
  * @param {boolean} [options.includeHeaders=true] - Whether to include headers row
  * @param {Object} [options.renameMap={}] - Map for renaming column headers (oldKey: newKey)
- * @param {Object} [options.template={}] - Template object to ensure consistent column order
- * @param {number} [options.maxRecords=1000000] - Maximum number of records to process
+* @param {Object} [options.template={}] - Template object to ensure consistent column order
+ * @param {number} [options.maxRecords] - Maximum number of records to process (optional, no limit by default)
  * @param {boolean} [options.preventCsvInjection=true] - Prevent CSV injection attacks by escaping formulas
  * @param {boolean} [options.rfc4180Compliant=true] - Ensure RFC 4180 compliance (proper quoting, line endings)
  * @returns {string} CSV formatted string
@@ -101,23 +101,33 @@ function jsonToCsv(data, options = {}) {
     
     const opts = options && typeof options === 'object' ? options : {};
     
-    const {
+        const {
       delimiter = ';',
       includeHeaders = true,
       renameMap = {},
       template = {},
-      maxRecords = 1000000,
+      maxRecords,
       preventCsvInjection = true,
       rfc4180Compliant = true
     } = opts;
 
-    // Handle empty data
+        // Handle empty data
     if (data.length === 0) {
       return '';
     }
 
-    // Limit data size to prevent OOM
-    if (data.length > maxRecords) {
+    // Show warning for large datasets (optional limit)
+    if (data.length > 1000000 && !maxRecords && process.env.NODE_ENV !== 'test') {
+      console.warn(
+        '⚠️ Warning: Processing >1M records in memory may be slow.\n' +
+        '💡 Consider processing data in batches or using streaming for large files.\n' +
+        '📊 Current size: ' + data.length.toLocaleString() + ' records\n' +
+        '🔧 Tip: Use { maxRecords: N } option to set a custom limit if needed.'
+      );
+    }
+
+    // Apply optional record limit if specified
+    if (maxRecords && data.length > maxRecords) {
       throw new LimitError(
         `Data size exceeds maximum limit of ${maxRecords} records`,
         maxRecords,
