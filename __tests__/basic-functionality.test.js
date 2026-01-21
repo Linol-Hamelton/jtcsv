@@ -1,4 +1,13 @@
-const { jsonToCsv, preprocessData, deepUnwrap, ValidationError, LimitError } = require('../json-to-csv');
+const { jsonToCsv, preprocessData, deepUnwrap, ValidationError, LimitError } = require('../index');
+
+// Mock console.warn to avoid output in tests
+beforeEach(() => {
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 describe('Basic Functionality', () => {
   describe('jsonToCsv', () => {
@@ -138,6 +147,7 @@ describe('Basic Functionality', () => {
 
   describe('Input Validation', () => {
     test('should throw ValidationError for non-array input', () => {
+      // These should throw ValidationError
       expect(() => jsonToCsv(null)).toThrow(ValidationError);
       expect(() => jsonToCsv(undefined)).toThrow(ValidationError);
       expect(() => jsonToCsv('string')).toThrow(ValidationError);
@@ -169,8 +179,16 @@ describe('Basic Functionality', () => {
       // Default limit is 1,000,000, so this should not throw
       expect(() => jsonToCsv(data)).not.toThrow();
       
-      // But with custom limit of 10, it should throw
+      // But with custom limit of 10, it should throw LimitError
       expect(() => jsonToCsv(data, { maxRecords: 10 })).toThrow(LimitError);
+      
+      // Verify the error message
+      try {
+        jsonToCsv(data, { maxRecords: 10 });
+      } catch (error) {
+        expect(error).toBeInstanceOf(LimitError);
+        expect(error.message).toContain('Data size exceeds maximum limit of 10 records');
+      }
     });
 
     test('should allow custom maxRecords', () => {

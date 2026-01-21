@@ -46,8 +46,10 @@ function validateInput(data, options) {
   }
   
   // Validate maxRecords
-  if (options?.maxRecords && (typeof options.maxRecords !== 'number' || options.maxRecords <= 0)) {
-    throw new ConfigurationError('maxRecords must be a positive number');
+  if (options && options.maxRecords !== undefined) {
+    if (typeof options.maxRecords !== 'number' || options.maxRecords <= 0) {
+      throw new ConfigurationError('maxRecords must be a positive number');
+    }
   }
   
   return true;
@@ -111,7 +113,9 @@ function jsonToCsv(data, options = {}) {
     const allKeys = new Set();
     data.forEach((item, index) => {
       if (!item || typeof item !== 'object') {
-        console.warn(`[jtcsv] Warning: Item at index ${index} is not an object, skipping`);
+        if (process.env.NODE_ENV !== 'test') {
+          console.warn(`[jtcsv] Warning: Item at index ${index} is not an object, skipping`);
+        }
         return;
       }
       Object.keys(item).forEach(key => allKeys.add(key));
@@ -138,7 +142,13 @@ function jsonToCsv(data, options = {}) {
       finalHeaders = [...templateHeaders, ...extraHeaders];
     }
 
-    // Escape CSV value with CSV injection protection
+    /**
+     * Escapes a value for CSV format with CSV injection protection
+     * 
+     * @private
+     * @param {*} value - The value to escape
+     * @returns {string} Escaped CSV value
+     */
     const escapeValue = (value) => {
       if (value === null || value === undefined || value === '') {
         return '';
@@ -229,7 +239,7 @@ function deepUnwrap(value, depth = 0, maxDepth = 5, visited = new Set()) {
       return '';
     }
     const unwrappedItems = value.map(item => 
-      deepUnwrap(item, depth + 1, maxDepth, new Set(visited))
+      deepUnwrap(item, depth + 1, maxDepth, visited)
     ).filter(item => item !== '');
     return unwrappedItems.join(', ');
   }
@@ -250,6 +260,10 @@ function deepUnwrap(value, depth = 0, maxDepth = 5, visited = new Set()) {
     try {
       return JSON.stringify(value);
     } catch (error) {
+      // Check if it's a circular reference
+      if (error.message.includes('circular') || error.message.includes('Converting circular')) {
+        return '[Circular Reference]';
+      }
       return '[Unstringifiable Object]';
     }
   }
@@ -354,9 +368,10 @@ async function saveAsCsv(data, filePath, options = {}) {
     // Convert data to CSV
     const csvContent = jsonToCsv(data, options);
     
+    // Ensure directory exists
+    const dir = require('path').dirname(safePath);
+    
     try {
-      // Ensure directory exists
-      const dir = require('path').dirname(safePath);
       await fs.mkdir(dir, { recursive: true });
       
       // Write file

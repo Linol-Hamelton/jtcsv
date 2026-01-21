@@ -119,9 +119,9 @@ function handleError(error, context = {}) {
 }
 
 /**
- * Safe execution wrapper
+ * Safe execution wrapper for async functions
  */
-async function safeExecute(fn, errorType, context = {}) {
+async function safeExecuteAsync(fn, errorType, context = {}) {
   try {
     return await fn();
   } catch (error) {
@@ -138,6 +138,40 @@ async function safeExecute(fn, errorType, context = {}) {
   }
 }
 
+/**
+ * Safe execution wrapper for sync functions
+ */
+function safeExecuteSync(fn, errorType, context = {}) {
+  try {
+    return fn();
+  } catch (error) {
+    if (error instanceof JtcsvError) {
+      throw error;
+    }
+    
+    // Wrap unknown errors
+    const message = createErrorMessage(errorType, error.message);
+    const wrappedError = new JtcsvError(message, errorType);
+    wrappedError.originalError = error;
+    
+    handleError(wrappedError, context);
+  }
+}
+
+/**
+ * Safe execution wrapper (auto-detects async/sync)
+ */
+function safeExecute(fn, errorType, context = {}) {
+  const result = fn();
+  
+  // Check if function returns a promise
+  if (result && typeof result.then === 'function') {
+    return safeExecuteAsync(async () => result, errorType, context);
+  }
+  
+  return safeExecuteSync(() => result, errorType, context);
+}
+
 module.exports = {
   JtcsvError,
   ValidationError,
@@ -148,5 +182,7 @@ module.exports = {
   ConfigurationError,
   createErrorMessage,
   handleError,
-  safeExecute
+  safeExecute,
+  safeExecuteAsync,
+  safeExecuteSync
 };

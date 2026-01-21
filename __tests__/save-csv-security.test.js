@@ -1,35 +1,38 @@
-const { saveAsCsv, validateFilePath, jsonToCsv } = require('../json-to-csv');
+const { saveAsCsv, validateFilePath, jsonToCsv, preprocessData } = require('../index');
 
 // Mock console to avoid output in tests
 jest.spyOn(console, 'log').mockImplementation(() => {});
 jest.spyOn(console, 'error').mockImplementation(() => {});
+jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-// Mock fs module
-jest.mock('fs', () => {
-  const mockWriteFile = jest.fn().mockResolvedValue();
-  const mockMkdir = jest.fn().mockResolvedValue();
-  return {
-    promises: {
-      writeFile: mockWriteFile,
-      mkdir: mockMkdir
-    }
-  };
-});
+// Simple mock for fs
+const mockFs = {
+  promises: {
+    writeFile: jest.fn().mockResolvedValue(),
+    mkdir: jest.fn().mockResolvedValue()
+  }
+};
 
-// Mock path module - simpler version
+// Mock the entire fs module
+jest.mock('fs', () => mockFs);
+
+// Mock path module to avoid issues
 jest.mock('path', () => {
+  const actualPath = jest.requireActual('path');
   return {
-    dirname: jest.fn().mockReturnValue('.'),
-    resolve: jest.fn((path) => path),
-    normalize: jest.fn((path) => path),
-    extname: jest.fn((path) => {
-      const match = path.match(/\.([^.]+)$/);
-      return match ? '.' + match[1] : '';
+    ...actualPath,
+    // Simple implementations for tests
+    dirname: jest.fn((p) => '.'),
+    resolve: jest.fn((p) => p),
+    normalize: jest.fn((p) => p),
+    extname: jest.fn((p) => {
+      // Simple extension extraction
+      const lastDot = p.lastIndexOf('.');
+      return lastDot === -1 ? '' : p.substring(lastDot);
     })
   };
 });
 
-// Get the mock after jest.mock
 const fs = require('fs');
 const path = require('path');
 
@@ -38,18 +41,21 @@ describe('saveAsCsv Security', () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset path mocks
-    path.dirname.mockReturnValue('.');
+    // Reset mocks to simple implementations
+    fs.promises.writeFile.mockResolvedValue();
+    fs.promises.mkdir.mockResolvedValue();
+    
+    path.dirname.mockImplementation((p) => '.');
     path.resolve.mockImplementation((p) => p);
     path.normalize.mockImplementation((p) => p);
     path.extname.mockImplementation((p) => {
-      const match = p.match(/\.([^.]+)$/);
-      return match ? '.' + match[1] : '';
+      const lastDot = p.lastIndexOf('.');
+      return lastDot === -1 ? '' : p.substring(lastDot);
     });
-    
-    // Reset fs mocks
-    fs.promises.writeFile.mockResolvedValue();
-    fs.promises.mkdir.mockResolvedValue();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('validateFilePath', () => {
@@ -129,14 +135,27 @@ describe('saveAsCsv Security', () => {
       await saveAsCsv(testData, filePath);
       
       // Check that writeFile was called
-      expect(fs.promises.writeFile).toHaveBeenCalled();
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
       
       // Get the actual arguments
       const callArgs = fs.promises.writeFile.mock.calls[0];
+      
+      // First arg should be the file path
       expect(callArgs[0]).toBe(filePath);
-      expect(typeof callArgs[1]).toBe('string'); // Should be a string, not object
+      
+      // Second arg should be a string (CSV content)
+      expect(typeof callArgs[1]).toBe('string');
+      
+      // Should contain expected data
+      expect(callArgs[1]).toContain('id');
+      expect(callArgs[1]).toContain('name');
+      expect(callArgs[1]).toContain('1');
+      expect(callArgs[1]).toContain('Test');
+      
+      // Third arg should be encoding
       expect(callArgs[2]).toBe('utf8');
       
+      // mkdir should have been called
       expect(fs.promises.mkdir).toHaveBeenCalledWith('.', { recursive: true });
     });
 
@@ -146,11 +165,16 @@ describe('saveAsCsv Security', () => {
       
       await saveAsCsv(testData, filePath, options);
       
-      expect(fs.promises.writeFile).toHaveBeenCalled();
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
       const callArgs = fs.promises.writeFile.mock.calls[0];
-      expect(callArgs[0]).toBe(filePath);
+      
+      // Should be a string
       expect(typeof callArgs[1]).toBe('string');
-      expect(callArgs[2]).toBe('utf8');
+      
+      // With no headers, should not contain header row
+      const csvContent = callArgs[1];
+      expect(csvContent).not.toContain('id,name');
+      expect(csvContent).toContain('1,Test');
       
       expect(fs.promises.mkdir).toHaveBeenCalledWith('.', { recursive: true });
     });
@@ -202,7 +226,7 @@ describe('saveAsCsv Security', () => {
         }
       ];
 
-      const processedData = require('../json-to-csv').preprocessData(complexData);
+      const processedData = preprocessData(complexData);
       const filePath = 'complex.csv';
       
       await saveAsCsv(processedData, filePath);

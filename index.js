@@ -22,4 +22,3 @@ module.exports = {
   // Error classes
   ...errorsModule
 };
-
