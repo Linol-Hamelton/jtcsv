@@ -1,4 +1,15 @@
-const { jsonToCsv, preprocessData, deepUnwrap, saveAsCsv, ValidationError, SecurityError } = require('../json-to-csv');
+const { jsonToCsv, preprocessData, deepUnwrap, saveAsCsv, ValidationError, SecurityError, ConfigurationError } = require('../index');
+
+// Mock console to avoid output in tests
+beforeEach(() => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 describe('Critical Bug Fixes', () => {
   describe('BUG #1: Circular references in deepUnwrap', () => {
@@ -163,10 +174,13 @@ describe('Critical Bug Fixes', () => {
     test('should validate options parameter', () => {
       const data = [{ test: 'data' }];
       
-      // Should handle invalid options gracefully
+      // Should throw ConfigurationError for invalid options
+      // Note: This is an improvement - stricter validation
+      expect(() => jsonToCsv(data, 'invalid')).toThrow(ConfigurationError);
+      expect(() => jsonToCsv(data, 123)).toThrow(ConfigurationError);
+      
+      // null options should be treated as empty object (no error)
       expect(() => jsonToCsv(data, null)).not.toThrow();
-      expect(() => jsonToCsv(data, 'invalid')).not.toThrow();
-      expect(() => jsonToCsv(data, 123)).not.toThrow();
       
       // Should work with valid options
       expect(() => jsonToCsv(data, { delimiter: ',' })).not.toThrow();

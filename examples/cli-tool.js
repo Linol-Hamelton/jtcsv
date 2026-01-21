@@ -27,20 +27,20 @@ function parseArgs() {
       const [key, value] = arg.slice(2).split('=');
       
       switch (key) {
-        case 'delimiter':
-          result.delimiter = value || ',';
-          break;
-        case 'no-headers':
-          result.noHeaders = true;
-          break;
-        case 'help':
-          result.help = true;
-          break;
-        case 'version':
-          result.version = true;
-          break;
-        default:
-          console.warn(`Warning: Unknown option --${key}`);
+      case 'delimiter':
+        result.delimiter = value || ',';
+        break;
+      case 'no-headers':
+        result.noHeaders = true;
+        break;
+      case 'help':
+        result.help = true;
+        break;
+      case 'version':
+        result.version = true;
+        break;
+      default:
+        console.warn(`Warning: Unknown option --${key}`);
       }
     } else if (!result.input) {
       result.input = arg;

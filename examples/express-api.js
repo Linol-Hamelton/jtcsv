@@ -152,11 +152,11 @@ app.get('/export/safe', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Express API running at http://localhost:${PORT}`);
-  console.log(`📊 Try these endpoints:`);
+  console.log('📊 Try these endpoints:');
   console.log(`   http://localhost:${PORT}/export/users`);
   console.log(`   http://localhost:${PORT}/export/users/download`);
   console.log(`   http://localhost:${PORT}/export/safe`);
-  console.log(`\nExample POST to /export/custom:`);
+  console.log('\nExample POST to /export/custom:');
   console.log(`curl -X POST http://localhost:${PORT}/export/custom \\
   -H "Content-Type: application/json" \\
   -d '{"data":[{"name":"John","age":30}],"options":{"delimiter":";"}}'`);

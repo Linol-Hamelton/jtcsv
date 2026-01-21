@@ -74,13 +74,44 @@ function parseCsvLine(line, lineNumber, delimiter) {
     }
 
     if (char === '"') {
-      if (insideQuotes && i + 1 < line.length && line[i + 1] === '"') {
-        // Escaped quote inside quotes
-        currentField += '"';
-        i++; // Skip next quote
+      if (insideQuotes) {
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          // Could be escaped quote ("") or double quote at end ("")
+          if (i + 2 === line.length) {
+            // This is the pattern "" at the end of the line
+            // First quote is part of field, second is closing quote
+            currentField += '"';
+            i++; // Skip the closing quote
+            insideQuotes = false;
+          } else {
+            // Escaped quote inside quotes ("" -> ")
+            currentField += '"';
+            i++; // Skip next quote
+          }
+        } else {
+          // Check if this is really the end of the quoted field
+          // Look ahead to see if next char is delimiter or end of line
+          let isEndOfField = false;
+          let j = i + 1;
+          // Skip whitespace
+          while (j < line.length && (line[j] === ' ' || line[j] === '\t')) {
+            j++;
+          }
+          if (j === line.length || line[j] === delimiter) {
+            isEndOfField = true;
+          }
+          
+          if (isEndOfField) {
+            // This is the closing quote
+            insideQuotes = false;
+          } else {
+            // This quote is part of the field content
+            currentField += '"';
+          }
+        }
       } else {
-        // Toggle quote mode
-        insideQuotes = !insideQuotes;
+        // Start of quoted field
+        insideQuotes = true;
       }
       continue;
     }
@@ -140,8 +171,12 @@ function parseCsvValue(value, options) {
   // Parse booleans
   if (parseBooleans) {
     const lowerValue = result.toLowerCase();
-    if (lowerValue === 'true') return true;
-    if (lowerValue === 'false') return false;
+    if (lowerValue === 'true') {
+      return true; 
+    }
+    if (lowerValue === 'false') {
+      return false; 
+    }
   }
   
   // Parse empty strings as null
@@ -197,8 +232,51 @@ function csvToJson(csv, options = {}) {
       return [];
     }
 
-    // Split CSV into lines
-    const lines = csv.split(/\r?\n/);
+    // Parse CSV with proper handling of quotes and newlines
+    const lines = [];
+    let currentLine = '';
+    let insideQuotes = false;
+    
+    for (let i = 0; i < csv.length; i++) {
+      const char = csv[i];
+      
+      if (char === '"') {
+        if (insideQuotes && i + 1 < csv.length && csv[i + 1] === '"') {
+          // Escaped quote inside quotes ("" -> ")
+          currentLine += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote mode
+          insideQuotes = !insideQuotes;
+        }
+        currentLine += char;
+        continue;
+      }
+      
+      if (char === '\n' && !insideQuotes) {
+        // End of line (outside quotes)
+        lines.push(currentLine);
+        currentLine = '';
+        continue;
+      }
+      
+      if (char === '\r') {
+        // Ignore carriage return, will be handled by \n
+        continue;
+      }
+      
+      currentLine += char;
+    }
+    
+    // Add the last line
+    if (currentLine !== '' || insideQuotes) {
+      lines.push(currentLine);
+    }
+    
+    // Check for unclosed quotes
+    if (insideQuotes) {
+      throw new ParsingError('Unclosed quotes in CSV', lines.length);
+    }
     
     if (lines.length === 0) {
       return [];
@@ -304,7 +382,7 @@ function validateCsvFilePath(filePath) {
   // Prevent directory traversal attacks
   const normalizedPath = path.normalize(filePath);
   if (normalizedPath.includes('..') || 
-      /\\\.\.\\|\/\.\.\//.test(filePath) ||
+      /\\\\.\\.\\|\/\\.\\.\//.test(filePath) ||
       filePath.startsWith('..') ||
       filePath.includes('/..')) {
     throw new SecurityError('Directory traversal detected in file path');
@@ -329,32 +407,36 @@ function validateCsvFilePath(filePath) {
  * });
  */
 async function readCsvAsJson(filePath, options = {}) {
-  return safeExecute(async () => {
-    const fs = require('fs').promises;
+  const fs = require('fs').promises;
+  
+  // Validate file path
+  const safePath = validateCsvFilePath(filePath);
+  
+  try {
+    // Read file
+    const csvContent = await fs.readFile(safePath, 'utf8');
     
-    // Validate file path
-    const safePath = validateCsvFilePath(filePath);
-    
-    try {
-      // Read file
-      const csvContent = await fs.readFile(safePath, 'utf8');
-      
-      // Parse CSV
-      return csvToJson(csvContent, options);
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new FileSystemError(`File not found: ${safePath}`, error);
-      }
-      if (error.code === 'EACCES') {
-        throw new FileSystemError(`Permission denied: ${safePath}`, error);
-      }
-      if (error.code === 'EISDIR') {
-        throw new FileSystemError(`Path is a directory: ${safePath}`, error);
-      }
-      
-      throw new FileSystemError(`Failed to read CSV file: ${error.message}`, error);
+    // Parse CSV
+    return csvToJson(csvContent, options);
+  } catch (error) {
+    // Re-throw parsing errors as-is
+    if (error instanceof ParsingError || error instanceof ValidationError || error instanceof LimitError) {
+      throw error;
     }
-  }, 'FILE_SYSTEM_ERROR', { function: 'readCsvAsJson' });
+    
+    // Wrap file system errors
+    if (error.code === 'ENOENT') {
+      throw new FileSystemError(`File not found: ${safePath}`, error);
+    }
+    if (error.code === 'EACCES') {
+      throw new FileSystemError(`Permission denied: ${safePath}`, error);
+    }
+    if (error.code === 'EISDIR') {
+      throw new FileSystemError(`Path is a directory: ${safePath}`, error);
+    }
+    
+    throw new FileSystemError(`Failed to read CSV file: ${error.message}`, error);
+  }
 }
 
 /**
@@ -365,32 +447,36 @@ async function readCsvAsJson(filePath, options = {}) {
  * @returns {Array<Object>} JSON array
  */
 function readCsvAsJsonSync(filePath, options = {}) {
-  return safeExecute(() => {
-    const fs = require('fs');
+  const fs = require('fs');
+  
+  // Validate file path
+  const safePath = validateCsvFilePath(filePath);
+  
+  try {
+    // Read file
+    const csvContent = fs.readFileSync(safePath, 'utf8');
     
-    // Validate file path
-    const safePath = validateCsvFilePath(filePath);
-    
-    try {
-      // Read file
-      const csvContent = fs.readFileSync(safePath, 'utf8');
-      
-      // Parse CSV
-      return csvToJson(csvContent, options);
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new FileSystemError(`File not found: ${safePath}`, error);
-      }
-      if (error.code === 'EACCES') {
-        throw new FileSystemError(`Permission denied: ${safePath}`, error);
-      }
-      if (error.code === 'EISDIR') {
-        throw new FileSystemError(`Path is a directory: ${safePath}`, error);
-      }
-      
-      throw new FileSystemError(`Failed to read CSV file: ${error.message}`, error);
+    // Parse CSV
+    return csvToJson(csvContent, options);
+  } catch (error) {
+    // Re-throw parsing errors as-is
+    if (error instanceof ParsingError || error instanceof ValidationError || error instanceof LimitError) {
+      throw error;
     }
-  }, 'FILE_SYSTEM_ERROR', { function: 'readCsvAsJsonSync' });
+    
+    // Wrap file system errors
+    if (error.code === 'ENOENT') {
+      throw new FileSystemError(`File not found: ${safePath}`, error);
+    }
+    if (error.code === 'EACCES') {
+      throw new FileSystemError(`Permission denied: ${safePath}`, error);
+    }
+    if (error.code === 'EISDIR') {
+      throw new FileSystemError(`Path is a directory: ${safePath}`, error);
+    }
+    
+    throw new FileSystemError(`Failed to read CSV file: ${error.message}`, error);
+  }
 }
 
 // Export the functions

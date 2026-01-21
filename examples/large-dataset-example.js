@@ -144,7 +144,7 @@ async function main() {
       
       // Show first few lines
       const sample = csv.split('\n').slice(0, 3).join('\n');
-      console.log(`\nSample output (first 3 lines):`);
+      console.log('\nSample output (first 3 lines):');
       console.log(sample);
       console.log('...');
     }
