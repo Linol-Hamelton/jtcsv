@@ -53,6 +53,41 @@ This release addresses multiple critical security vulnerabilities and adds compr
 - Performance: Optimized for large datasets
 - Compatibility: Node.js >= 12.0.0
 
+## [1.2.0] - 2024-01-20
+
+### Added
+- **Auto-detect delimiter**: CSV delimiter is now auto-detected by default (detects ; , \t |)
+- **Unlimited processing**: Removed default 1,000,000 record limit
+- **New function**: `autoDetectDelimiter()` utility function
+- **New options**: `autoDetect` (default: true) and `candidates` for delimiter detection
+
+### Changed
+- **Breaking**: `csvToJson()` and `jsonToCsv()` no longer have default record limits
+- **Breaking**: `delimiter` parameter is now optional (auto-detected by default)
+- **Improved**: Warning for >1M records suggests streaming for large files
+- **Enhanced**: Better developer experience - no need to guess CSV delimiter
+
+### Fixed
+- **Critical**: Removed arbitrary 1,000,000 record limit that caused errors for large datasets
+- **Competitiveness**: Now matches PapaParse's auto-detect feature
+
+### Security
+- **Maintained**: All security features from previous versions preserved
+- **Enhanced**: Optional limits still available for security-conscious applications
+
+### Performance
+- **Improved**: Unlimited processing for enterprise datasets
+- **Optimized**: Auto-detect algorithm is fast and efficient
+
+### Tests
+- **Added**: 8 new tests for auto-detect functionality
+- **All**: 152 tests pass (was 144)
+
+### Documentation
+- **Updated**: README.md with new features and examples
+- **Enhanced**: TypeScript definitions for new API
+- **Improved**: Comparison table shows auto-detect advantage
+
 ## [1.0.0] - 2024-01-20
 
 ### Added
@@ -77,4 +112,5 @@ This release addresses multiple critical security vulnerabilities and adds compr
 
 [0.1.0-beta.1]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v0.1.0-beta.1
 [1.0.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.0.0
+[1.2.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.2.0
 
