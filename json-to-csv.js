@@ -127,7 +127,7 @@ function jsonToCsv(data, options = {}) {
 
     // Get all unique keys from all objects
     const allKeys = new Set();
-    data.forEach((item, index) => {
+    data.forEach((item) => {
       if (!item || typeof item !== 'object') {
         return;
       }
@@ -155,7 +155,7 @@ function jsonToCsv(data, options = {}) {
       finalHeaders = [...templateHeaders, ...extraHeaders];
     }
 
-        /**
+    /**
      * Escapes a value for CSV format with CSV injection protection
      * 
      * @private
@@ -218,7 +218,7 @@ function jsonToCsv(data, options = {}) {
       }).join(delimiter);
       
       rows.push(row);
-        }
+    }
     
     // RFC 4180: Each record is located on a separate line, delimited by a line break (CRLF)
     const lineEnding = rfc4180Compliant ? '\r\n' : '\n';

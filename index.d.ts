@@ -1,6 +1,6 @@
-"// TypeScript definitions for jtcsv"
-
 declare module 'jtcsv' {
+  import { Readable, Writable, Transform } from 'stream';
+
   // JSON to CSV interfaces
   export interface JsonToCsvOptions {
     /** CSV delimiter (default: ';') */
@@ -40,6 +40,31 @@ declare module 'jtcsv' {
     parseBooleans?: boolean;
     /** Maximum number of rows to process (default: 1,000,000) */
     maxRows?: number;
+  }
+
+  // JSON save interfaces
+  export interface SaveAsJsonOptions {
+    /** Format JSON with indentation (default: false) */
+    prettyPrint?: boolean;
+    /** Maximum file size in bytes (default: 10MB = 10485760) */
+    maxSize?: number;
+  }
+
+  // Streaming interfaces
+  export interface JsonToCsvStreamOptions extends JsonToCsvOptions {
+    /** Custom transform function for each row */
+    transform?: (row: Record<string, any>) => Record<string, any>;
+    /** JSON schema for validation and formatting */
+    schema?: Record<string, any>;
+    /** Add UTF-8 BOM for Excel compatibility (default: true) */
+    addBOM?: boolean;
+  }
+
+  export interface CsvToJsonStreamOptions extends CsvToJsonOptions {
+    /** Custom transform function for each row */
+    transform?: (row: Record<string, any>) => Record<string, any>;
+    /** JSON schema for validation and formatting */
+    schema?: Record<string, any>;
   }
 
   // Error classes
@@ -186,6 +211,40 @@ declare module 'jtcsv' {
   ): Record<string, any>[];
 
   /**
+   * Save data as JSON file with security validation
+   * @param data Data to save as JSON
+   * @param filePath Output file path (must end with .json)
+   * @param options Save options
+   * @returns Promise that resolves when file is saved
+   * @throws {ValidationError} If file path is invalid or data cannot be stringified
+   * @throws {SecurityError} If directory traversal detected
+   * @throws {FileSystemError} If file system operation fails
+   * @throws {LimitError} If file size exceeds limit
+   */
+  export function saveAsJson(
+    data: any, 
+    filePath: string, 
+    options?: SaveAsJsonOptions
+  ): Promise<void>;
+
+  /**
+   * Synchronously save data as JSON file with security validation
+   * @param data Data to save as JSON
+   * @param filePath Output file path (must end with .json)
+   * @param options Save options
+   * @returns Path to saved file
+   * @throws {ValidationError} If file path is invalid or data cannot be stringified
+   * @throws {SecurityError} If directory traversal detected
+   * @throws {FileSystemError} If file system operation fails
+   * @throws {LimitError} If file size exceeds limit
+   */
+  export function saveAsJsonSync(
+    data: any, 
+    filePath: string, 
+    options?: SaveAsJsonOptions
+  ): string;
+
+  /**
    * Validate file path to prevent path traversal attacks (internal)
    * @param filePath File path to validate
    * @returns Validated absolute path
@@ -193,4 +252,97 @@ declare module 'jtcsv' {
    * @throws {SecurityError} If path traversal detected
    */
   export function validateFilePath(filePath: string): string;
+
+  // Streaming JSON to CSV functions
+
+  /**
+   * Creates a transform stream that converts JSON objects to CSV rows
+   * @param options Configuration options
+   * @returns Transform stream
+   */
+  export function createJsonToCsvStream(
+    options?: JsonToCsvStreamOptions
+  ): Transform;
+
+  /**
+   * Converts a readable stream of JSON objects to CSV and writes to a writable stream
+   * @param inputStream Readable stream of JSON objects
+   * @param outputStream Writable stream for CSV output
+   * @param options Configuration options
+   * @returns Promise that resolves when streaming is complete
+   */
+  export function streamJsonToCsv(
+    inputStream: Readable,
+    outputStream: Writable,
+    options?: JsonToCsvStreamOptions
+  ): Promise<void>;
+
+  /**
+   * Converts JSON to CSV and saves it to a file using streaming
+   * @param inputStream Readable stream of JSON objects
+   * @param filePath Path to save the CSV file
+   * @param options Configuration options
+   * @returns Promise that resolves when file is saved
+   */
+  export function saveJsonStreamAsCsv(
+    inputStream: Readable,
+    filePath: string,
+    options?: JsonToCsvStreamOptions
+  ): Promise<void>;
+
+  /**
+   * Creates a readable stream from an array of JSON objects
+   * @param data Array of JSON objects
+   * @returns Readable stream
+   */
+  export function createJsonReadableStream(
+    data: Record<string, any>[]
+  ): Readable;
+
+  /**
+   * Creates a writable stream that collects CSV data
+   * @returns Writable stream that collects data
+   */
+  export function createCsvCollectorStream(): Writable;
+
+  // Streaming CSV to JSON functions
+
+  /**
+   * Creates a transform stream that converts CSV chunks to JSON objects
+   * @param options Configuration options
+   * @returns Transform stream
+   */
+  export function createCsvToJsonStream(
+    options?: CsvToJsonStreamOptions
+  ): Transform;
+
+  /**
+   * Converts a readable stream of CSV text to JSON objects
+   * @param inputStream Readable stream of CSV text
+   * @param outputStream Writable stream for JSON objects
+   * @param options Configuration options
+   * @returns Promise that resolves when streaming is complete
+   */
+  export function streamCsvToJson(
+    inputStream: Readable,
+    outputStream: Writable,
+    options?: CsvToJsonStreamOptions
+  ): Promise<void>;
+
+  /**
+   * Reads CSV file and converts it to JSON using streaming
+   * @param filePath Path to CSV file
+   * @param options Configuration options
+   * @returns Readable stream of JSON objects
+   */
+  export function createCsvFileToJsonStream(
+    filePath: string,
+    options?: CsvToJsonStreamOptions
+  ): Promise<Readable>;
+
+  /**
+   * Creates a writable stream that collects JSON objects into an array
+   * @returns Writable stream that collects data
+   */
+  export function createJsonCollectorStream(): Writable;
 }
