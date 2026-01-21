@@ -52,6 +52,16 @@ function validateInput(data, options) {
     }
   }
   
+  // Validate preventCsvInjection
+  if (options?.preventCsvInjection !== undefined && typeof options.preventCsvInjection !== 'boolean') {
+    throw new ConfigurationError('preventCsvInjection must be a boolean');
+  }
+  
+  // Validate rfc4180Compliant
+  if (options?.rfc4180Compliant !== undefined && typeof options.rfc4180Compliant !== 'boolean') {
+    throw new ConfigurationError('rfc4180Compliant must be a boolean');
+  }
+  
   return true;
 }
 
@@ -65,6 +75,8 @@ function validateInput(data, options) {
  * @param {Object} [options.renameMap={}] - Map for renaming column headers (oldKey: newKey)
  * @param {Object} [options.template={}] - Template object to ensure consistent column order
  * @param {number} [options.maxRecords=1000000] - Maximum number of records to process
+ * @param {boolean} [options.preventCsvInjection=true] - Prevent CSV injection attacks by escaping formulas
+ * @param {boolean} [options.rfc4180Compliant=true] - Ensure RFC 4180 compliance (proper quoting, line endings)
  * @returns {string} CSV formatted string
  * 
  * @example
@@ -77,7 +89,9 @@ function validateInput(data, options) {
  * 
  * const csv = jsonToCsv(data, {
  *   delimiter: ',',
- *   renameMap: { id: 'ID', name: 'Full Name' }
+ *   renameMap: { id: 'ID', name: 'Full Name' },
+ *   preventCsvInjection: true,
+ *   rfc4180Compliant: true
  * });
  */
 function jsonToCsv(data, options = {}) {
@@ -92,7 +106,9 @@ function jsonToCsv(data, options = {}) {
       includeHeaders = true,
       renameMap = {},
       template = {},
-      maxRecords = 1000000
+      maxRecords = 1000000,
+      preventCsvInjection = true,
+      rfc4180Compliant = true
     } = opts;
 
     // Handle empty data
@@ -113,9 +129,6 @@ function jsonToCsv(data, options = {}) {
     const allKeys = new Set();
     data.forEach((item, index) => {
       if (!item || typeof item !== 'object') {
-        if (process.env.NODE_ENV !== 'test') {
-          console.warn(`[jtcsv] Warning: Item at index ${index} is not an object, skipping`);
-        }
         return;
       }
       Object.keys(item).forEach(key => allKeys.add(key));
@@ -142,7 +155,7 @@ function jsonToCsv(data, options = {}) {
       finalHeaders = [...templateHeaders, ...extraHeaders];
     }
 
-    /**
+        /**
      * Escapes a value for CSV format with CSV injection protection
      * 
      * @private
@@ -156,21 +169,27 @@ function jsonToCsv(data, options = {}) {
       
       const stringValue = String(value);
       
-      // CSV Injection protection - escape formulas
+      // CSV Injection protection - escape formulas if enabled
       let escapedValue = stringValue;
-      if (/^[=+\-@]/.test(stringValue)) {
+      if (preventCsvInjection && /^[=+\-@]/.test(stringValue)) {
         // Prepend single quote to prevent formula execution in Excel
         escapedValue = "'" + stringValue;
       }
       
-      // Check if value needs escaping (contains delimiter, quotes, or newlines)
-      if (
-        escapedValue.includes(delimiter) ||
-        escapedValue.includes('"') ||
-        escapedValue.includes('\n') ||
-        escapedValue.includes('\r')
-      ) {
-        // Escape double quotes by doubling them
+      // RFC 4180 compliance: fields containing line breaks, double quotes, or commas must be quoted
+      const needsQuoting = rfc4180Compliant 
+        ? (escapedValue.includes(delimiter) ||
+           escapedValue.includes('"') ||
+           escapedValue.includes('\n') ||
+           escapedValue.includes('\r'))
+        : (escapedValue.includes(delimiter) ||
+           escapedValue.includes('"') ||
+           escapedValue.includes('\n') ||
+           escapedValue.includes('\r'));
+      
+      if (needsQuoting) {
+        // RFC 4180: If double-quotes are used to enclose fields, then a double-quote 
+        // appearing inside a field must be escaped by preceding it with another double quote.
         return `"${escapedValue.replace(/"/g, '""')}"`;
       }
       
@@ -199,9 +218,11 @@ function jsonToCsv(data, options = {}) {
       }).join(delimiter);
       
       rows.push(row);
-    }
+        }
     
-    return rows.join('\n');
+    // RFC 4180: Each record is located on a separate line, delimited by a line break (CRLF)
+    const lineEnding = rfc4180Compliant ? '\r\n' : '\n';
+    return rows.join(lineEnding);
   }, 'PARSE_FAILED', { function: 'jsonToCsv' });
 }
 
@@ -376,10 +397,6 @@ async function saveAsCsv(data, filePath, options = {}) {
       
       // Write file
       await fs.writeFile(safePath, csvContent, 'utf8');
-      
-      if (process.env.NODE_ENV !== 'test') {
-        console.log(`✅ CSV file successfully created: ${safePath}`);
-      }
       
       return safePath;
     } catch (error) {

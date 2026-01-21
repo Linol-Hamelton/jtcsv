@@ -63,7 +63,7 @@ describe('Final Coverage Tests', () => {
       ];
       
       const template = { email: '', name: '', id: '' }; // Reverse order
-      const result = jsonToCsv(data, { template });
+      const result = jsonToCsv(data, { template, rfc4180Compliant: false });
       
       const lines = result.split('\n');
       expect(lines[0]).toBe('email;name;id');
@@ -77,7 +77,7 @@ describe('Final Coverage Tests', () => {
       
       const renameMap = { id: 'ID', name: 'Full Name' };
       const template = { name: '', id: '' }; // Specific order
-      const result = jsonToCsv(data, { renameMap, template });
+      const result = jsonToCsv(data, { renameMap, template, rfc4180Compliant: false });
       
       const lines = result.split('\n');
       expect(lines[0]).toBe('Full Name;ID');
@@ -166,51 +166,6 @@ describe('Final Coverage Tests', () => {
       jest.dontMock('fs');
       jest.dontMock('path');
       jest.resetModules();
-    });
-
-    test('should log success message in non-test environment', async () => {
-      // Temporarily set NODE_ENV to something other than 'test'
-      const originalNodeEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-      
-      try {
-        // Mock fs and path
-        jest.doMock('fs', () => ({
-          promises: {
-            writeFile: jest.fn().mockResolvedValue(),
-            mkdir: jest.fn().mockResolvedValue()
-          }
-        }));
-        
-        jest.doMock('path', () => ({
-          resolve: jest.fn((p) => `/absolute/${p}`),
-          normalize: jest.fn((p) => p),
-          dirname: jest.fn((p) => '/absolute/dir'),
-          extname: jest.fn((p) => '.csv')
-        }));
-        
-        // Re-import the module
-        jest.resetModules();
-        const index = require('../index');
-        
-        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-        
-        await index.saveAsCsv([{ id: 1 }], 'test.csv');
-        
-        expect(consoleLogSpy).toHaveBeenCalledWith(
-          expect.stringContaining('CSV file successfully created:')
-        );
-        
-        consoleLogSpy.mockRestore();
-        
-        // Clean up
-        jest.dontMock('fs');
-        jest.dontMock('path');
-        jest.resetModules();
-      } finally {
-        // Restore original NODE_ENV
-        process.env.NODE_ENV = originalNodeEnv;
-      }
     });
   });
 });

@@ -1,4 +1,4 @@
-// TypeScript definitions for jtcsv
+"// TypeScript definitions for jtcsv"
 
 declare module 'jtcsv' {
   // JSON to CSV interfaces
@@ -13,6 +13,10 @@ declare module 'jtcsv' {
     template?: Record<string, any>;
     /** Maximum number of records to process (default: 1,000,000) */
     maxRecords?: number;
+    /** Prevent CSV injection attacks by escaping formulas (default: true) */
+    preventCsvInjection?: boolean;
+    /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
+    rfc4180Compliant?: boolean;
   }
 
   export interface SaveAsCsvOptions extends JsonToCsvOptions {
