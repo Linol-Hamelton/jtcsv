@@ -4,6 +4,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Build outputs
+dist/
+
 # Coverage directory used by tools like istanbul
 coverage/
 
@@ -40,11 +43,20 @@ jspm_packages/
 # TypeScript v1 declaration files
 typings/
 
+# TypeScript cache
+*.tsbuildinfo
+
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -61,12 +73,17 @@ typings/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
+.parcel-cache
 
 # next.js build output
 .next
 
 # nuxt.js build output
 .nuxt
+
+# Gatsby files
+.cache/
+public
 
 # vuepress build output
 .vuepress/dist
@@ -80,27 +97,22 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 
-# Temporary folders
-tmp/
-temp/
+# TernJS port file
+.tern-port
 
-# OS generated files
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# Logs
-*.log
-
-# Test output
-__tests__/output/
-
-# CSV test files
-*.csv
 
 # IDE files
 .vscode/
@@ -108,9 +120,38 @@ __tests__/output/
 *.swp
 *.swo
 
-# Package lock (we want to commit package-lock.json for reproducibility)
-# package-lock.json - COMMITTED
+# Logs
+logs
+*.log
 
+# Test files
+__tests__/__snapshots__/
+
+# Build files
+*.map
+
+# Package files
+package.json.backup
+package-new.json
+package-browser.json
+
+# Test output
+*.test.js
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Demo server
+server.js
+
+# Temporary test files
+test-build.js
+
+# CSV test files
+*.csv
 # Example output files
 demo-output.csv
 
@@ -122,4 +163,21 @@ test*.csv
 
 # Editor files
 *.sublime-*
+
+# Test output
+__tests__/output/
+
+# Temporary folders
+tmp/
+temp/
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Package lock (we want to commit package-lock.json for reproducibility)
+# package-lock.json - COMMITTED
 
