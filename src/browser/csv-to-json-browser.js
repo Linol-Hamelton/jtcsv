@@ -3,7 +3,6 @@
 
 import {
   ValidationError,
-  SecurityError,
   ParsingError,
   LimitError,
   ConfigurationError,

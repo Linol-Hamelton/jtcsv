@@ -2,12 +2,18 @@ module.exports = {
   env: {
     node: true,
     es2021: true,
-    jest: true
+    jest: true,
+    browser: true,
+    worker: true
   },
   extends: ['eslint:recommended'],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module'
+  },
+  globals: {
+    define: 'readonly',
+    self: 'readonly'
   },
   rules: {
     'no-unused-vars': ['error', { 
@@ -63,6 +69,24 @@ module.exports = {
       files: ['bin/**/*.js'],
       rules: {
         'no-console': 'off'  // CLI tools need console output
+      }
+    },
+    {
+      files: ['src/browser/**/*.js', 'src/browser/workers/**/*.js'],
+      env: {
+        browser: true,
+        worker: true
+      },
+      globals: {
+        document: 'readonly',
+        window: 'readonly',
+        FileReader: 'readonly',
+        Worker: 'readonly',
+        self: 'readonly',
+        define: 'readonly'
+      },
+      rules: {
+        'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }]
       }
     }
   ]
