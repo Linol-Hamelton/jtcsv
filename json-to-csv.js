@@ -101,7 +101,7 @@ function jsonToCsv(data, options = {}) {
     
     const opts = options && typeof options === 'object' ? options : {};
     
-        const {
+    const {
       delimiter = ';',
       includeHeaders = true,
       renameMap = {},
@@ -111,7 +111,7 @@ function jsonToCsv(data, options = {}) {
       rfc4180Compliant = true
     } = opts;
 
-        // Handle empty data
+    // Handle empty data
     if (data.length === 0) {
       return '';
     }
@@ -382,7 +382,7 @@ function validateFilePath(filePath) {
  * @returns {Promise<void>}
  * 
  * @example
- * const { saveAsCsv } = require('./json-to-csv');
+ *     const { saveAsCsv } = require('./json-to-csv');
  * 
  * await saveAsCsv(data, './output.csv', {
  *   delimiter: ',',

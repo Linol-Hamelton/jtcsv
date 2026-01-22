@@ -32,7 +32,7 @@ function validateCsvInput(csv, options) {
     throw new ConfigurationError('Options must be an object');
   }
   
-    // Validate delimiter
+  // Validate delimiter
   if (options?.delimiter && typeof options.delimiter !== 'string') {
     throw new ConfigurationError('Delimiter must be a string');
   }
@@ -60,7 +60,7 @@ function validateCsvInput(csv, options) {
 }
 
 /**
- * Parses a single CSV line with proper escaping
+но * Parses a single CSV line with proper escaping
  * @private
  */
 function parseCsvLine(line, lineNumber, delimiter) {
@@ -78,7 +78,7 @@ function parseCsvLine(line, lineNumber, delimiter) {
       continue;
     }
 
-        if (char === '\\') {
+    if (char === '\\') {
       if (i + 1 === line.length) {
         // Backslash at end of line - treat as literal
         currentField += char;
@@ -93,7 +93,7 @@ function parseCsvLine(line, lineNumber, delimiter) {
       continue;
     }
 
-        if (char === '"') {
+    if (char === '"') {
       if (insideQuotes) {
         if (i + 1 < line.length && line[i + 1] === '"') {
           // Could be escaped quote ("") or double quote at end ("")
@@ -227,7 +227,7 @@ function parseCsvValue(value, options) {
     return null;
   }
   
-    return result;
+  return result;
 }
 
 /**
@@ -308,7 +308,7 @@ function csvToJson(csv, options = {}) {
     
     const opts = options && typeof options === 'object' ? options : {};
     
-        const {
+    const {
       delimiter,
       autoDetect = true,
       candidates = [';', ',', '\t', '|'],
@@ -320,7 +320,7 @@ function csvToJson(csv, options = {}) {
       maxRows
     } = opts;
 
-        // Determine delimiter
+    // Determine delimiter
     let finalDelimiter = delimiter;
     if (!finalDelimiter && autoDetect) {
       finalDelimiter = autoDetectDelimiter(csv, candidates);
@@ -340,7 +340,7 @@ function csvToJson(csv, options = {}) {
     for (let i = 0; i < csv.length; i++) {
       const char = csv[i];
       
-                        if (char === '"') {
+      if (char === '"') {
         if (insideQuotes && i + 1 < csv.length && csv[i + 1] === '"') {
           // Escaped quote inside quotes ("" -> ")
           currentLine += '"';
@@ -373,14 +373,14 @@ function csvToJson(csv, options = {}) {
       lines.push(currentLine);
     }
     
-        // Check for unclosed quotes
+    // Check for unclosed quotes
     // Note: This check is moved to parseCsvLine which has better context
     // for handling escaped quotes like ""
     // if (insideQuotes) {
     //   throw new ParsingError('Unclosed quotes in CSV', lines.length);
     // }
     
-        if (lines.length === 0) {
+    if (lines.length === 0) {
       return [];
     }
 
@@ -406,7 +406,7 @@ function csvToJson(csv, options = {}) {
     let headers = [];
     let startIndex = 0;
     
-        // Parse headers if present
+    // Parse headers if present
     if (hasHeaders && lines.length > 0) {
       try {
         headers = parseCsvLine(lines[0], 1, finalDelimiter).map(header => {
@@ -422,7 +422,7 @@ function csvToJson(csv, options = {}) {
         throw error;
       }
     } else {
-            // Generate numeric headers from first line
+      // Generate numeric headers from first line
       try {
         const firstLineFields = parseCsvLine(lines[0], 1, finalDelimiter);
         headers = firstLineFields.map((_, index) => `column${index + 1}`);
@@ -511,7 +511,7 @@ function validateCsvFilePath(filePath) {
  * @returns {Promise<Array<Object>>} Promise that resolves to JSON array
  * 
  * @example
- * const { readCsvAsJson } = require('./csv-to-json');
+ *     const { readCsvAsJson } = require('./csv-to-json');
  * 
  * const json = await readCsvAsJson('./data.csv', {
  *   delimiter: ',',
@@ -603,5 +603,3 @@ module.exports = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports.default = csvToJson;
 }
-
-
