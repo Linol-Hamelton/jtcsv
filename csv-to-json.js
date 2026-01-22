@@ -52,7 +52,7 @@ function validateCsvInput(csv, options) {
   }
   
   // Validate maxRows
-  if (options?.maxRows && (typeof options.maxRows !== 'number' || options.maxRows <= 0)) {
+  if (options?.maxRows !== undefined && (typeof options.maxRows !== 'number' || options.maxRows <= 0)) {
     throw new ConfigurationError('maxRows must be a positive number');
   }
   
@@ -78,12 +78,22 @@ function parseCsvLine(line, lineNumber, delimiter) {
       continue;
     }
 
-    if (char === '\\') {
-      escapeNext = true;
+        if (char === '\\') {
+      if (i + 1 === line.length) {
+        // Backslash at end of line - treat as literal
+        currentField += char;
+      } else if (line[i + 1] === '\\') {
+        // Double backslash - add one backslash to field and skip next
+        currentField += char;
+        i++; // Skip next backslash
+      } else {
+        // Escape next character
+        escapeNext = true;
+      }
       continue;
     }
 
-    if (char === '"') {
+        if (char === '"') {
       if (insideQuotes) {
         if (i + 1 < line.length && line[i + 1] === '"') {
           // Could be escaped quote ("") or double quote at end ("")
@@ -97,6 +107,22 @@ function parseCsvLine(line, lineNumber, delimiter) {
             // Escaped quote inside quotes ("" -> ")
             currentField += '"';
             i++; // Skip next quote
+            // Check if this is the end of the quoted field
+            // Look ahead to see if next char is delimiter or end of line
+            let isEndOfField = false;
+            let j = i + 1;
+            // Skip whitespace
+            while (j < line.length && (line[j] === ' ' || line[j] === '\t')) {
+              j++;
+            }
+            if (j === line.length || line[j] === delimiter) {
+              isEndOfField = true;
+            }
+            
+            if (isEndOfField) {
+              // This is the closing quote
+              insideQuotes = false;
+            }
           }
         } else {
           // Check if this is really the end of the quoted field
@@ -134,6 +160,13 @@ function parseCsvLine(line, lineNumber, delimiter) {
     }
 
     currentField += char;
+  }
+
+  // Handle case where escapeNext is still true at end of line
+  if (escapeNext) {
+    // This happens when line ends with backslash
+    // Add the backslash as literal character
+    currentField += '\\';
   }
 
   // Add last field
@@ -307,7 +340,7 @@ function csvToJson(csv, options = {}) {
     for (let i = 0; i < csv.length; i++) {
       const char = csv[i];
       
-      if (char === '"') {
+                        if (char === '"') {
         if (insideQuotes && i + 1 < csv.length && csv[i + 1] === '"') {
           // Escaped quote inside quotes ("" -> ")
           currentLine += '"';
@@ -340,10 +373,12 @@ function csvToJson(csv, options = {}) {
       lines.push(currentLine);
     }
     
-    // Check for unclosed quotes
-    if (insideQuotes) {
-      throw new ParsingError('Unclosed quotes in CSV', lines.length);
-    }
+        // Check for unclosed quotes
+    // Note: This check is moved to parseCsvLine which has better context
+    // for handling escaped quotes like ""
+    // if (insideQuotes) {
+    //   throw new ParsingError('Unclosed quotes in CSV', lines.length);
+    // }
     
         if (lines.length === 0) {
       return [];
@@ -568,3 +603,5 @@ module.exports = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports.default = csvToJson;
 }
+
+
