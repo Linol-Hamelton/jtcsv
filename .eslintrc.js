@@ -10,8 +10,12 @@ module.exports = {
     sourceType: 'module'
   },
   rules: {
-    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'no-unused-vars': ['error', { 
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_',
+      caughtErrorsIgnorePattern: '^_'
+    }],
+    'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }],
     'no-debugger': 'error',
     'no-alert': 'error',
     'no-var': 'error',
@@ -33,6 +37,33 @@ module.exports = {
     'keyword-spacing': ['error', { before: true, after: true }],
     'space-infix-ops': 'error',
     'arrow-spacing': 'error',
-    'no-multiple-empty-lines': ['error', { max: 1, maxEOF: 0 }]
-  }
+    'no-multiple-empty-lines': ['error', { max: 1, maxEOF: 0 }],
+    'no-case-declarations': 'off'
+  },
+  overrides: [
+    {
+      files: ['**/__tests__/**/*.js', '**/*.test.js'],
+      rules: {
+        'no-unused-vars': 'off',
+        'no-console': 'off'
+      }
+    },
+    {
+      files: ['**/examples/**/*.js', 'benchmark.js', 'test-*.js'],
+      rules: {
+        'no-console': 'off',
+        'no-unused-vars': ['error', { 
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }]
+      }
+    },
+    {
+      files: ['bin/**/*.js'],
+      rules: {
+        'no-console': 'off'  // CLI tools need console output
+      }
+    }
+  ]
 };

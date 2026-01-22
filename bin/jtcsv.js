@@ -41,8 +41,8 @@ ${color('USAGE:', 'bright')}
   jtcsv [command] [options] [file...]
 
 ${color('COMMANDS:', 'bright')}
-  ${color('json2csv', 'green')}     Convert JSON to CSV
-  ${color('csv2json', 'green')}     Convert CSV to JSON
+  ${color('json-to-csv', 'green')}     Convert JSON to CSV (alias: json2csv)
+  ${color('csv-to-json', 'green')}     Convert CSV to JSON (alias: csv2json)
   ${color('stream', 'yellow')}      Streaming conversion for large files
   ${color('batch', 'yellow')}       Batch process multiple files
   ${color('tui', 'magenta')}        Launch Terminal User Interface (requires blessed)
@@ -51,23 +51,29 @@ ${color('COMMANDS:', 'bright')}
 
 ${color('EXAMPLES:', 'bright')}
   ${color('Convert JSON file to CSV:', 'dim')}
-  jtcsv json2csv input.json output.csv --delimiter=,
+  jtcsv json-to-csv input.json output.csv --delimiter=,
 
   ${color('Convert CSV file to JSON:', 'dim')}
-  jtcsv csv2json input.csv output.json --parse-numbers
+  jtcsv csv-to-json input.csv output.json --parse-numbers --auto-detect
 
   ${color('Stream large JSON file to CSV:', 'dim')}
-  jtcsv stream json2csv large.json output.csv --max-records=1000000
+  jtcsv stream json-to-csv large.json output.csv --max-records=1000000
 
   ${color('Launch TUI interface:', 'dim')}
   jtcsv tui
 
 ${color('OPTIONS:', 'bright')}
   ${color('--delimiter=', 'cyan')}CHAR    CSV delimiter (default: ;)
+  ${color('--auto-detect', 'cyan')}        Auto-detect delimiter (default: true)
+  ${color('--candidates=', 'cyan')}LIST    Delimiter candidates (default: ;,\t|)
   ${color('--no-headers', 'cyan')}         Exclude headers from CSV output
   ${color('--parse-numbers', 'cyan')}      Parse numeric values in CSV
   ${color('--parse-booleans', 'cyan')}     Parse boolean values in CSV
+  ${color('--no-trim', 'cyan')}            Don't trim whitespace from CSV values
+  ${color('--rename=', 'cyan')}JSON       Rename columns (JSON map)
+  ${color('--template=', 'cyan')}JSON      Column order template (JSON object)
   ${color('--no-injection-protection', 'cyan')}  Disable CSV injection protection
+  ${color('--no-rfc4180', 'cyan')}         Disable RFC 4180 compliance
   ${color('--max-records=', 'cyan')}N      Maximum records to process (optional, no limit by default)
   ${color('--max-rows=', 'cyan')}N         Maximum rows to process (optional, no limit by default)
   ${color('--pretty', 'cyan')}             Pretty print JSON output
@@ -109,8 +115,19 @@ async function convertJsonToCsv(inputFile, outputFile, options) {
     
     console.log(color(`Converting ${jsonData.length} records...`, 'dim'));
     
+    // Prepare options for jtcsv
+    const jtcsvOptions = {
+      delimiter: options.delimiter,
+      includeHeaders: options.includeHeaders,
+      renameMap: options.renameMap,
+      template: options.template,
+      maxRecords: options.maxRecords,
+      preventCsvInjection: options.preventCsvInjection,
+      rfc4180Compliant: options.rfc4180Compliant
+    };
+    
     // Convert to CSV
-    const csvData = jtcsv.jsonToCsv(jsonData, options);
+    const csvData = jtcsv.jsonToCsv(jsonData, jtcsvOptions);
     
     // Write output file
     await fs.promises.writeFile(outputFile, csvData, 'utf8');
@@ -129,10 +146,23 @@ async function convertCsvToJson(inputFile, outputFile, options) {
   const startTime = Date.now();
   
   try {
-    console.log(color(`Reading CSV file...`, 'dim'));
+    console.log(color('Reading CSV file...', 'dim'));
+    
+    // Prepare options for jtcsv
+    const jtcsvOptions = {
+      delimiter: options.delimiter,
+      autoDetect: options.autoDetect,
+      candidates: options.candidates,
+      hasHeaders: options.hasHeaders,
+      renameMap: options.renameMap,
+      trim: options.trim,
+      parseNumbers: options.parseNumbers,
+      parseBooleans: options.parseBooleans,
+      maxRows: options.maxRows
+    };
     
     // Read and convert CSV
-    const jsonData = await jtcsv.readCsvAsJson(inputFile, options);
+    const jsonData = await jtcsv.readCsvAsJson(inputFile, jtcsvOptions);
     
     // Format JSON
     const jsonOutput = options.pretty 
@@ -156,7 +186,7 @@ async function streamJsonToCsv(inputFile, outputFile, options) {
   const startTime = Date.now();
   
   try {
-    console.log(color(`Streaming conversion started...`, 'dim'));
+    console.log(color('Streaming conversion started...', 'dim'));
     
     // Create streams
     const readStream = fs.createReadStream(inputFile, 'utf8');
@@ -235,10 +265,17 @@ async function launchTUI() {
 function parseOptions(args) {
   const options = {
     delimiter: ';',
+    autoDetect: true,
+    candidates: [';', ',', '\t', '|'],
+    hasHeaders: true,
     includeHeaders: true,
+    renameMap: undefined,
+    template: undefined,
+    trim: true,
     parseNumbers: false,
     parseBooleans: false,
     preventCsvInjection: true,
+    rfc4180Compliant: true,
     maxRecords: undefined,
     maxRows: undefined,
     pretty: false,
@@ -255,36 +292,72 @@ function parseOptions(args) {
       const [key, value] = arg.slice(2).split('=');
       
       switch (key) {
-        case 'delimiter':
-          options.delimiter = value || ',';
-          break;
-        case 'no-headers':
-          options.includeHeaders = false;
-          break;
-        case 'parse-numbers':
-          options.parseNumbers = true;
-          break;
-        case 'parse-booleans':
-          options.parseBooleans = true;
-          break;
-        case 'no-injection-protection':
-          options.preventCsvInjection = false;
-          break;
-        case 'max-records':
-          options.maxRecords = parseInt(value, 10);
-          break;
-        case 'max-rows':
-          options.maxRows = parseInt(value, 10);
-          break;
-        case 'pretty':
-          options.pretty = true;
-          break;
-        case 'silent':
-          options.silent = true;
-          break;
-        case 'verbose':
-          options.verbose = true;
-          break;
+      case 'delimiter':
+        options.delimiter = value || ',';
+        options.autoDetect = false; // Disable auto-detect if delimiter is specified
+        break;
+      case 'auto-detect':
+        options.autoDetect = value !== 'false';
+        break;
+      case 'candidates':
+        options.candidates = value ? value.split(',') : [';', ',', '\t', '|'];
+        break;
+      case 'no-headers':
+        options.includeHeaders = false;
+        options.hasHeaders = false;
+        break;
+      case 'parse-numbers':
+        options.parseNumbers = true;
+        break;
+      case 'parse-booleans':
+        options.parseBooleans = true;
+        break;
+      case 'no-trim':
+        options.trim = false;
+        break;
+      case 'rename':
+        try {
+          // Handle both quoted and unquoted JSON
+          const jsonStr = value || '{}';
+          // Remove surrounding single quotes if present
+          const cleanStr = jsonStr.replace(/^'|'$/g, '').replace(/^"|"$/g, '');
+          options.renameMap = JSON.parse(cleanStr);
+        } catch (e) {
+          throw new Error(`Invalid JSON in --rename option: ${e.message}. Value: ${value}`);
+        }
+        break;
+      case 'template':
+        try {
+          // Handle both quoted and unquoted JSON
+          const jsonStr = value || '{}';
+          // Remove surrounding single quotes if present
+          const cleanStr = jsonStr.replace(/^'|'$/g, '').replace(/^"|"$/g, '');
+          options.template = JSON.parse(cleanStr);
+        } catch (e) {
+          throw new Error(`Invalid JSON in --template option: ${e.message}. Value: ${value}`);
+        }
+        break;
+      case 'no-injection-protection':
+        options.preventCsvInjection = false;
+        break;
+      case 'no-rfc4180':
+        options.rfc4180Compliant = false;
+        break;
+      case 'max-records':
+        options.maxRecords = parseInt(value, 10);
+        break;
+      case 'max-rows':
+        options.maxRows = parseInt(value, 10);
+        break;
+      case 'pretty':
+        options.pretty = true;
+        break;
+      case 'silent':
+        options.silent = true;
+        break;
+      case 'verbose':
+        options.verbose = true;
+        break;
       }
     } else if (!arg.startsWith('-')) {
       files.push(arg);
@@ -312,57 +385,59 @@ async function main() {
   }
   
   switch (command) {
-    case 'json2csv':
-      if (files.length < 2) {
-        console.error(color('Error: Input and output files required', 'red'));
-        console.log(color('Usage: jtcsv json2csv input.json output.csv', 'cyan'));
-        process.exit(1);
-      }
-      await convertJsonToCsv(files[0], files[1], options);
-      break;
-      
-    case 'csv2json':
-      if (files.length < 2) {
-        console.error(color('Error: Input and output files required', 'red'));
-        console.log(color('Usage: jtcsv csv2json input.csv output.json', 'cyan'));
-        process.exit(1);
-      }
-      await convertCsvToJson(files[0], files[1], options);
-      break;
-      
-    case 'stream':
-      if (args.length < 2) {
-        console.error(color('Error: Streaming mode requires subcommand', 'red'));
-        console.log(color('Usage: jtcsv stream [json2csv|csv2json] input output', 'cyan'));
-        process.exit(1);
-      }
-      const streamCommand = args[1].toLowerCase();
-      if (streamCommand === 'json2csv' && files.length >= 2) {
-        await streamJsonToCsv(files[0], files[1], options);
-      } else {
-        console.error(color('Error: Invalid streaming command', 'red'));
-        process.exit(1);
-      }
-      break;
-      
-    case 'tui':
-      await launchTUI();
-      break;
-      
-    case 'help':
-      showHelp();
-      break;
-      
-    case 'version':
-    case '-v':
-    case '--version':
-      showVersion();
-      break;
-      
-    default:
-      console.error(color(`Error: Unknown command '${command}'`, 'red'));
-      console.log(color('Use jtcsv help for available commands', 'cyan'));
+  case 'json-to-csv':
+  case 'json2csv': // Backward compatibility
+    if (files.length < 2) {
+      console.error(color('Error: Input and output files required', 'red'));
+      console.log(color('Usage: jtcsv json-to-csv input.json output.csv', 'cyan'));
       process.exit(1);
+    }
+    await convertJsonToCsv(files[0], files[1], options);
+    break;
+      
+  case 'csv-to-json':
+  case 'csv2json': // Backward compatibility
+    if (files.length < 2) {
+      console.error(color('Error: Input and output files required', 'red'));
+      console.log(color('Usage: jtcsv csv-to-json input.csv output.json', 'cyan'));
+      process.exit(1);
+    }
+    await convertCsvToJson(files[0], files[1], options);
+    break;
+      
+  case 'stream':
+    if (args.length < 2) {
+      console.error(color('Error: Streaming mode requires subcommand', 'red'));
+      console.log(color('Usage: jtcsv stream [json2csv|csv2json] input output', 'cyan'));
+      process.exit(1);
+    }
+    const streamCommand = args[1].toLowerCase();
+    if (streamCommand === 'json2csv' && files.length >= 2) {
+      await streamJsonToCsv(files[0], files[1], options);
+    } else {
+      console.error(color('Error: Invalid streaming command', 'red'));
+      process.exit(1);
+    }
+    break;
+      
+  case 'tui':
+    await launchTUI();
+    break;
+      
+  case 'help':
+    showHelp();
+    break;
+      
+  case 'version':
+  case '-v':
+  case '--version':
+    showVersion();
+    break;
+      
+  default:
+    console.error(color(`Error: Unknown command '${command}'`, 'red'));
+    console.log(color('Use jtcsv help for available commands', 'cyan'));
+    process.exit(1);
   }
 }
 

@@ -134,7 +134,7 @@ describe('CSV to JSON Functions', () => {
       expect(() => csvToJson({})).toThrow(ValidationError);
     });
 
-        test('should respect maxRows limit when specified', () => {
+    test('should respect maxRows limit when specified', () => {
       // Create CSV with 11 rows (10 data rows + header)
       const rows = ['id;name'];
       for (let i = 1; i <= 11; i++) {
@@ -155,7 +155,7 @@ describe('CSV to JSON Functions', () => {
         .not.toThrow();
     });
 
-        test('should process large CSV without limit by default', () => {
+    test('should process large CSV without limit by default', () => {
       // Create CSV with 100 rows (1 header + 99 data rows) to test no default limit
       const rows = ['id;name'];
       for (let i = 1; i <= 99; i++) { // Use 99 data rows for test
@@ -166,7 +166,7 @@ describe('CSV to JSON Functions', () => {
       // Should process without error (no default limit)
       const result = csvToJson(csv, { delimiter: ';' });
       expect(result.length).toBe(99); // 99 data rows
-        });
+    });
 
     test('should auto-detect comma delimiter', () => {
       const csv = 'id,name,email\n1,John,john@example.com\n2,Jane,jane@example.com';

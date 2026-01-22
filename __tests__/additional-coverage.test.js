@@ -1,3 +1,5 @@
+const { saveAsCsv } = require('../index');
+
 describe('saveAsCsv - Edge Cases', () => {
   // For saveAsCsv tests, we need to mock fs
   // We'll use jest.doMock to mock only for these tests
@@ -28,7 +30,7 @@ describe('saveAsCsv - Edge Cases', () => {
     mockPath = require('path');
       
     // Get fresh references to functions
-    saveAsCsv = index.saveAsCsv;
+    // saveAsCsv is already imported at the top
   });
     
   afterEach(() => {
