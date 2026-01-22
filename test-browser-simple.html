@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>jtcsv Browser Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007acc; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a9e; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>jtcsv Browser Test</h1>
+    
+    <div class="test">
+        <h2>Test 1: JSON to CSV</h2>
+        <button onclick="testJsonToCsv()">Run Test</button>
+        <div id="result1"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 2: CSV to JSON</h2>
+        <button onclick="testCsvToJson()">Run Test</button>
+        <div id="result2"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 3: File Upload</h2>
+        <input type="file" id="csvFile" accept=".csv">
+        <button onclick="testFileUpload()">Parse File</button>
+        <div id="result3"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 4: Download CSV</h2>
+        <button onclick="testDownloadCsv()">Download Test CSV</button>
+        <div id="result4"></div>
+    </div>
+    
+    <script src="dist/jtcsv.umd.js"></script>
+    <script>
+        function logResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<pre class="${isError ? 'error' : 'success'}">${message}</pre>`;
+        }
+        
+        function testJsonToCsv() {
+            try {
+                const testData = [
+                    { id: 1, name: 'John Doe', email: 'john@example.com' },
+                    { id: 2, name: 'Jane Smith', email: 'jane@example.com' }
+                ];
+                
+                const csv = window.jtcsv.jsonToCsv(testData, {
+                    delimiter: ',',
+                    includeHeaders: true,
+                    preventCsvInjection: true
+                });
+                
+                logResult('result1', `✅ Success! CSV generated:\n\n${csv}`);
+            } catch (error) {
+                logResult('result1', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        function testCsvToJson() {
+            try {
+                const csv = 'id,name,email\n1,John Doe,john@example.com\n2,Jane Smith,jane@example.com';
+                
+                const json = window.jtcsv.csvToJson(csv, {
+                    delimiter: ',',
+                    parseNumbers: true
+                });
+                
+                logResult('result2', `✅ Success! JSON parsed:\n\n${JSON.stringify(json, null, 2)}`);
+            } catch (error) {
+                logResult('result2', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        function testFileUpload() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files.length) {
+                logResult('result3', '❌ Please select a CSV file first', true);
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            window.jtcsv.parseCsvFile(file, {
+                delimiter: ',',
+                parseNumbers: true
+            }).then(json => {
+                logResult('result3', `✅ Success! Parsed ${json.length} rows:\n\n${JSON.stringify(json.slice(0, 3), null, 2)}`);
+            }).catch(error => {
+                logResult('result3', `❌ Error: ${error.message}`, true);
+            });
+        }
+        
+        function testDownloadCsv() {
+            try {
+                const testData = [
+                    { id: 1, name: 'Test User 1', email: 'test1@example.com' },
+                    { id: 2, name: 'Test User 2', email: 'test2@example.com' },
+                    { id: 3, name: 'Test User 3', email: 'test3@example.com' }
+                ];
+                
+                window.jtcsv.downloadAsCsv(testData, 'test-users.csv', {
+                    delimiter: ',',
+                    includeHeaders: true
+                });
+                
+                logResult('result4', '✅ CSV file downloaded successfully!');
+            } catch (error) {
+                logResult('result4', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        // Auto-run basic tests on load
+        window.addEventListener('load', () => {
+            console.log('jtcsv loaded:', window.jtcsv.version);
+            
+            // Quick test to verify library is working
+            try {
+                const test = window.jtcsv.jsonToCsv([{test: 'value'}], {delimiter: ','});
+                console.log('✅ Basic test passed:', test);
+            } catch (error) {
+                console.error('❌ Basic test failed:', error);
+            }
+        });
+    </script>
+</body>
+</html>

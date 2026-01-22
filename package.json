@@ -1,22 +1,46 @@
 {
   "name": "jtcsv-converter",
-  "version": "1.2.0",
-  "description": "Complete JSON↔CSV converter for Node.js with streaming, security, TUI, and TypeScript support - Zero dependencies",
+  "version": "2.0.0",
+  "description": "Complete JSON↔CSV converter for Node.js and Browser with streaming, security, Web Workers, and TypeScript support - Zero dependencies",
   "main": "index.js",
+  "browser": "dist/jtcsv.umd.js",
+  "module": "dist/jtcsv.esm.js",
   "types": "index.d.ts",
   "bin": {
     "jtcsv": "bin/jtcsv.js"
+  },
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "import": "./dist/jtcsv.esm.js",
+      "browser": "./dist/jtcsv.umd.js",
+      "default": "./index.js"
+    },
+    "./browser": {
+      "require": "./dist/jtcsv.cjs.js",
+      "import": "./dist/jtcsv.esm.js",
+      "browser": "./dist/jtcsv.umd.js",
+      "default": "./dist/jtcsv.esm.js"
+    }
   },
   "scripts": {
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
-    "lint": "eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js",
+    "test:browser": "jest --testEnvironment=jsdom",
+    "lint": "eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser",
     "lint:all": "eslint .",
     "security-check": "npm audit",
-    "prepublishOnly": "npm test && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js",
+    "prepublishOnly": "npm test && npm run build && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser",
     "tui": "node cli-tui.js",
-    "cli": "node bin/jtcsv.js"
+    "cli": "node bin/jtcsv.js",
+    "build": "rollup -c",
+    "build:watch": "rollup -c -w",
+    "build:prod": "NODE_ENV=production rollup -c",
+    "dev": "NODE_ENV=development rollup -c -w",
+    "demo": "http-server demo -p 3000 -o",
+    "size": "size-limit",
+    "size:why": "size-limit --why"
   },
   "keywords": [
     "json",
@@ -32,15 +56,18 @@
     "data",
     "transform",
     "nodejs",
+    "browser",
+    "web-workers",
+    "streaming",
+    "security",
+    "csv-injection",
     "javascript",
+    "typescript",
     "simple",
     "lightweight",
     "zero-dependencies",
-    "security",
-    "streaming",
     "utf8",
     "cyrillic",
-    "typescript",
     "bidirectional",
     "cli",
     "tui",
@@ -73,15 +100,40 @@
     "json-save.js",
     "index.d.ts",
     "bin/",
-    "cli-tui.js"
+    "cli-tui.js",
+    "dist/",
+    "src/browser/"
   ],
   "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.22.0",
+    "@rollup/plugin-babel": "^6.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-terser": "^0.4.0",
     "eslint": "8.57.1",
-    "jest": "^29.0.0"
+    "jest": "^29.0.0",
+    "rollup": "^4.0.0",
+    "size-limit": "^8.0.0"
   },
   "optionalDependencies": {
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0"
   },
-  "type": "commonjs"
+  "type": "commonjs",
+  "size-limit": [
+    {
+      "path": "dist/jtcsv.umd.js",
+      "limit": "30 KB"
+    },
+    {
+      "path": "dist/jtcsv.esm.js",
+      "limit": "25 KB"
+    }
+  ],
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "maintained node versions"
+  ]
 }
