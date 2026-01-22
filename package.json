@@ -1,11 +1,11 @@
 {
-  "name": "jtcsv",
+  "name": "jtcsv-converter",
   "version": "1.2.0",
   "description": "Complete JSON↔CSV converter for Node.js with streaming, security, TUI, and TypeScript support - Zero dependencies",
   "main": "index.js",
   "types": "index.d.ts",
   "bin": {
-    "jtcsv": "./bin/jtcsv.js"
+    "jtcsv": "bin/jtcsv.js"
   },
   "scripts": {
     "test": "jest",
@@ -54,7 +54,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Linol-Hamelton/jtcsv.git"
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git"
   },
   "bugs": {
     "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
@@ -76,12 +76,12 @@
     "cli-tui.js"
   ],
   "devDependencies": {
-    "jest": "^29.0.0",
-    "eslint": "^8.0.0"
+    "eslint": "8.57.1",
+    "jest": "^29.0.0"
   },
   "optionalDependencies": {
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0"
-  }
+  },
+  "type": "commonjs"
 }
-
