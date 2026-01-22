@@ -46,30 +46,8 @@ const json3 = csvToJson(csvCustom, {
 ## 📦 Installation
 
 ```bash
-npm install jtcsv-converter
+npm install jtcsv
 ```
-
-## 🖥️ Command Line Interface
-
-JTCSV includes a powerful CLI tool for command-line conversions:
-
-### Basic Usage
-```bash
-# Convert CSV to JSON
-jtcsv csv-to-json data.csv output.json
-
-# Convert JSON to CSV  
-jtcsv json-to-csv data.json output.csv
-
-# Auto-detect delimiter
-jtcsv csv-to-json data.csv output.json --auto-detect
-
-# Parse numbers and booleans
-jtcsv csv-to-json data.csv output.json --parse-numbers --parse-booleans
-```
-
-### Full CLI Documentation
-See [CLI.md](./CLI.md) for complete CLI documentation with examples.
 
 ## ✨ Key Features
 
@@ -96,23 +74,6 @@ See [CLI.md](./CLI.md) for complete CLI documentation with examples.
 ### ✅ **TypeScript Ready**
 - Full TypeScript definitions included
 - IntelliSense support in modern editors
-
-## 📊 Performance Benchmark
-
-### CSV → JSON Conversion (10,000 rows):
-- **PapaParse**: 18.62 ms 🥇 (Fastest, CSV→JSON only)
-- **csv-parser**: 31.51 ms 🥈 (Streaming focused)  
-- **JTCSV**: 45.22 ms 🥉 (**Bidirectional + Security**)
-
-### JSON → CSV Conversion (10,000 records):
-- **json2csv**: 12.23 ms 🥇 (JSON→CSV only)
-- **JTCSV**: 14.89 ms 🥈 (**Only 21.8% slower, but bidirectional**)
-
-### Throughput:
-- CSV → JSON: ~221,000 rows/second
-- JSON → CSV: ~671,000 records/second
-
-*See [BENCHMARK-RESULTS.md](./BENCHMARK-RESULTS.md) for full details*
 
 ## 📊 Real-World Examples
 
@@ -293,6 +254,21 @@ jsonToCsv([], { delimiter: 123 }); // throws ConfigurationError
 jsonToCsv(largeArray, { maxRecords: 100 }); // throws LimitError if >100 records
 ```
 
+## 📈 Performance
+
+### Memory Efficiency
+- **In-memory**: Unlimited records (with performance warning for >1M)
+- **Streaming**: Unlimited size with constant memory
+- **Zero-copy**: Efficient buffer management
+
+### Benchmark Results
+```
+10,000 records: ~15ms
+100,000 records: ~120ms
+1,000,000 records: ~1.2s
+Streaming 1GB file: ~45s (22MB/s)
+```
+
 ## 🔄 Complete Roundtrip Example
 
 ```javascript
@@ -354,15 +330,11 @@ jtcsv/
 ├── csv-to-json.js       # CSV→JSON conversion
 ├── errors.js            # Error classes
 ├── stream-json-to-csv.js # Streaming API
-├── stream-csv-to-json.js # Streaming API
-├── json-save.js         # File utilities
-├── bin/jtcsv.js         # CLI tool
-├── cli-tui.js           # Terminal UI (optional)
 ├── examples/            # Usage examples
+│   ├── express-api.js   # Express server example
+│   ├── cli-tool.js      # Command line tool
+│   └── large-dataset-example.js
 ├── __tests__/           # Test suites
-├── benchmark.js         # Performance tests
-├── CLI.md              # CLI documentation
-├── BENCHMARK-RESULTS.md # Benchmark results
 └── package.json
 ```
 
@@ -415,7 +387,7 @@ MIT © Ruslan Fomenko
 ## 🔗 Links
 
 - **GitHub**: https://github.com/Linol-Hamelton/jtcsv
-- **npm**: https://www.npmjs.com/package/jtcsv-converter
+- **npm**: https://www.npmjs.com/package/jtcsv
 - **Issues**: https://github.com/Linol-Hamelton/jtcsv/issues
 
 ---
@@ -429,7 +401,6 @@ MIT © Ruslan Fomenko
 - Embedding in other packages (zero deps)
 - TypeScript projects
 - Enterprise applications requiring RFC compliance
-- Command-line data processing
 
 ### ⚠️ **Consider Alternatives For:**
 - Browser-only applications (use PapaParse)
@@ -449,18 +420,15 @@ MIT © Ruslan Fomenko
 | **CSV Injection Protection** | ✅ | ❌ | ⚠️ | ❌ |
 | **TypeScript** | ✅ | ✅ | ✅ | ❌ |
 | **RFC 4180** | ✅ | ✅ | ✅ | ✅ |
-| **CLI Tool** | ✅ | ✅ | ❌ | ❌ |
-| **Bidirectional** | ✅ ⭐ | ❌ | ❌ | ❌ |
 
-## 🆕 What's New in v1.2.0
+## 🆕 What's New in v1.0.0
 
-- **Complete CLI tool** with rich features
-- **Performance benchmarks** vs competitors
-- **Auto-detect delimiter** improvements
+- **Complete bidirectional conversion** (JSON↔CSV)
+- **Streaming API** for large files (>100MB)
 - **Enhanced security** with CSV injection protection
 - **TypeScript definitions** for all functions
-- **100% test coverage** (152 passing tests)
-- **Streaming API** for large files (>100MB)
+- **100% test coverage** (108 passing tests)
+- **CI/CD pipeline** with GitHub Actions
 - **Comprehensive documentation**
 
 ---
