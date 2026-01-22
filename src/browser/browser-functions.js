@@ -107,7 +107,7 @@ export async function parseCsvFile(file, options = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
-    reader.onload = function(event) {
+    reader.onload = function (event) {
       try {
         const csvText = event.target.result;
         const json = csvToJson(csvText, options);
@@ -117,11 +117,11 @@ export async function parseCsvFile(file, options = {}) {
       }
     };
     
-    reader.onerror = function() {
+    reader.onerror = function () {
       reject(new ValidationError('Ошибка чтения файла'));
     };
     
-    reader.onabort = function() {
+    reader.onabort = function () {
       reject(new ValidationError('Чтение файла прервано'));
     };
     
@@ -160,7 +160,7 @@ export async function parseCsvBlob(blob, options = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
-    reader.onload = function(event) {
+    reader.onload = function (event) {
       try {
         const csvText = event.target.result;
         const json = csvToJson(csvText, options);
@@ -170,7 +170,7 @@ export async function parseCsvBlob(blob, options = {}) {
       }
     };
     
-    reader.onerror = function() {
+    reader.onerror = function () {
       reject(new ValidationError('Ошибка чтения Blob'));
     };
     
