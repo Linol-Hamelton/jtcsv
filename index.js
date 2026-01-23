@@ -7,6 +7,8 @@ const errorsModule = require('./errors');
 const jsonSaveModule = require('./json-save');
 const streamJsonToCsvModule = require('./stream-json-to-csv');
 const streamCsvToJsonModule = require('./stream-csv-to-json');
+const ndjsonParser = require('./src/formats/ndjson-parser');
+const tsvParser = require('./src/formats/tsv-parser');
 
 // Combine all exports
 module.exports = {
@@ -40,6 +42,27 @@ module.exports = {
   createCsvFileToJsonStream: streamCsvToJsonModule.createCsvFileToJsonStream,
   createJsonCollectorStream: streamCsvToJsonModule.createJsonCollectorStream,
 
+  // NDJSON format support
+  jsonToNdjson: ndjsonParser.toNdjson,
+  ndjsonToJson: ndjsonParser.fromNdjson,
+  parseNdjsonStream: ndjsonParser.parseStream,
+  createNdjsonToCsvStream: ndjsonParser.createNdjsonToCsvStream,
+  createCsvToNdjsonStream: ndjsonParser.createCsvToNdjsonStream,
+  getNdjsonStats: ndjsonParser.getStats,
+
+  // TSV format support
+  jsonToTsv: tsvParser.jsonToTsv,
+  tsvToJson: tsvParser.tsvToJson,
+  isTsv: tsvParser.isTsv,
+  validateTsv: tsvParser.validateTsv,
+  readTsvAsJson: tsvParser.readTsvAsJson,
+  readTsvAsJsonSync: tsvParser.readTsvAsJsonSync,
+  saveAsTsv: tsvParser.saveAsTsv,
+  saveAsTsvSync: tsvParser.saveAsTsvSync,
+  createJsonToTsvStream: tsvParser.createJsonToTsvStream,
+  createTsvToJsonStream: tsvParser.createTsvToJsonStream,
+
   // Error classes
   ...errorsModule
 };
+

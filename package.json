@@ -9,7 +9,7 @@
   "bin": {
     "jtcsv": "bin/jtcsv.js"
   },
-    "exports": {
+  "exports": {
     ".": {
       "require": "./index.js",
       "import": "./dist/jtcsv.esm.js",
@@ -56,7 +56,7 @@
     "test:plugins": "jest __tests__/plugin-system.test.js",
     "test:fastpath": "jest __tests__/fast-path-engine.test.js",
     "test:ndjson": "jest __tests__/ndjson-parser.test.js",
-        "test:performance": "jest __tests__/*.test.js --testNamePattern=\"Производительность|производительность\"",
+    "test:performance": "jest __tests__/*.test.js --testNamePattern=\"Производительность|производительность\"",
     "test:express": "cd plugins/express-middleware && npm test",
     "test:fastify": "cd plugins/fastify-plugin && npm test",
     "test:nextjs": "cd plugins/nextjs-api && npm test",
@@ -118,7 +118,7 @@
     "gui",
     "tool",
     "utility",
-        "plugin-system",
+    "plugin-system",
     "ndjson",
     "fast-path",
     "optimization",
@@ -155,7 +155,7 @@
     "stream-csv-to-json.js",
     "json-save.js",
     "index.d.ts",
-        "bin/",
+    "bin/",
     "cli-tui.js",
     "dist/",
     "src/",
@@ -194,8 +194,10 @@
     "defaults",
     "not IE 11",
     "maintained node versions"
-  ]
+  ],
+  "dependencies": {
+    "csv-parser": "3.2.0",
+    "json2csv": "6.0.0-alpha.2",
+    "papaparse": "5.5.3"
+  }
 }
-
-
-

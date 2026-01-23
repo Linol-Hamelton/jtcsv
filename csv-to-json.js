@@ -17,6 +17,14 @@ const {
   safeExecute
 } = require('./errors');
 
+const { TransformHooks, predefinedHooks } = require('./src/core/transform-hooks');
+const DelimiterCache = require('./src/core/delimiter-cache');
+const FastPathEngine = require('./src/engines/fast-path-engine');
+
+// Глобальный экземпляр кэша для авто-детектирования разделителя
+const globalDelimiterCache = new DelimiterCache(100);
+const globalFastPathEngine = new FastPathEngine();
+
 /**
  * Validates CSV input and options
  * @private
@@ -56,11 +64,55 @@ function validateCsvInput(csv, options) {
     throw new ConfigurationError('maxRows must be a positive number');
   }
   
+  // Validate cache options
+  if (options?.useCache !== undefined && typeof options.useCache !== 'boolean') {
+    throw new ConfigurationError('useCache must be a boolean');
+  }
+  
+  if (options?.cache && !(options.cache instanceof DelimiterCache)) {
+    throw new ConfigurationError('cache must be an instance of DelimiterCache');
+  }
+
+  if (options?.useFastPath !== undefined && typeof options.useFastPath !== 'boolean') {
+    throw new ConfigurationError('useFastPath must be a boolean');
+  }
+
+  if (options?.fastPathMode !== undefined && options.fastPathMode !== 'objects' && options.fastPathMode !== 'compact') {
+    throw new ConfigurationError('fastPathMode must be "objects" or "compact"');
+  }
+
+  if (options?.fastPathStream !== undefined && typeof options.fastPathStream !== 'boolean') {
+    throw new ConfigurationError('fastPathStream must be a boolean');
+  }
+  
+  // Validate hooks
+  if (options?.hooks) {
+    if (typeof options.hooks !== 'object') {
+      throw new ConfigurationError('hooks must be an object');
+    }
+    
+    if (options.hooks.beforeConvert && typeof options.hooks.beforeConvert !== 'function') {
+      throw new ConfigurationError('hooks.beforeConvert must be a function');
+    }
+    
+    if (options.hooks.afterConvert && typeof options.hooks.afterConvert !== 'function') {
+      throw new ConfigurationError('hooks.afterConvert must be a function');
+    }
+    
+    if (options.hooks.perRow && typeof options.hooks.perRow !== 'function') {
+      throw new ConfigurationError('hooks.perRow must be a function');
+    }
+    
+    if (options.hooks.transformHooks && !(options.hooks.transformHooks instanceof TransformHooks)) {
+      throw new ConfigurationError('hooks.transformHooks must be an instance of TransformHooks');
+    }
+  }
+  
   return true;
 }
 
 /**
-но * Parses a single CSV line with proper escaping
+ * Parses a single CSV line with proper escaping
  * @private
  */
 function parseCsvLine(line, lineNumber, delimiter) {
@@ -231,55 +283,18 @@ function parseCsvValue(value, options) {
 }
 
 /**
- * Auto-detect CSV delimiter from content
+ * Auto-detect CSV delimiter from content with caching support
  * @private
  */
-function autoDetectDelimiter(csv, candidates = [';', ',', '\t', '|']) {
-  if (!csv || typeof csv !== 'string') {
-    return ';'; // default
-  }
-
-  const lines = csv.split('\n').filter(line => line.trim().length > 0);
-  
-  if (lines.length === 0) {
-    return ';'; // default
-  }
-
-  // Use first non-empty line for detection
-  const firstLine = lines[0];
-  
-  const counts = {};
-  candidates.forEach(delim => {
-    // Escape special regex characters
-    const escapedDelim = delim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escapedDelim, 'g');
-    const matches = firstLine.match(regex);
-    counts[delim] = matches ? matches.length : 0;
-  });
-
-  // Find delimiter with maximum count
-  let maxCount = -1;
-  let detectedDelimiter = ';'; // default
-  
-  for (const [delim, count] of Object.entries(counts)) {
-    if (count > maxCount) {
-      maxCount = count;
-      detectedDelimiter = delim;
-    }
-  }
-
-  // If no delimiter found or tie, return default
-  if (maxCount === 0) {
-    return ';'; // default
-  }
-
-  return detectedDelimiter;
+function autoDetectDelimiter(csv, candidates = [';', ',', '\t', '|'], cache = null) {
+  // Используем статический метод DelimiterCache с поддержкой кэширования
+  return DelimiterCache.autoDetectDelimiter(csv, candidates, cache);
 }
 
 /**
- * Converts CSV string to JSON array
+ * Converts CSV string to JSON array with hooks and caching support
  * 
-  * @param {string} csv - CSV string to convert
+ * @param {string} csv - CSV string to convert
  * @param {Object} [options] - Configuration options
  * @param {string} [options.delimiter] - CSV delimiter character (default: auto-detected)
  * @param {boolean} [options.autoDetect=true] - Auto-detect delimiter if not specified
@@ -290,6 +305,13 @@ function autoDetectDelimiter(csv, candidates = [';', ',', '\t', '|']) {
  * @param {boolean} [options.parseNumbers=false] - Parse numeric values
  * @param {boolean} [options.parseBooleans=false] - Parse boolean values
  * @param {number} [options.maxRows] - Maximum number of rows to process (optional, no limit by default)
+ * @param {boolean} [options.useCache=true] - Use caching for delimiter detection
+ * @param {DelimiterCache} [options.cache] - Custom cache instance (optional)
+ * @param {Object} [options.hooks] - Transform hooks
+ * @param {Function} [options.hooks.beforeConvert] - Hook called before conversion
+ * @param {Function} [options.hooks.afterConvert] - Hook called after conversion
+ * @param {Function} [options.hooks.perRow] - Hook called for each row
+ * @param {TransformHooks} [options.hooks.transformHooks] - TransformHooks instance
  * @returns {Array<Object>} JSON array
  * 
  * @example
@@ -298,7 +320,20 @@ function autoDetectDelimiter(csv, candidates = [';', ',', '\t', '|']) {
  * const csv = `id;name;email\n1;John;john@example.com\n2;Jane;jane@example.com`;
  * const json = csvToJson(csv, {
  *   delimiter: ';',
- *   parseNumbers: true
+ *   parseNumbers: true,
+ *   useCache: true, // Включить кэширование
+ *   hooks: {
+ *     beforeConvert: (data) => {
+ *       console.log('Starting conversion...');
+ *       return data;
+ *     },
+ *     perRow: (row, index) => {
+ *       return { ...row, processed: true, index };
+ *     },
+ *     afterConvert: (data) => {
+ *       return data.filter(item => item.id > 0);
+ *     }
+ *   }
  * });
  */
 function csvToJson(csv, options = {}) {
@@ -317,19 +352,141 @@ function csvToJson(csv, options = {}) {
       trim = true,
       parseNumbers = false,
       parseBooleans = false,
-      maxRows
+      maxRows,
+      useCache = true,
+      cache: customCache,
+      useFastPath = false,
+      fastPathMode = 'objects',
+      fastPathStream = false,
+      hooks = {}
     } = opts;
 
-    // Determine delimiter
+    // Выбираем кэш для использования
+    const cacheToUse = useCache ? (customCache || globalDelimiterCache) : null;
+
+    // Create transform hooks system
+    const transformHooks = new TransformHooks();
+    
+    // Add individual hooks if provided
+    if (hooks.beforeConvert) {
+      transformHooks.beforeConvert(hooks.beforeConvert);
+    }
+    
+    if (hooks.afterConvert) {
+      transformHooks.afterConvert(hooks.afterConvert);
+    }
+    
+    if (hooks.perRow) {
+      transformHooks.perRow(hooks.perRow);
+    }
+    
+    // Use provided TransformHooks instance if available
+    const finalHooks = hooks.transformHooks || transformHooks;
+
+    // Apply beforeConvert hooks to CSV string
+    const processedCsv = finalHooks.applyBeforeConvert(csv, { 
+      operation: 'csvToJson',
+      options: opts 
+    });
+
+    // Determine delimiter with caching support
     let finalDelimiter = delimiter;
     if (!finalDelimiter && autoDetect) {
-      finalDelimiter = autoDetectDelimiter(csv, candidates);
+      finalDelimiter = autoDetectDelimiter(processedCsv, candidates, cacheToUse);
     }
     finalDelimiter = finalDelimiter || ';'; // fallback
 
     // Handle empty CSV
-    if (csv.trim() === '') {
+    if (processedCsv.trim() === '') {
       return [];
+    }
+
+    if (useFastPath) {
+      let headers = null;
+      let totalRows = 0;
+      let dataRowIndex = 0;
+      const result = [];
+
+      globalFastPathEngine.parseRows(processedCsv, { delimiter: finalDelimiter }, (fields) => {
+        totalRows++;
+
+        if (!headers) {
+          if (hasHeaders) {
+            headers = fields.map(header => {
+              const trimmed = trim ? header.trim() : header;
+              return renameMap[trimmed] || trimmed;
+            });
+            return;
+          }
+          headers = fields.map((_, index) => `column${index + 1}`);
+        }
+
+        if (!fields || fields.length === 0) {
+          return;
+        }
+
+        const isEmptyRow = fields.every(field => (trim ? field.trim() : field) === '');
+        if (isEmptyRow) {
+          return;
+        }
+
+        if (maxRows && totalRows > maxRows) {
+          throw new LimitError(
+            `CSV size exceeds maximum limit of ${maxRows} rows`,
+            maxRows,
+            totalRows
+          );
+        }
+
+        const fieldCount = Math.min(fields.length, headers.length);
+        let row;
+
+        if (fastPathMode === 'compact') {
+          row = new Array(fieldCount);
+          for (let j = 0; j < fieldCount; j++) {
+            row[j] = parseCsvValue(fields[j], { trim, parseNumbers, parseBooleans });
+          }
+        } else {
+          row = {};
+          for (let j = 0; j < fieldCount; j++) {
+            row[headers[j]] = parseCsvValue(fields[j], { trim, parseNumbers, parseBooleans });
+          }
+        }
+
+        const processedRow = finalHooks.applyPerRow(row, dataRowIndex, {
+          lineNumber: totalRows,
+          headers,
+          options: opts
+        });
+
+        dataRowIndex++;
+        if (!fastPathStream) {
+          result.push(processedRow);
+        }
+
+        if (fields.length > headers.length && process.env.NODE_ENV === 'development') {
+          console.warn(`[jtcsv] Line ${totalRows}: ${fields.length - headers.length} extra fields ignored`);
+        }
+      });
+
+      if (!headers) {
+        return [];
+      }
+
+      if (totalRows > 1000000 && !maxRows && process.env.NODE_ENV !== 'test') {
+        console.warn(
+          'Warning: Processing >1M records in memory may be slow.\n' +
+          'Consider using createCsvToJsonStream() for better performance with large files.\n' +
+          'Current size: ' + totalRows.toLocaleString() + ' rows\n' +
+          'Tip: Use { maxRows: N } option to set a custom limit if needed.'
+        );
+      }
+
+      return finalHooks.applyAfterConvert(result, {
+        operation: 'csvToJson',
+        totalRows: fastPathStream ? dataRowIndex : result.length,
+        options: opts
+      });
     }
 
     // Parse CSV with proper handling of quotes and newlines
@@ -337,11 +494,11 @@ function csvToJson(csv, options = {}) {
     let currentLine = '';
     let insideQuotes = false;
     
-    for (let i = 0; i < csv.length; i++) {
-      const char = csv[i];
+    for (let i = 0; i < processedCsv.length; i++) {
+      const char = processedCsv[i];
       
       if (char === '"') {
-        if (insideQuotes && i + 1 < csv.length && csv[i + 1] === '"') {
+        if (insideQuotes && i + 1 < processedCsv.length && processedCsv[i + 1] === '"') {
           // Escaped quote inside quotes ("" -> ")
           currentLine += '"';
           i++; // Skip next quote
@@ -372,13 +529,6 @@ function csvToJson(csv, options = {}) {
     if (currentLine !== '' || insideQuotes) {
       lines.push(currentLine);
     }
-    
-    // Check for unclosed quotes
-    // Note: This check is moved to parseCsvLine which has better context
-    // for handling escaped quotes like ""
-    // if (insideQuotes) {
-    //   throw new ParsingError('Unclosed quotes in CSV', lines.length);
-    // }
     
     if (lines.length === 0) {
       return [];
@@ -456,12 +606,19 @@ function csvToJson(csv, options = {}) {
           row[headers[j]] = parseCsvValue(fields[j], { trim, parseNumbers, parseBooleans });
         }
         
+        // Apply per-row hooks
+        const processedRow = finalHooks.applyPerRow(row, i - startIndex, {
+          lineNumber: i + 1,
+          headers,
+          options: opts
+        });
+        
+        result.push(processedRow);
+        
         // Warn about extra fields
         if (fields.length > headers.length && process.env.NODE_ENV === 'development') {
           console.warn(`[jtcsv] Line ${i + 1}: ${fields.length - headers.length} extra fields ignored`);
         }
-        
-        result.push(row);
       } catch (error) {
         if (error instanceof ParsingError) {
           throw new ParsingError(`Line ${i + 1}: ${error.message}`, i + 1);
@@ -470,7 +627,12 @@ function csvToJson(csv, options = {}) {
       }
     }
 
-    return result;
+    // Apply afterConvert hooks
+    return finalHooks.applyAfterConvert(result, {
+      operation: 'csvToJson',
+      totalRows: result.length,
+      options: opts
+    });
   }, 'PARSE_FAILED', { function: 'csvToJson' });
 }
 
@@ -504,18 +666,22 @@ function validateCsvFilePath(filePath) {
 }
 
 /**
- * Reads CSV file and converts it to JSON array
+ * Reads CSV file and converts it to JSON array with hooks and caching support
  * 
  * @param {string} filePath - Path to CSV file
  * @param {Object} [options] - Configuration options (same as csvToJson)
  * @returns {Promise<Array<Object>>} Promise that resolves to JSON array
  * 
  * @example
- *     const { readCsvAsJson } = require('./csv-to-json');
+ * const { readCsvAsJson } = require('./csv-to-json');
  * 
  * const json = await readCsvAsJson('./data.csv', {
  *   delimiter: ',',
- *   parseNumbers: true
+ *   parseNumbers: true,
+ *   useCache: true,
+ *   hooks: {
+ *     perRow: (row) => ({ ...row, processed: true })
+ *   }
  * });
  */
 async function readCsvAsJson(filePath, options = {}) {
@@ -528,7 +694,7 @@ async function readCsvAsJson(filePath, options = {}) {
     // Read file
     const csvContent = await fs.readFile(safePath, 'utf8');
     
-    // Parse CSV
+    // Parse CSV with hooks and caching
     return csvToJson(csvContent, options);
   } catch (error) {
     // Re-throw parsing errors as-is
@@ -552,7 +718,7 @@ async function readCsvAsJson(filePath, options = {}) {
 }
 
 /**
- * Synchronously reads CSV file and converts it to JSON array
+ * Synchronously reads CSV file and converts it to JSON array with hooks and caching support
  * 
  * @param {string} filePath - Path to CSV file
  * @param {Object} [options] - Configuration options (same as csvToJson)
@@ -568,7 +734,7 @@ function readCsvAsJsonSync(filePath, options = {}) {
     // Read file
     const csvContent = fs.readFileSync(safePath, 'utf8');
     
-    // Parse CSV
+    // Parse CSV with hooks and caching
     return csvToJson(csvContent, options);
   } catch (error) {
     // Re-throw parsing errors as-is
@@ -591,12 +757,51 @@ function readCsvAsJsonSync(filePath, options = {}) {
   }
 }
 
+/**
+ * Creates a new TransformHooks instance
+ * @returns {TransformHooks} New TransformHooks instance
+ */
+function createTransformHooks() {
+  return new TransformHooks();
+}
+
+/**
+ * Creates a new DelimiterCache instance
+ * @param {number} maxSize - Maximum cache size (default: 100)
+ * @returns {DelimiterCache} New DelimiterCache instance
+ */
+function createDelimiterCache(maxSize = 100) {
+  return new DelimiterCache(maxSize);
+}
+
+/**
+ * Gets statistics from the global delimiter cache
+ * @returns {Object} Cache statistics
+ */
+function getDelimiterCacheStats() {
+  return globalDelimiterCache.getStats();
+}
+
+/**
+ * Clears the global delimiter cache
+ */
+function clearDelimiterCache() {
+  globalDelimiterCache.clear();
+}
+
 // Export the functions
 module.exports = {
   csvToJson,
   readCsvAsJson,
   readCsvAsJsonSync,
-  autoDetectDelimiter
+  autoDetectDelimiter,
+  createTransformHooks,
+  createDelimiterCache,
+  getDelimiterCacheStats,
+  clearDelimiterCache,
+  TransformHooks,
+  DelimiterCache,
+  predefinedHooks
 };
 
 // For ES6 module compatibility

@@ -71,6 +71,99 @@ declare module 'jtcsv' {
     schema?: Record<string, any>;
   }
 
+  // NDJSON interfaces
+  export interface NdjsonOptions {
+    /** Buffer size for streaming (default: 64KB) */
+    bufferSize?: number;
+    /** Maximum line length (default: 10MB) */
+    maxLineLength?: number;
+    /** Error handler callback */
+    onError?: (error: Error, line: string, lineNumber: number) => void;
+    /** JSON stringify replacer function */
+    replacer?: (key: string, value: any) => any;
+    /** JSON stringify space (indentation) */
+    space?: number | string;
+    /** Filter function for rows */
+    filter?: (obj: Record<string, any>, index: number) => boolean;
+    /** Transform function for rows */
+    transform?: (obj: Record<string, any>, index: number) => any;
+  }
+
+  export interface NdjsonToCsvStreamOptions {
+    /** Delimiter for CSV output (default: ',') */
+    delimiter?: string;
+    /** Include headers row (default: true) */
+    includeHeaders?: boolean;
+  }
+
+  export interface CsvToNdjsonStreamOptions {
+    /** Delimiter for CSV input (default: ',') */
+    delimiter?: string;
+    /** Whether CSV has headers (default: true) */
+    hasHeaders?: boolean;
+  }
+
+  export interface NdjsonStats {
+    /** Total lines in NDJSON */
+    totalLines: number;
+    /** Valid JSON lines */
+    validLines: number;
+    /** Lines with JSON parsing errors */
+    errorLines: number;
+    /** Total bytes */
+    totalBytes: number;
+    /** Success rate percentage */
+    successRate: number;
+    /** Array of parsing errors */
+    errors: Array<{
+      line: number;
+      error: string;
+      content: string;
+    }>;
+  }
+
+  // TSV interfaces
+  export interface TsvOptions extends JsonToCsvOptions, CsvToJsonOptions {
+    /** Always use tab as delimiter for TSV */
+    delimiter?: '\t';
+    /** Disable auto-detection for TSV */
+    autoDetect?: false;
+  }
+
+  export interface ValidateTsvOptions {
+    /** Require consistent column count (default: true) */
+    requireConsistentColumns?: boolean;
+    /** Disallow empty fields (default: false) */
+    disallowEmptyFields?: boolean;
+  }
+
+  export interface TsvValidationResult {
+    /** Whether TSV is valid */
+    valid: boolean;
+    /** Error message if invalid */
+    error?: string;
+    /** Validation statistics */
+    stats: {
+      /** Total lines */
+      totalLines: number;
+      /** Total columns in first line */
+      totalColumns: number;
+      /** Minimum columns across all lines */
+      minColumns: number;
+      /** Maximum columns across all lines */
+      maxColumns: number;
+      /** Whether all lines have same column count */
+      consistentColumns: boolean;
+    };
+    /** Array of validation errors */
+    errors?: Array<{
+      line?: number;
+      error: string;
+      details?: any;
+      fields?: number[];
+    }>;
+  }
+
   // Error classes
   export class JtcsvError extends Error {
     code: string;
@@ -360,8 +453,173 @@ declare module 'jtcsv' {
    * @returns Writable stream that collects data
    */
   export function createJsonCollectorStream(): Writable;
+
+  // NDJSON format support
+
+  /**
+   * Convert JSON array to NDJSON string
+   * @param data Array of objects to convert
+   * @param options NDJSON options
+   * @returns NDJSON string
+   */
+  export function jsonToNdjson<T extends Record<string, any>>(
+    data: T[],
+    options?: NdjsonOptions
+  ): string;
+
+  /**
+   * Convert NDJSON string to JSON array
+   * @param ndjsonString NDJSON string
+   * @param options NDJSON options
+   * @returns JSON array
+   */
+  export function ndjsonToJson(
+    ndjsonString: string,
+    options?: NdjsonOptions
+  ): Record<string, any>[];
+
+  /**
+   * Parse NDJSON stream as async iterator
+   * @param input ReadableStream or string input
+   * @param options NDJSON options
+   * @returns Async generator of JSON objects
+   */
+  export function parseNdjsonStream(
+    input: ReadableStream | string,
+    options?: NdjsonOptions
+  ): AsyncGenerator<Record<string, any>>;
+
+  /**
+   * Create TransformStream for converting NDJSON to CSV
+   * @param options Conversion options
+   * @returns TransformStream
+   */
+  export function createNdjsonToCsvStream(
+    options?: NdjsonToCsvStreamOptions
+  ): TransformStream;
+
+  /**
+   * Create TransformStream for converting CSV to NDJSON
+   * @param options Conversion options
+   * @returns TransformStream
+   */
+  export function createCsvToNdjsonStream(
+    options?: CsvToNdjsonStreamOptions
+  ): TransformStream;
+
+  /**
+   * Get statistics for NDJSON data
+   * @param input NDJSON string or ReadableStream
+   * @returns Promise with NDJSON statistics
+   */
+  export function getNdjsonStats(
+    input: string | ReadableStream
+  ): Promise<NdjsonStats>;
+
+  // TSV format support
+
+  /**
+   * Convert JSON array to TSV string
+   * @param data Array of objects to convert
+   * @param options TSV options
+   * @returns TSV string
+   */
+  export function jsonToTsv<T extends Record<string, any>>(
+    data: T[],
+    options?: TsvOptions
+  ): string;
+
+  /**
+   * Convert TSV string to JSON array
+   * @param tsvString TSV string
+   * @param options TSV options
+   * @returns JSON array
+   */
+  export function tsvToJson(
+    tsvString: string,
+    options?: TsvOptions
+  ): Record<string, any>[];
+
+  /**
+   * Check if string is likely TSV format
+   * @param sample Sample data string
+   * @returns True if likely TSV format
+   */
+  export function isTsv(sample: string): boolean;
+
+  /**
+   * Validate TSV string structure
+   * @param tsvString TSV string to validate
+   * @param options Validation options
+   * @returns Validation result
+   */
+  export function validateTsv(
+    tsvString: string,
+    options?: ValidateTsvOptions
+  ): TsvValidationResult;
+
+  /**
+   * Read TSV file and convert to JSON array
+   * @param filePath Path to TSV file
+   * @param options TSV options
+   * @returns Promise with JSON array
+   */
+  export function readTsvAsJson(
+    filePath: string,
+    options?: TsvOptions
+  ): Promise<Record<string, any>[]>;
+
+  /**
+   * Synchronously read TSV file and convert to JSON array
+   * @param filePath Path to TSV file
+   * @param options TSV options
+   * @returns JSON array
+   */
+  export function readTsvAsJsonSync(
+    filePath: string,
+    options?: TsvOptions
+  ): Record<string, any>[];
+
+  /**
+   * Save JSON data as TSV file
+   * @param data Array of objects to save
+   * @param filePath Output file path
+   * @param options TSV options
+   * @returns Promise that resolves when file is saved
+   */
+  export function saveAsTsv<T extends Record<string, any>>(
+    data: T[],
+    filePath: string,
+    options?: TsvOptions
+  ): Promise<void>;
+
+  /**
+   * Synchronously save JSON data as TSV file
+   * @param data Array of objects to save
+   * @param filePath Output file path
+   * @param options TSV options
+   */
+  export function saveAsTsvSync<T extends Record<string, any>>(
+    data: T[],
+    filePath: string,
+    options?: TsvOptions
+  ): void;
+
+  /**
+   * Create TransformStream for converting JSON to TSV
+   * @param options TSV options
+   * @returns TransformStream
+   */
+  export function createJsonToTsvStream(
+    options?: TsvOptions
+  ): TransformStream;
+
+  /**
+   * Create TransformStream for converting TSV to JSON
+   * @param options TSV options
+   * @returns TransformStream
+   */
+  export function createTsvToJsonStream(
+    options?: TsvOptions
+  ): TransformStream;
 }
-
-
-
-
