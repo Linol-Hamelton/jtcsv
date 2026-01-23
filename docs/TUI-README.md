@@ -270,3 +270,7 @@ MIT © Ruslan Fomenko
 - **Macro recording** for repetitive tasks
 - **Integration with editors** (VSCode, Vim, Emacs)
 - **API server mode** for remote access
+
+
+
+

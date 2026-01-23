@@ -10,7 +10,7 @@
  * 2. Или импортируйте функции в существующие API routes
  */
 
-import { csvToJson, jsonToCsv } from 'jtcsv-converter';
+import { csvToJson, jsonToCsv } from 'jtcsv
 
 /**
  * Конфигурация Next.js API route
@@ -368,3 +368,5 @@ export function createJtcsvApiEndpoint(options = {}) {
     return handler(req, res);
   };
 }
+
+

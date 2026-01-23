@@ -4,12 +4,12 @@
 
 ### Global Installation (Recommended)
 ```bash
-npm install -g jtcsv-converter
+npm install -g jtcsv
 ```
 
 ### Local Installation
 ```bash
-npm install jtcsv-converter
+npm install jtcsv
 # Then use with npx:
 npx jtcsv [command]
 ```
@@ -275,8 +275,8 @@ jtcsv csv-to-json data.csv - | jq '.[] | select(.age > 30)' | jtcsv json-to-csv 
 #### "Command not found: jtcsv"
 ```bash
 # Reinstall globally
-npm uninstall -g jtcsv-converter
-npm install -g jtcsv-converter
+npm uninstall -g jtcsv
+npm install -g jtcsv
 
 # Or use npx
 npx jtcsv --version
@@ -332,3 +332,7 @@ Contributions are welcome! Please see the [GitHub repository](https://github.com
 ## 🐛 Reporting Issues
 
 Found a bug? Please report it on the [GitHub Issues](https://github.com/Linol-Hamelton/jtcsv/issues) page.
+
+
+
+

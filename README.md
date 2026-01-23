@@ -2,9 +2,9 @@
 
 **Version 2.0** - Now with full browser support, Web Workers, and streaming!
 
-[![npm version](https://img.shields.io/npm/v/jtcsv-converter.svg)](https://www.npmjs.com/package/jtcsv-converter)
+[![npm version](https://img.shields.io/npm/v/jtcsvps://www.npmjs.com/package/jtcsv)jtcsv
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)](https://www.npmjs.com/package/jtcsv-converter)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)](https://www.npmjs.com/package/jtcsv
 
 A lightweight, efficient, and secure library for converting between JSON and CSV formats with full browser support, Web Workers for large files, and streaming capabilities.
 
@@ -41,17 +41,17 @@ A lightweight, efficient, and secure library for converting between JSON and CSV
 
 ### Node.js
 ```bash
-npm install jtcsv-converter
+npm install jtcsv
 ```
 
 ### Browser (CDN)
 ```html
 <!-- UMD version (global jtcsv variable) -->
-<script src="https://cdn.jsdelivr.net/npm/jtcsv-converter@latest/dist/jtcsv.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jtcsvst/jtcsv.umd.js"></script>
 
 <!-- ESM version -->
 <script type="module">
-  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsv-converter@latest/dist/jtcsv.esm.js';
+  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsvst/jtcsv.esm.js';
 </script>
 ```
 
@@ -59,7 +59,7 @@ npm install jtcsv-converter
 
 ### Node.js Usage
 ```javascript
-const { jsonToCsv, csvToJson } = require('jtcsv-converter');
+const { jsonToCsv, csvToJson } = require('jtcsv
 
 // JSON to CSV
 const data = [
@@ -174,7 +174,7 @@ Parses CSV using Web Workers with progress tracking.
 ### React Component Example
 ```jsx
 import React, { useState } from 'react';
-import { parseCsvFile, downloadAsCsv } from 'jtcsv-converter/browser';
+import { parseCsvFile, downloadAsCsv } from 'jtcsv
 
 export function CSVProcessor() {
   const [data, setData] = useState([]);
@@ -217,7 +217,7 @@ export function CSVProcessor() {
 
 ### Large File Processing with Progress
 ```javascript
-import { parseCSVWithWorker } from 'jtcsv-converter/browser';
+import { parseCSVWithWorker } from 'jtcsv
 
 async function processLargeFile(file) {
   const progressBar = document.getElementById('progress-bar');
@@ -312,7 +312,7 @@ jtcsv/
 │   └── jtcsv.cjs.js     # CJS bundle
 ├── demo/                 # Demo application
 ├── __tests__/           # Test files
-├── rollup.config.js     # Build configuration
+├── rollup.config.mjs     # Build configuration
 └── package.json         # Project configuration
 ```
 
@@ -345,3 +345,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Happy coding!** If you find this library useful, please consider giving it a star on GitHub ⭐
+
+
+
+

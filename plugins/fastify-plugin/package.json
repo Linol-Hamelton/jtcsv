@@ -35,7 +35,7 @@
   "peerDependencies": {
     "fastify": "^4.0.0",
     "fastify-plugin": "^4.0.0",
-    "jtcsv-converter": "^2.1.0"
+    "jtcsv": "^2.1.0"
   },
   "devDependencies": {
     "fastify": "^4.0.0",
@@ -51,3 +51,5 @@
     "example.js"
   ]
 }
+
+

@@ -402,3 +402,5 @@ module.exports = fp(jtcsvFastifyPlugin, {
 
 // Экспортируем также как обычную функцию
 module.exports.jtcsvFastifyPlugin = jtcsvFastifyPlugin;
+
+

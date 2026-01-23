@@ -5,7 +5,7 @@
 ## 📦 Установка
 
 ```bash
-npm install @jtcsv/validator jtcsv-converter
+npm install @jtcsv/validator jtcsv
 ```
 
 ## 🚀 Быстрый старт
@@ -173,3 +173,5 @@ const jsonString = '[{"name":"John","age":30}]';
 const result = validator.validateJsonString(jsonString, {
   transform: true
 });
+
+

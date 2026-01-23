@@ -5,11 +5,11 @@ Next.js интеграция для JTCSV - API routes, React hooks и комп�
 ## 📦 Установка
 
 ```bash
-npm install @jtcsv/nextjs jtcsv-converter
+npm install @jtcsv/nextjs jtcsv
 # или
-pnpm add @jtcsv/nextjs jtcsv-converter
+pnpm add @jtcsv/nextjs jtcsv
 # или
-yarn add @jtcsv/nextjs jtcsv-converter
+yarn add @jtcsv/nextjs jtcsv
 ```
 
 ## 🚀 Быстрый старт
@@ -448,3 +448,5 @@ MIT
 - [Issues](https://github.com/Linol-Hamelton/jtcsv/issues)
 - [Discussions](https://github.com/Linol-Hamelton/jtcsv/discussions)
 - [Documentation](https://github.com/Linol-Hamelton/jtcsv#readme)
+
+

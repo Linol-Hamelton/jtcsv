@@ -5,7 +5,7 @@ Express middleware для автоматической конвертации CS
 ## 📦 Установка
 
 ```bash
-npm install @jtcsv/express-middleware express jtcsv-converter
+npm install @jtcsv/express-middleware express jtcsv
 ```
 
 ## 🚀 Быстрый старт
@@ -302,3 +302,5 @@ MIT
 - [Issues](https://github.com/Linol-Hamelton/jtcsv/issues)
 - [Discussions](https://github.com/Linol-Hamelton/jtcsv/discussions)
 - [Documentation](https://github.com/Linol-Hamelton/jtcsv#readme)
+
+

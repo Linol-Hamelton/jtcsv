@@ -6,7 +6,7 @@
  * @date 2026-01-23
  */
 
-import { csvToJson, jsonToCsv } from 'jtcsv-converter';
+import { csvToJson, jsonToCsv } from 'jtcsv
 
 export { csvToJson, jsonToCsv };
 
@@ -384,3 +384,5 @@ export function useJtcsvContext() {
 
 // Экспортируем все из route.js
 export * from './route';
+
+

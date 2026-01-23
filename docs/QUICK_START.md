@@ -40,7 +40,7 @@
 ### Шаг 1: Rollup Setup (2 часа)
 ```bash
 npm install --save-dev rollup @rollup/plugin-node-resolve
-# Скопировать rollup.config.js из ТЗ
+# Скопировать rollup.config.mjs из ТЗ
 npm run build
 ```
 
@@ -145,7 +145,7 @@ const json = await parser.csvToJson(csvText);
 # 1. Установить Rollup
 npm install --save-dev rollup @rollup/plugin-node-resolve
 
-# 2. Скопировать rollup.config.js из ТЗ
+# 2. Скопировать rollup.config.mjs из ТЗ
 
 # 3. Обновить 2 файла (json-to-csv.js, csv-to-json.js)
 # (Копируй код из ТЗ раздела 1.2)
@@ -179,3 +179,7 @@ npm publish
 **Время начало**: ПРЯМО СЕЙЧАС! 🚀
 
 Успехов! 💪
+
+
+
+

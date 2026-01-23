@@ -7,7 +7,7 @@
 
 declare module '@jtcsv/express-middleware' {
   import { RequestHandler } from 'express';
-  import { CsvToJsonOptions, JsonToCsvOptions } from 'jtcsv-converter';
+  import { CsvToJsonOptions, JsonToCsvOptions } from 'jtcsv
 
   export interface JtcsvMiddlewareOptions {
     /** Максимальный размер тела запроса */
@@ -110,3 +110,5 @@ declare module '@jtcsv/express-middleware' {
 }
 
 export {};
+
+
