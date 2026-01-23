@@ -14,38 +14,38 @@
 
 | Library | Time | Memory | Rank | Notes |
 |---------|------|--------|------|-------|
-| **JTCSV (FastPath Compact)** | 16.79 ms | 4.47 MB | 🥇 1st | Fastest + compact mode |
-| **JTCSV (FastPath Stream)** | 18.27 ms | 6.03 MB | 🥈 2nd | Streaming optimized |
-| **JTCSV** | 19.76 ms | 8.96 MB | 🥉 3rd | Full features (default) |
-| **PapaParse** | 21.57 ms | 6.97 MB | 4th | CSV→JSON only |
-| **csv-parser** | 30.52 ms | 6.53 MB | 5th | Streaming focused |
+| **JTCSV (FastPath Compact)** | 19.67 ms | 2.35 MB | 🥇 1st | Fastest + compact mode |
+| **JTCSV (FastPath Stream)** | 24.54 ms | 5.84 MB | 🥈 2nd | Streaming optimized |
+| **JTCSV** | 25.40 ms | 14.38 MB | 🥉 3rd | Full features (default) |
+| **PapaParse** | 27.42 ms | 7.01 MB | 4th | CSV→JSON only |
+| **csv-parser** | 38.78 ms | 14.86 MB | 5th | Streaming focused |
 
 ### JSON → CSV Conversion (10,000 records)
 
 | Library | Time | Memory | Rank | Notes |
 |---------|------|--------|------|-------|
-| **JTCSV** | 11.21 ms | 4.77 MB | 🥇 1st | Fastest + lowest memory |
-| **json2csv** | 12.27 ms | 12.11 MB | 🥈 2nd | JSON→CSV only |
+| **JTCSV** | 13.79 ms | 4.77 MB | 🥇 1st | Fastest + lowest memory |
+| **json2csv** | 15.96 ms | 12.07 MB | 🥈 2nd | JSON→CSV only |
 
 ## 🎯 JTCSV Performance Characteristics
 
 ### Throughput
 
-- **CSV → JSON (FastPath Compact):** ~595,000 rows/second
-- **JSON → CSV (JTCSV):** ~892,000 records/second
+- **CSV → JSON (FastPath Compact):** ~508,000 rows/second
+- **JSON → CSV (JTCSV):** ~725,000 records/second
 
 ### Memory Efficiency
 
-- **CSV → JSON (FastPath Compact):** ~0.45 KB per row
-- **JSON → CSV (JTCSV):** ~0.48 KB per record
+- **CSV → JSON (FastPath Compact):** ~0.235 KB per row
+- **JSON → CSV (JTCSV):** ~0.477 KB per record
 
 ### Scaling Performance (latest run, JTCSV only)
 
 | Rows/Records | CSV→JSON Time (FastPath Compact) | JSON→CSV Time (JTCSV) | CSV→JSON Memory | JSON→CSV Memory |
 |--------------|----------------------------------|-----------------------|-----------------|-----------------|
-| 1,000 | 2.06 ms | 1.04 ms | 2.15 MB | 0.52 MB |
-| 10,000 | 14.68 ms | 8.23 ms | 2.11 MB | 4.14 MB |
-| 100,000 | 164.18 ms | 90.93 ms | 44.93 MB | 34.79 MB |
+| 1,000 | 2.24 ms | 1.09 ms | 2.19 MB | 483.75 KB |
+| 10,000 | 20.13 ms | 10.12 ms | 1.51 MB | 4.15 MB |
+| 100,000 | 219.79 ms | 124.43 ms | 46.95 MB | 40.28 MB |
 
 ## ⚡ Performance Analysis
 
@@ -103,11 +103,11 @@ jtcsv csv-to-json data.csv output.json --silent
 ## 📈 Competitive Positioning
 
 ### Speed Ranking (CSV→JSON)
-1. JTCSV (FastPath Compact) 16.79 ms 🥇
-2. JTCSV (FastPath Stream) 18.27 ms 🥈
-3. JTCSV 19.76 ms 🥉
-4. PapaParse 21.57 ms
-5. csv-parser 30.52 ms
+1. JTCSV (FastPath Compact) 19.67 ms 🥇
+2. JTCSV (FastPath Stream) 24.54 ms 🥈
+3. JTCSV 25.40 ms 🥉
+4. PapaParse 27.42 ms
+5. csv-parser 38.78 ms
 
 ### Feature Comparison
 
@@ -139,8 +139,8 @@ JTCSV now leads on speed when FastPath is enabled, while keeping the **best over
 
 ---
 
-*Last Updated: January 23, 2026*  
-*Benchmark Version: 1.2*  
+*Last Updated: January 24, 2026*  
+*Benchmark Version: 1.3*  
 *Test Method: 5 iterations (main), 3 iterations (scale)*  
 *Data: 10,000 synthetic records with 10 fields each*
 

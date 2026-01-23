@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-01-24
+
+### Added
+- Browser streaming CSV iterator (`csvToJsonIterator`, `parseCsvFileStream`) and lazy worker helpers.
+- Jest setup polyfills for `TextDecoder`/`TransformStream` in jsdom.
+
+### Changed
+- NDJSON browser stream handling now falls back to `util`/`stream/web` when globals are missing.
+- Browser docs updated with streaming/lazy API examples.
+
+### Fixed
+- Browser test failures caused by missing Web APIs in jsdom.
+
 ## [2.1.3] - 2026-01-23
 
 ### Added
