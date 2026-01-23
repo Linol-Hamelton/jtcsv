@@ -195,3 +195,34 @@ npm publish
 
 
 
+
+---
+
+## Browser Streaming and Lazy Workers (NEW)
+
+```javascript
+import { csvToJsonIterator, parseCsvFileStream } from 'jtcsv-browser';
+
+// Stream a File without full-buffer
+for await (const row of parseCsvFileStream(file, { delimiter: ',' })) {
+  console.log(row);
+}
+
+// Stream any ReadableStream
+for await (const row of csvToJsonIterator(stream, { delimiter: ',' })) {
+  console.log(row);
+}
+```
+
+```javascript
+import { parseCSVWithWorkerLazy } from 'jtcsv-browser';
+
+// Lazy-load worker pool only when used
+const json = await parseCSVWithWorkerLazy(file, {}, (progress) => {
+  console.log(progress.percentage);
+});
+```
+
+Notes:
+- `parseCSVWithWorker` accepts `string`, `File`, `ArrayBuffer`, or typed arrays.
+- Use streaming for large files to avoid full memory load.

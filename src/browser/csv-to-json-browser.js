@@ -10,15 +10,10 @@ import {
 } from './errors-browser.js';
 
 /**
- * Валидация CSV ввода и опций
+ * Валидация опций парсинга
  * @private
  */
-function validateCsvInput(csv, options) {
-  // Validate CSV input
-  if (typeof csv !== 'string') {
-    throw new ValidationError('Input must be a CSV string');
-  }
-  
+function validateCsvOptions(options) {
   // Validate options
   if (options && typeof options !== 'object') {
     throw new ConfigurationError('Options must be an object');
@@ -49,6 +44,19 @@ function validateCsvInput(csv, options) {
   }
   
   return true;
+}
+
+/**
+ * Валидация CSV ввода и опций
+ * @private
+ */
+function validateCsvInput(csv, options) {
+  // Validate CSV input
+  if (typeof csv !== 'string') {
+    throw new ValidationError('Input must be a CSV string');
+  }
+  
+  return validateCsvOptions(options);
 }
 
 /**
@@ -205,6 +213,95 @@ function parseCsvValue(value, options) {
   return result;
 }
 
+function isSimpleCsv(csv) {
+  return csv.indexOf('"') === -1 && csv.indexOf('\\') === -1;
+}
+
+function parseSimpleCsv(csv, delimiter, options) {
+  const {
+    hasHeaders = true,
+    renameMap = {},
+    trim = true,
+    parseNumbers = false,
+    parseBooleans = false,
+    maxRows
+  } = options;
+
+  const result = [];
+  let headers = null;
+  let fieldStart = 0;
+  let currentRow = [];
+  let rowHasData = false;
+  let rowCount = 0;
+
+  const finalizeRow = (fields) => {
+    if (fields.length === 1 && fields[0].trim() === '') {
+      return;
+    }
+
+    if (!headers) {
+      if (hasHeaders) {
+        headers = fields.map(header => {
+          const trimmed = trim ? header.trim() : header;
+          return renameMap[trimmed] || trimmed;
+        });
+        return;
+      }
+
+      headers = fields.map((_, index) => `column${index + 1}`);
+    }
+
+    rowCount++;
+    if (maxRows && rowCount > maxRows) {
+      throw new LimitError(
+        `CSV size exceeds maximum limit of ${maxRows} rows`,
+        maxRows,
+        rowCount
+      );
+    }
+
+    const row = {};
+    const fieldCount = Math.min(fields.length, headers.length);
+    for (let i = 0; i < fieldCount; i++) {
+      row[headers[i]] = parseCsvValue(fields[i], { trim, parseNumbers, parseBooleans });
+    }
+
+    result.push(row);
+  };
+
+  let i = 0;
+  while (i <= csv.length) {
+    const char = i < csv.length ? csv[i] : '\n';
+
+    if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+      rowHasData = true;
+    }
+
+    if (char === delimiter || char === '\n' || char === '\r' || i === csv.length) {
+      const field = csv.slice(fieldStart, i);
+      currentRow.push(field);
+
+      if (char === '\n' || char === '\r' || i === csv.length) {
+        if (rowHasData || currentRow.length > 1) {
+          finalizeRow(currentRow);
+        }
+        currentRow = [];
+        rowHasData = false;
+      }
+
+      if (char === '\r' && csv[i + 1] === '\n') {
+        i++;
+      }
+
+      fieldStart = i + 1;
+    }
+
+    i++;
+  }
+
+  return result;
+}
+
 /**
  * Автоматическое определение разделителя CSV
  * 
@@ -298,6 +395,17 @@ export function csvToJson(csv, options = {}) {
     // Обработка пустого CSV
     if (csv.trim() === '') {
       return [];
+    }
+
+    if (isSimpleCsv(csv)) {
+      return parseSimpleCsv(csv, finalDelimiter, {
+        hasHeaders,
+        renameMap,
+        trim,
+        parseNumbers,
+        parseBooleans,
+        maxRows
+      });
     }
 
     // Парсинг CSV с обработкой кавычек и переносов строк
@@ -433,10 +541,154 @@ export function csvToJson(csv, options = {}) {
   }, 'PARSE_FAILED', { function: 'csvToJson' });
 }
 
+export async function* csvToJsonIterator(input, options = {}) {
+  const opts = options && typeof options === 'object' ? options : {};
+  validateCsvOptions(opts);
+
+  if (typeof input === 'string') {
+    const rows = csvToJson(input, options);
+    for (const row of rows) {
+      yield row;
+    }
+    return;
+  }
+
+  const {
+    delimiter,
+    autoDetect = true,
+    candidates = [';', ',', '\t', '|'],
+    hasHeaders = true,
+    renameMap = {},
+    trim = true,
+    parseNumbers = false,
+    parseBooleans = false,
+    maxRows
+  } = opts;
+
+  const stream = (input instanceof Blob && input.stream) ? input.stream() : input;
+  if (!stream || typeof stream.getReader !== 'function') {
+    throw new ValidationError('Input must be a CSV string, Blob/File, or ReadableStream');
+  }
+
+  const reader = stream.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let insideQuotes = false;
+  let headers = null;
+  let rowCount = 0;
+  let lineNumber = 0;
+  let finalDelimiter = delimiter;
+  let delimiterResolved = Boolean(finalDelimiter);
+
+  const processFields = (fields) => {
+    if (fields.length === 1 && fields[0].trim() === '') {
+      return null;
+    }
+
+    rowCount++;
+    if (maxRows && rowCount > maxRows) {
+      throw new LimitError(
+        `CSV size exceeds maximum limit of ${maxRows} rows`,
+        maxRows,
+        rowCount
+      );
+    }
+
+    const row = {};
+    const fieldCount = Math.min(fields.length, headers.length);
+    for (let j = 0; j < fieldCount; j++) {
+      row[headers[j]] = parseCsvValue(fields[j], { trim, parseNumbers, parseBooleans });
+    }
+    return row;
+  };
+
+  const processLine = (line) => {
+    lineNumber++;
+    let cleanLine = line;
+    if (cleanLine.endsWith('\r')) {
+      cleanLine = cleanLine.slice(0, -1);
+    }
+
+    if (!delimiterResolved) {
+      if (!finalDelimiter && autoDetect) {
+        finalDelimiter = autoDetectDelimiter(cleanLine, candidates);
+      }
+      finalDelimiter = finalDelimiter || ';';
+      delimiterResolved = true;
+    }
+
+    if (cleanLine.trim() === '') {
+      return null;
+    }
+
+    if (!headers) {
+      if (hasHeaders) {
+        headers = parseCsvLine(cleanLine, lineNumber, finalDelimiter).map(header => {
+          const trimmed = trim ? header.trim() : header;
+          return renameMap[trimmed] || trimmed;
+        });
+        return null;
+      }
+
+      const fields = parseCsvLine(cleanLine, lineNumber, finalDelimiter);
+      headers = fields.map((_, index) => `column${index + 1}`);
+      return processFields(fields);
+    }
+
+    const fields = parseCsvLine(cleanLine, lineNumber, finalDelimiter);
+    return processFields(fields);
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+
+    let start = 0;
+    for (let i = 0; i < buffer.length; i++) {
+      const char = buffer[i];
+      if (char === '"') {
+        if (insideQuotes && buffer[i + 1] === '"') {
+          i++;
+          continue;
+        }
+        insideQuotes = !insideQuotes;
+        continue;
+      }
+
+      if (char === '\n' && !insideQuotes) {
+        const line = buffer.slice(start, i);
+        start = i + 1;
+        const row = processLine(line);
+        if (row) {
+          yield row;
+        }
+      }
+    }
+
+    buffer = buffer.slice(start);
+  }
+
+  if (buffer.length > 0) {
+    const row = processLine(buffer);
+    if (row) {
+      yield row;
+    }
+  }
+
+  if (insideQuotes) {
+    throw new ParsingError('Unclosed quotes in CSV', lineNumber);
+  }
+}
+
 // Экспорт для Node.js совместимости
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     csvToJson,
-    autoDetectDelimiter
+    autoDetectDelimiter,
+    csvToJsonIterator
   };
 }

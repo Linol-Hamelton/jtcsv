@@ -2,7 +2,7 @@
 // Функции, которые работают только в браузере
 
 import { jsonToCsv } from './json-to-csv-browser.js';
-import { csvToJson } from './csv-to-json-browser.js';
+import { csvToJson, csvToJsonIterator } from './csv-to-json-browser.js';
 import { ValidationError } from './errors-browser.js';
 
 /**
@@ -131,6 +131,29 @@ export async function parseCsvFile(file, options = {}) {
 }
 
 /**
+ * Stream CSV file as async iterator without full buffering.
+ *
+ * @param {File} file - File selected from input
+ * @param {Object} [options] - csvToJson options
+ * @returns {AsyncGenerator<Object>} Async iterator of rows
+ */
+export function parseCsvFileStream(file, options = {}) {
+  if (typeof window === 'undefined') {
+    throw new ValidationError('parseCsvFileStream() is browser-only. Use readCsvAsJson() in Node.js');
+  }
+
+  if (!(file instanceof File)) {
+    throw new ValidationError('Input must be a File object');
+  }
+
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    throw new ValidationError('File must have .csv extension');
+  }
+
+  return csvToJsonIterator(file, options);
+}
+
+/**
  * Создает CSV файл из JSON данных (альтернатива downloadAsCsv)
  * Возвращает Blob вместо автоматического скачивания
  * 
@@ -183,6 +206,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     downloadAsCsv,
     parseCsvFile,
+    parseCsvFileStream,
     createCsvBlob,
     parseCsvBlob
   };

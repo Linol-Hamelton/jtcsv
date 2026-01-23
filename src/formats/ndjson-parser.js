@@ -6,6 +6,29 @@
  * @date 2026-01-22
  */
 
+function createTextDecoder() {
+  if (typeof TextDecoder !== 'undefined') {
+    return new TextDecoder('utf-8');
+  }
+  try {
+    const { TextDecoder: UtilTextDecoder } = require('util');
+    return new UtilTextDecoder('utf-8');
+  } catch (error) {
+    return null;
+  }
+}
+
+function getTransformStream() {
+  if (typeof TransformStream !== 'undefined') {
+    return TransformStream;
+  }
+  try {
+    return require('stream/web').TransformStream;
+  } catch (error) {
+    return null;
+  }
+}
+
 class NdjsonParser {
   /**
    * Парсит NDJSON поток и возвращает async iterator
@@ -59,7 +82,10 @@ class NdjsonParser {
 
     // Если входные данные - поток
     const reader = input.getReader ? input.getReader() : input;
-    const decoder = new TextDecoder('utf-8');
+    const decoder = createTextDecoder();
+    if (!decoder) {
+      throw new Error('TextDecoder is not available in this environment');
+    }
 
     try {
       while (true) {
@@ -209,7 +235,12 @@ class NdjsonParser {
     let headers = null;
     let firstChunk = true;
 
-    return new TransformStream({
+    const TransformStreamCtor = getTransformStream();
+    if (!TransformStreamCtor) {
+      throw new Error('TransformStream is not available in this environment');
+    }
+
+    return new TransformStreamCtor({
       async transform(chunk, controller) {
         try {
           const obj = JSON.parse(chunk);
@@ -264,7 +295,12 @@ class NdjsonParser {
     let headers = null;
     let firstLine = true;
 
-    return new TransformStream({
+    const TransformStreamCtor = getTransformStream();
+    if (!TransformStreamCtor) {
+      throw new Error('TransformStream is not available in this environment');
+    }
+
+    return new TransformStreamCtor({
       transform(chunk, controller) {
         const lines = chunk.toString().split('\n');
         
@@ -361,7 +397,10 @@ class NdjsonParser {
     } else {
       // Для потоков
       const reader = input.getReader();
-      const decoder = new TextDecoder('utf-8');
+      const decoder = createTextDecoder();
+      if (!decoder) {
+        throw new Error('TextDecoder is not available in this environment');
+      }
       let buffer = '';
       
       try {
