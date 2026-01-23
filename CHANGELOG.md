@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lint cleanup in parser utilities and option parsing paths.
 
 ### Security
-- Kept optional `blessed-contrib@4.11.0` and applied an npm override for `xml2js@0.6.2` to mitigate the prototype pollution advisory from `map-canvas` (compatibility risk noted).
+- Core package keeps zero runtime dependencies; TUI and Excel move to optional add-ons to limit supply-chain exposure.
 
 ## [0.1.0-beta.1] - 2024-01-20
 

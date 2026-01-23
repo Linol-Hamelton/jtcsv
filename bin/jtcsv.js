@@ -47,7 +47,7 @@ ${color('MAIN COMMANDS:', 'bright')}
   ${color('stream', 'yellow')}         Streaming conversion for large files
   ${color('batch', 'yellow')}          Batch process multiple files
   ${color('preprocess', 'magenta')}    Preprocess JSON with deep unwrapping
-  ${color('tui', 'magenta')}           Launch Terminal User Interface
+  ${color('tui', 'magenta')}           Launch Terminal User Interface (@jtcsv/tui)
   ${color('help', 'blue')}             Show this help message
   ${color('version', 'blue')}          Show version information
 
@@ -1038,34 +1038,17 @@ function parseOptions(args) {
 
 async function launchTUI() {
   try {
-    // Check if blessed is installed
-    require.resolve('blessed');
-    
     console.log(color('Launching Terminal User Interface...', 'cyan'));
     console.log(color('Press Ctrl+Q to exit', 'dim'));
-    
-    // Check if TUI file exists and has content
-    const tuiPath = path.join(__dirname, '../cli-tui.js');
-    const stats = await fs.promises.stat(tuiPath);
-    
-    if (stats.size < 100) {
-      console.log(color('⚠️  TUI interface is not fully implemented yet', 'yellow'));
-      console.log(color('   Basic TUI will be started...', 'dim'));
-      
-      // Start basic TUI
-      await startBasicTUI();
-    } else {
-      // Import and launch full TUI
-      const JtcsvTUI = require('../cli-tui.js');
-      const tui = new JtcsvTUI();
-      tui.start();
-    }
-    
+
+    const JtcsvTUI = require('@jtcsv/tui');
+    const tui = new JtcsvTUI();
+    tui.start();
   } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
-      console.error(color('Error: blessed is required for TUI interface', 'red'));
+      console.error(color('Error: @jtcsv/tui is not installed', 'red'));
       console.log(color('Install it with:', 'dim'));
-      console.log(color('  npm install blessed blessed-contrib', 'cyan'));
+      console.log(color('  npm install @jtcsv/tui', 'cyan'));
       console.log(color('\nOr use the CLI interface instead:', 'dim'));
       console.log(color('  jtcsv help', 'cyan'));
     } else {

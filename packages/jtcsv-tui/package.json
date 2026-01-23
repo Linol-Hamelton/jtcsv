@@ -1,0 +1,15 @@
+{
+  "name": "@jtcsv/tui",
+  "version": "2.1.2",
+  "description": "JTCSV Terminal UI (optional add-on)",
+  "main": "src/index.js",
+  "bin": {
+    "jtcsv-tui": "bin/jtcsv-tui.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "4.11.0",
+    "jtcsv": "^2.1.2"
+  }
+}
