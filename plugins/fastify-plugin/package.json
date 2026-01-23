@@ -1,0 +1,53 @@
+{
+  "name": "@jtcsv/fastify",
+  "version": "1.0.0",
+  "description": "Fastify plugin для автоматической конвертации CSV/JSON",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint index.js",
+    "example": "node example.js"
+  },
+  "keywords": [
+    "fastify",
+    "plugin",
+    "csv",
+    "json",
+    "converter",
+    "jtcsv",
+    "api",
+    "rest",
+    "http",
+    "streaming"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "plugins/fastify-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/fastify-plugin#readme",
+  "peerDependencies": {
+    "fastify": "^4.0.0",
+    "fastify-plugin": "^4.0.0",
+    "jtcsv-converter": "^2.1.0"
+  },
+  "devDependencies": {
+    "fastify": "^4.0.0",
+    "fastify-plugin": "^4.0.0",
+    "jest": "^29.0.0",
+    "eslint": "^8.57.0",
+    "supertest": "^6.3.0"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "example.js"
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "name": "jtcsv-converter",
-  "version": "2.0.0",
-  "description": "Complete JSON↔CSV converter for Node.js and Browser with streaming, security, Web Workers, and TypeScript support - Zero dependencies",
+  "version": "2.1.0",
+  "description": "Complete JSON↔CSV and CSV↔JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and Plugin System - Zero dependencies",
   "main": "index.js",
   "browser": "dist/jtcsv.umd.js",
   "module": "dist/jtcsv.esm.js",
@@ -9,7 +9,7 @@
   "bin": {
     "jtcsv": "bin/jtcsv.js"
   },
-  "exports": {
+    "exports": {
     ".": {
       "require": "./index.js",
       "import": "./dist/jtcsv.esm.js",
@@ -21,6 +21,31 @@
       "import": "./dist/jtcsv.esm.js",
       "browser": "./dist/jtcsv.umd.js",
       "default": "./dist/jtcsv.esm.js"
+    },
+    "./plugins": {
+      "require": "./src/index-with-plugins.js",
+      "import": "./src/index-with-plugins.js",
+      "default": "./src/index-with-plugins.js"
+    },
+    "./express": {
+      "require": "./plugins/express-middleware/index.js",
+      "import": "./plugins/express-middleware/index.js",
+      "default": "./plugins/express-middleware/index.js"
+    },
+    "./fastify": {
+      "require": "./plugins/fastify-plugin/index.js",
+      "import": "./plugins/fastify-plugin/index.js",
+      "default": "./plugins/fastify-plugin/index.js"
+    },
+    "./nextjs": {
+      "require": "./plugins/nextjs-api/index.js",
+      "import": "./plugins/nextjs-api/index.js",
+      "default": "./plugins/nextjs-api/index.js"
+    },
+    "./nextjs/route": {
+      "require": "./plugins/nextjs-api/route.js",
+      "import": "./plugins/nextjs-api/route.js",
+      "default": "./plugins/nextjs-api/route.js"
     }
   },
   "scripts": {
@@ -28,19 +53,36 @@
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "test:browser": "jest --testEnvironment=jsdom",
-    "lint": "eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser",
+    "test:plugins": "jest __tests__/plugin-system.test.js",
+    "test:fastpath": "jest __tests__/fast-path-engine.test.js",
+    "test:ndjson": "jest __tests__/ndjson-parser.test.js",
+        "test:performance": "jest __tests__/*.test.js --testNamePattern=\"Производительность|производительность\"",
+    "test:express": "cd plugins/express-middleware && npm test",
+    "test:fastify": "cd plugins/fastify-plugin && npm test",
+    "test:nextjs": "cd plugins/nextjs-api && npm test",
+    "lint": "eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser src/engines src/formats src/core",
     "lint:all": "eslint .",
+    "lint:plugins": "eslint plugins/",
     "security-check": "npm audit",
-    "prepublishOnly": "npm test && npm run build && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser",
+    "prepublishOnly": "npm test && npm run build && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser src/engines src/formats src/core",
     "tui": "node cli-tui.js",
     "cli": "node bin/jtcsv.js",
     "build": "rollup -c",
     "build:watch": "rollup -c -w",
     "build:prod": "NODE_ENV=production rollup -c",
     "dev": "NODE_ENV=development rollup -c -w",
-    "demo": "http-server demo -p 3000 -o",
+    "demo": "node run-demo.js",
+    "demo:web": "cd demo && npm run dev",
+    "demo:serve": "cd demo && npm run serve",
+    "demo:plugins": "node examples/plugin-excel-exporter.js",
+    "demo:express": "cd plugins/express-middleware && node example.js",
     "size": "size-limit",
-    "size:why": "size-limit --why"
+    "size:why": "size-limit --why",
+    "benchmark": "node benchmark.js",
+    "benchmark:fastpath": "node benchmark.js --fastpath",
+    "example:plugins": "node examples/plugin-excel-exporter.js",
+    "example:express": "cd plugins/express-middleware && node example.js",
+    "plugins:build": "npm run build && cd plugins/express-middleware && npm run build && cd ../fastify-plugin && npm run build && cd ../nextjs-api && npm run build"
   },
   "keywords": [
     "json",
@@ -75,7 +117,21 @@
     "interface",
     "gui",
     "tool",
-    "utility"
+    "utility",
+        "plugin-system",
+    "ndjson",
+    "fast-path",
+    "optimization",
+    "performance",
+    "enterprise",
+    "express",
+    "fastify",
+    "nextjs",
+    "react",
+    "middleware",
+    "api",
+    "rest",
+    "http"
   ],
   "author": "Ruslan Fomenko",
   "license": "MIT",
@@ -99,10 +155,12 @@
     "stream-csv-to-json.js",
     "json-save.js",
     "index.d.ts",
-    "bin/",
+        "bin/",
     "cli-tui.js",
     "dist/",
-    "src/browser/"
+    "src/",
+    "examples/",
+    "plugins/"
   ],
   "devDependencies": {
     "@babel/core": "^7.23.0",
@@ -118,17 +176,18 @@
   },
   "optionalDependencies": {
     "blessed": "^0.1.81",
-    "blessed-contrib": "^4.11.0"
+    "blessed-contrib": "^4.11.0",
+    "exceljs": "^4.4.0"
   },
   "type": "commonjs",
   "size-limit": [
     {
       "path": "dist/jtcsv.umd.js",
-      "limit": "30 KB"
+      "limit": "35 KB"
     },
     {
       "path": "dist/jtcsv.esm.js",
-      "limit": "25 KB"
+      "limit": "30 KB"
     }
   ],
   "browserslist": [

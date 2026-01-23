@@ -1,0 +1,54 @@
+{
+  "name": "@jtcsv/excel",
+  "version": "1.0.0",
+  "description": "Excel integration for JTCSV - Convert between JSON, CSV and Excel formats",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/",
+    "build": "echo 'No build step required'",
+    "example": "node examples/basic-usage.js"
+  },
+  "keywords": [
+    "excel",
+    "xlsx",
+    "csv",
+    "json",
+    "converter",
+    "jtcsv",
+    "export",
+    "import",
+    "spreadsheet",
+    "data-export",
+    "exceljs"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "packages/jtcsv-excel"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-excel#readme",
+  "peerDependencies": {
+    "jtcsv-converter": "^2.1.0"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.57.0"
+  },
+  "files": [
+    "src/",
+    "examples/",
+    "README.md"
+  ]
+}
