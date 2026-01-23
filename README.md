@@ -4,15 +4,16 @@
 
 [![npm version](https://img.shields.io/npm/v/jtcsvps://www.npmjs.com/package/jtcsv)jtcsv
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)](https://www.npmjs.com/package/jtcsv
+[![Zero-Deps Core](https://img.shields.io/badge/core-zero%20deps-brightgreen.svg)](https://www.npmjs.com/package/jtcsv
 
 A lightweight, efficient, and secure library for converting between JSON and CSV formats with full browser support, Web Workers for large files, and streaming capabilities.
+Zero-deps core with optional add-ons (TUI, Excel) for advanced workflows.
 
 ## ✨ Features
 
 ### 🚀 Core Features
 - **Bidirectional Conversion**: JSON ↔ CSV with full type preservation
-- **Zero Dependencies**: Pure JavaScript/TypeScript, no external dependencies
+- **Zero-Deps Core**: Pure JavaScript/TypeScript core with optional add-ons
 - **TypeScript Support**: Full type definitions included
 - **Security First**: Built-in CSV injection protection
 - **RFC 4180 Compliant**: Proper CSV formatting and escaping
@@ -42,6 +43,15 @@ A lightweight, efficient, and secure library for converting between JSON and CSV
 ### Node.js
 ```bash
 npm install jtcsv
+```
+
+### Optional add-ons
+```bash
+# Terminal UI
+npm install @jtcsv/tui
+
+# Excel plugin
+npm install @jtcsv/excel exceljs
 ```
 
 ### Browser (CDN)

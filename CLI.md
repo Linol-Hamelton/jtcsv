@@ -114,14 +114,14 @@ jtcsv stream csv-to-json large.csv output.json
 ```
 
 ### `tui`
-Launch Terminal User Interface (requires blessed).
+Launch Terminal User Interface (requires @jtcsv/tui).
 
 **Usage:**
 ```bash
 jtcsv tui
 ```
 
-**Note:** Requires `blessed` and `blessed-contrib` packages.
+**Note:** Install the optional TUI add-on: `npm install @jtcsv/tui`.
 
 ### `help`
 Show help message.
@@ -344,4 +344,3 @@ Contributions are welcome! Please see the [GitHub repository](https://github.com
 ## 🐛 Reporting Issues
 
 Found a bug? Please report it on the [GitHub Issues](https://github.com/Linol-Hamelton/jtcsv/issues) page.
-

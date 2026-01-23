@@ -238,8 +238,8 @@ try {
   console.log('  examples/plugin-excel-exporter.js');
 } catch (error) {
   console.log('⚠️  Полная интеграция требует дополнительных зависимостей');
-  console.log('Установите exceljs для демонстрации Excel плагина:');
-  console.log('  npm install exceljs --save-optional');
+  console.log('Установите @jtcsv/excel и exceljs для демонстрации Excel плагина:');
+  console.log('  npm install @jtcsv/excel exceljs');
 }
 
 // ============================================================================
@@ -275,6 +275,5 @@ console.log('⭐ Star на GitHub если понравилось!');
 console.log('\n' + '✨'.repeat(30));
 console.log('✨  JTCSV 2.1.0 - Next Generation JSON/CSV Converter  ✨');
 console.log('✨'.repeat(30));
-
 
 

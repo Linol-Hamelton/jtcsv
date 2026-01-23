@@ -1,7 +1,7 @@
 {
   "name": "jtcsv",
-  "version": "2.1.1",
-  "description": "Complete JSON↔CSV and CSV↔JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and Plugin System - Zero dependencies",
+  "version": "2.1.2",
+  "description": "Complete JSON<->CSV and CSV<->JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and optional ecosystem (zero-deps core)",
   "main": "index.js",
   "browser": "dist/jtcsv.umd.js",
   "module": "dist/jtcsv.esm.js",
@@ -65,7 +65,7 @@
     "lint:plugins": "eslint plugins/",
     "security-check": "npm audit",
     "prepublishOnly": "npm test && npm run build && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser src/engines src/formats src/core",
-    "tui": "node cli-tui.js",
+    "tui": "node packages/jtcsv-tui/bin/jtcsv-tui.js",
     "cli": "node bin/jtcsv.js",
     "build": "rollup -c rollup.config.mjs",
     "build:watch": "rollup -c rollup.config.mjs -w",
@@ -156,7 +156,6 @@
     "json-save.js",
     "index.d.ts",
     "bin/",
-    "cli-tui.js",
     "dist/",
     "src/",
     "examples/",
@@ -174,14 +173,6 @@
     "jest": "^29.0.0",
     "rollup": "^4.0.0",
     "size-limit": "12.0.0"
-  },
-  "optionalDependencies": {
-    "blessed": "^0.1.81",
-    "blessed-contrib": "4.11.0",
-    "exceljs": "^4.4.0"
-  },
-  "overrides": {
-    "xml2js": "0.6.2"
   },
   "type": "commonjs",
   "size-limit": [
@@ -204,10 +195,5 @@
     "defaults",
     "not IE 11",
     "maintained node versions"
-  ],
-  "dependencies": {
-    "csv-parser": "3.2.0",
-    "json2csv": "6.0.0-alpha.2",
-    "papaparse": "5.5.3"
-  }
+  ]
 }

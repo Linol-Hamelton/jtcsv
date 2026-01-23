@@ -209,7 +209,7 @@ const plugins = [
 
 3. **Missing dependencies**
    ```bash
-   npm install blessed blessed-contrib
+   npm install @jtcsv/tui
    ```
 
 #### **Debug Mode**
@@ -222,8 +222,8 @@ DEBUG=jtcsv* jtcsv tui
 #### **UI Development**
 1. Fork the repository
 2. Install dependencies: `npm install`
-3. Run TUI: `npm run tui`
-4. Make changes to `cli-tui.js`
+3. Run TUI: `npx jtcsv-tui` or `npm run tui`
+4. Make changes to `packages/jtcsv-tui/src/index.js`
 5. Submit Pull Request
 
 #### **Testing**

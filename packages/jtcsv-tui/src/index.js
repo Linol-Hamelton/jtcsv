@@ -9,7 +9,16 @@ const blessed = require('blessed');
 const contrib = require('blessed-contrib');
 const fs = require('fs');
 const path = require('path');
-const jtcsv = require('../index.js');
+let jtcsv;
+try {
+  jtcsv = require('jtcsv');
+} catch (error) {
+  if (error.code === 'MODULE_NOT_FOUND') {
+    jtcsv = require('../../../index.js');
+  } else {
+    throw error;
+  }
+}
 
 class JtcsvTUI {
   constructor() {
