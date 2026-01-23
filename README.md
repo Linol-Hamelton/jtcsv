@@ -9,6 +9,17 @@
 A lightweight, efficient, and secure library for converting between JSON and CSV formats with full browser support, Web Workers for large files, and streaming capabilities.
 Zero-deps core with optional add-ons (TUI, Excel) for advanced workflows.
 
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [CLI Examples](#cli-examples)
+- [API Reference](#api-reference)
+- [Examples](#examples)
+- [Performance](#performance)
+- [Developer Experience](#developer-experience)
+
+
 ## ✨ Features
 
 ### 🚀 Core Features

@@ -85,6 +85,23 @@ export class ConfigurationError extends JTCSVError {
   }
 }
 
+export const ERROR_CODES = {
+  JTCSV_ERROR: 'JTCSV_ERROR',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  SECURITY_ERROR: 'SECURITY_ERROR',
+  FILE_SYSTEM_ERROR: 'FILE_SYSTEM_ERROR',
+  PARSING_ERROR: 'PARSING_ERROR',
+  LIMIT_ERROR: 'LIMIT_ERROR',
+  CONFIGURATION_ERROR: 'CONFIGURATION_ERROR',
+  INVALID_INPUT: 'INVALID_INPUT',
+  SECURITY_VIOLATION: 'SECURITY_VIOLATION',
+  FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  PARSE_FAILED: 'PARSE_FAILED',
+  SIZE_LIMIT: 'SIZE_LIMIT',
+  INVALID_CONFIG: 'INVALID_CONFIG',
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR'
+};
+
 /**
  * Безопасное выполнение функции с обработкой ошибок
  * 
@@ -188,6 +205,7 @@ if (typeof module !== 'undefined' && module.exports) {
     ParsingError,
     LimitError,
     ConfigurationError,
+    ERROR_CODES,
     safeExecute,
     safeExecuteAsync
   };
