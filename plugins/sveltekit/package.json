@@ -1,0 +1,33 @@
+{
+  "name": "@jtcsv/sveltekit",
+  "version": "1.0.0",
+  "description": "SvelteKit helpers for JTCSV",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "sveltekit",
+    "csv",
+    "json",
+    "converter",
+    "jtcsv"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "plugins/sveltekit"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/sveltekit#readme",
+  "peerDependencies": {
+    "jtcsv": "^2.1.3"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ]
+}

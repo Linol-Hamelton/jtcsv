@@ -78,6 +78,152 @@ export default function Converter() {
 
 [📚 Документация](./nextjs-api/README.md)
 
+### 4. NestJS Integration (@jtcsv/nestjs)
+
+**NestJS interceptors and decorators for CSV upload/download.**
+
+```bash
+npm install @jtcsv/nestjs jtcsv
+```
+
+```typescript
+import { CsvParserInterceptor, CsvDownloadDecorator } from 'jtcsv/nestjs';
+
+@Controller('data')
+export class DataController {
+  @Post('upload')
+  @CsvParserInterceptor({ delimiter: ',' })
+  uploadCsv(@Body() jsonData: any[]) {
+    return { parsed: jsonData };
+  }
+
+  @Get('export')
+  @CsvDownloadDecorator({ filename: 'export.csv' })
+  exportData() {
+    return [{ id: 1, name: 'John' }];
+  }
+}
+```
+
+[📚 Документация](./nestjs/README.md)
+
+### 5. Remix Integration (@jtcsv/remix)
+
+**Helpers for form-data parsing and CSV downloads in Remix.**
+
+```bash
+npm install @jtcsv/remix jtcsv
+```
+
+```typescript
+import { parseFormData, generateCsvResponse } from 'jtcsv/remix';
+
+export async function action({ request }) {
+  const rows = await parseFormData(request, { delimiter: ',' });
+  return { parsed: rows };
+}
+
+export async function loader() {
+  return generateCsvResponse([{ id: 1, name: 'John' }], 'export.csv');
+}
+```
+
+[📚 Документация](./remix/README.md)
+
+### 6. Nuxt Integration (@jtcsv/nuxt)
+
+**Nuxt module with auto-imported composable.**
+
+```bash
+npm install @jtcsv/nuxt jtcsv
+```
+
+```typescript
+export default defineNuxtConfig({
+  modules: ['@jtcsv/nuxt'],
+  jtcsv: { autoimport: true }
+});
+```
+
+```vue
+<script setup>
+const { csvToJson, jsonToCsv } = useJtcsv();
+</script>
+```
+
+[📚 Документация](./nuxt/README.md)
+
+### 7. SvelteKit Integration (@jtcsv/sveltekit)
+
+**Request helpers for SvelteKit actions/endpoints.**
+
+```bash
+npm install @jtcsv/sveltekit jtcsv
+```
+
+```typescript
+import { parseCsv, generateCsv } from 'jtcsv/sveltekit';
+
+export const actions = {
+  upload: async ({ request }) => {
+    const rows = await parseCsv(request, { delimiter: ',' });
+    return { rows };
+  }
+};
+
+export async function GET() {
+  return generateCsv([{ id: 1 }], 'export.csv');
+}
+```
+
+[📚 Документация](./sveltekit/README.md)
+
+### 8. Hono Integration (@jtcsv/hono)
+
+**Minimal middleware for CSV parsing with Hono.**
+
+```bash
+npm install @jtcsv/hono jtcsv
+```
+
+```typescript
+import { Hono } from 'hono';
+import { csvMiddleware, createCsvResponse } from 'jtcsv/hono';
+
+const app = new Hono()
+  .use('/upload', csvMiddleware())
+  .post('/upload', (c) => c.json({ rows: c.get('csv') }))
+  .get('/export', (c) => {
+    const { csv, headers } = createCsvResponse([{ id: 1 }], 'export.csv');
+    return c.text(csv, 200, headers);
+  });
+```
+
+[📚 Документация](./hono/README.md)
+
+### 9. tRPC Integration (@jtcsv/trpc)
+
+**Middleware helper for CSV input parsing in tRPC procedures.**
+
+```bash
+npm install @jtcsv/trpc jtcsv
+```
+
+```typescript
+import { initTRPC } from '@trpc/server';
+import { z } from 'zod';
+import { createCsvProcedure } from 'jtcsv/trpc';
+
+const t = initTRPC.create();
+
+export const router = t.router({
+  parseCsv: createCsvProcedure(t, z.string())
+    .mutation(async ({ input }) => ({ parsed: input }))
+});
+```
+
+[📚 Документация](./trpc/README.md)
+
 ## 🎯 Особенности
 
 ### Единый API
@@ -369,5 +515,3 @@ node api-convert.js
 ---
 
 **JTCSV Плагины** - делаем работу с CSV/JSON проще в любом фреймворке! 🚀
-
-

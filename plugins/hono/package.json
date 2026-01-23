@@ -1,0 +1,35 @@
+{
+  "name": "@jtcsv/hono",
+  "version": "1.0.0",
+  "description": "Hono middleware for JTCSV",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "hono",
+    "csv",
+    "json",
+    "converter",
+    "jtcsv",
+    "middleware"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "plugins/hono"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/hono#readme",
+  "peerDependencies": {
+    "hono": "^4.0.0",
+    "jtcsv": "^2.1.3"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ]
+}
