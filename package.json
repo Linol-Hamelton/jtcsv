@@ -110,6 +110,7 @@
     "size:why": "size-limit --why",
     "benchmark": "node benchmark.js",
     "benchmark:fastpath": "node benchmark.js --fastpath",
+    "profile:perf": "node scripts/profile-performance.js",
     "example:plugins": "node examples/plugin-excel-exporter.js",
     "example:express": "cd plugins/express-middleware && node example.js",
     "plugins:build": "npm run build && cd plugins/express-middleware && npm run build && cd ../fastify-plugin && npm run build && cd ../nextjs-api && npm run build"
