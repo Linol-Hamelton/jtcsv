@@ -27,22 +27,43 @@ class FastPathEngine {
     return csv.indexOf('""') !== -1;
   }
 
+  _hasBackslashes(csv) {
+    return csv.indexOf('\\') !== -1;
+  }
+
   _getStructureForParse(csv, options) {
     const sampleSize = Math.min(1000, csv.length);
     const sample = csv.substring(0, sampleSize);
     const structure = this.analyzeStructure(sample, options);
+    const hasBackslashes = this._hasBackslashes(csv);
+    const hasQuotes = structure.hasQuotes ? true : this._hasQuotes(csv);
+    const hasEscapedQuotes = structure.hasEscapedQuotes
+      ? true
+      : (hasQuotes ? this._hasEscapedQuotes(csv) : false);
 
-    if (structure.recommendedEngine === 'SIMPLE' && this._hasQuotes(csv)) {
-      return {
-        ...structure,
-        hasQuotes: true,
-        hasEscapedQuotes: this._hasEscapedQuotes(csv),
+    let normalized = {
+      ...structure,
+      hasQuotes,
+      hasEscapedQuotes,
+      hasBackslashes
+    };
+
+    if (structure.recommendedEngine === 'SIMPLE' && hasQuotes) {
+      normalized = {
+        ...normalized,
         hasNewlinesInFields: true,
         recommendedEngine: 'QUOTE_AWARE'
       };
     }
 
-    return structure;
+    if (options && options.forceEngine) {
+      normalized = {
+        ...normalized,
+        recommendedEngine: options.forceEngine
+      };
+    }
+
+    return normalized;
   }
 
   /**
@@ -145,11 +166,15 @@ class FastPathEngine {
    * Создает простой парсер (разделитель без кавычек)
    */
   _createSimpleParser(structure) {
-    const { delimiter } = structure;
+    const { delimiter, hasBackslashes } = structure;
     
     return (csv) => {
       const rows = [];
-      this._emitSimpleRows(csv, delimiter, (row) => rows.push(row));
+      if (hasBackslashes) {
+        this._emitSimpleRowsEscaped(csv, delimiter, (row) => rows.push(row));
+      } else {
+        this._emitSimpleRows(csv, delimiter, (row) => rows.push(row));
+      }
 
       return rows;
     };
@@ -191,14 +216,196 @@ class FastPathEngine {
     }
   }
 
+  _emitSimpleRowsEscaped(csv, delimiter, onRow) {
+    let currentRow = [];
+    let currentField = '';
+    let rowHasData = false;
+    let escapeNext = false;
+    let i = 0;
+
+    while (i <= csv.length) {
+      const char = i < csv.length ? csv[i] : '\n';
+      const nextChar = i + 1 < csv.length ? csv[i + 1] : '';
+
+      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+        rowHasData = true;
+      }
+
+      if (escapeNext) {
+        currentField += char;
+        escapeNext = false;
+        i++;
+        continue;
+      }
+
+      if (char === '\\') {
+        if (i + 1 >= csv.length) {
+          currentField += '\\';
+          i++;
+          continue;
+        }
+
+        if (nextChar === '\\') {
+          currentField += '\\';
+          i += 2;
+          continue;
+        }
+
+        if (nextChar === '\n' || nextChar === '\r') {
+          currentField += '\\';
+          i++;
+          continue;
+        }
+
+        escapeNext = true;
+        i++;
+        continue;
+      }
+
+      if (char === delimiter || char === '\n' || char === '\r' || i === csv.length) {
+        currentRow.push(currentField);
+        currentField = '';
+
+        if (char === '\n' || char === '\r' || i === csv.length) {
+          if (rowHasData) {
+            onRow(currentRow);
+          }
+          currentRow = [];
+          rowHasData = false;
+        }
+
+        if (char === '\r' && csv[i + 1] === '\n') {
+          i++;
+        }
+
+        i++;
+        continue;
+      }
+
+      currentField += char;
+      i++;
+    }
+  }
+
+  *_simpleRowsGenerator(csv, delimiter) {
+    let currentRow = [];
+    let rowHasData = false;
+    let fieldStart = 0;
+    let i = 0;
+
+    while (i <= csv.length) {
+      const char = i < csv.length ? csv[i] : '\n';
+
+      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+        rowHasData = true;
+      }
+
+      if (char === delimiter || char === '\n' || char === '\r' || i === csv.length) {
+        const field = csv.slice(fieldStart, i);
+        currentRow.push(field);
+
+        if (char === '\n' || char === '\r' || i === csv.length) {
+          if (rowHasData) {
+            yield currentRow;
+          }
+          currentRow = [];
+          rowHasData = false;
+        }
+
+        if (char === '\r' && csv[i + 1] === '\n') {
+          i++;
+        }
+
+        fieldStart = i + 1;
+      }
+
+      i++;
+    }
+  }
+
+  *_simpleEscapedRowsGenerator(csv, delimiter) {
+    let currentRow = [];
+    let currentField = '';
+    let rowHasData = false;
+    let escapeNext = false;
+    let i = 0;
+
+    while (i <= csv.length) {
+      const char = i < csv.length ? csv[i] : '\n';
+      const nextChar = i + 1 < csv.length ? csv[i + 1] : '';
+
+      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+        rowHasData = true;
+      }
+
+      if (escapeNext) {
+        currentField += char;
+        escapeNext = false;
+        i++;
+        continue;
+      }
+
+      if (char === '\\') {
+        if (i + 1 >= csv.length) {
+          currentField += '\\';
+          i++;
+          continue;
+        }
+
+        if (nextChar === '\\') {
+          currentField += '\\';
+          i += 2;
+          continue;
+        }
+
+        if (nextChar === '\n' || nextChar === '\r') {
+          currentField += '\\';
+          i++;
+          continue;
+        }
+
+        escapeNext = true;
+        i++;
+        continue;
+      }
+
+      if (char === delimiter || char === '\n' || char === '\r' || i === csv.length) {
+        currentRow.push(currentField);
+        currentField = '';
+
+        if (char === '\n' || char === '\r' || i === csv.length) {
+          if (rowHasData) {
+            yield currentRow;
+          }
+          currentRow = [];
+          rowHasData = false;
+        }
+
+        if (char === '\r' && csv[i + 1] === '\n') {
+          i++;
+        }
+
+        i++;
+        continue;
+      }
+
+      currentField += char;
+      i++;
+    }
+  }
+
   /**
    * Simple row emitter that avoids storing all rows in memory.
    */
   _createSimpleRowEmitter(structure) {
-    const { delimiter } = structure;
+    const { delimiter, hasBackslashes } = structure;
 
     return (csv, onRow) => {
-      this._emitSimpleRows(csv, delimiter, onRow);
+      if (hasBackslashes) {
+        this._emitSimpleRowsEscaped(csv, delimiter, onRow);
+      } else {
+        this._emitSimpleRows(csv, delimiter, onRow);
+      }
     };
   }
 
@@ -206,55 +413,16 @@ class FastPathEngine {
    * State machine парсер для CSV с кавычками (RFC 4180)
    */
   _createQuoteAwareParser(structure) {
-    const { delimiter, hasEscapedQuotes } = structure;
-    
+    const { delimiter, hasEscapedQuotes, hasBackslashes } = structure;
+
     return (csv) => {
       const rows = [];
-      let currentRow = [];
-      let currentField = '';
-      let insideQuotes = false;
-      let i = 0;
+      const iterator = hasBackslashes
+        ? this._quoteAwareEscapedRowsGenerator(csv, delimiter, hasEscapedQuotes)
+        : this._quoteAwareRowsGenerator(csv, delimiter, hasEscapedQuotes);
 
-      while (i < csv.length) {
-        const char = csv[i];
-        const nextChar = csv[i + 1];
-
-        if (char === '"') {
-          if (insideQuotes) {
-            if (hasEscapedQuotes && nextChar === '"') {
-              currentField += '"';
-              i += 2;
-            } else {
-              insideQuotes = false;
-              i++;
-            }
-          } else {
-            insideQuotes = true;
-            i++;
-          }
-        } else if (char === delimiter && !insideQuotes) {
-          currentRow.push(currentField);
-          currentField = '';
-          i++;
-        } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && !insideQuotes) {
-          currentRow.push(currentField);
-          if (currentRow.length > 0 && currentRow.some(field => field !== '')) {
-            rows.push(currentRow);
-          }
-          currentRow = [];
-          currentField = '';
-          i += (char === '\r' && nextChar === '\n') ? 2 : 1;
-        } else {
-          currentField += char;
-          i++;
-        }
-      }
-
-      if (currentField !== '' || currentRow.length > 0) {
-        currentRow.push(currentField);
-        if (currentRow.length > 0 && currentRow.some(field => field !== '')) {
-          rows.push(currentRow);
-        }
+      for (const row of iterator) {
+        rows.push(row);
       }
 
       return rows;
@@ -265,143 +433,257 @@ class FastPathEngine {
    * Quote-aware row emitter that avoids storing all rows in memory.
    */
   _createQuoteAwareRowEmitter(structure) {
-    const { delimiter, hasEscapedQuotes } = structure;
+    const { delimiter, hasEscapedQuotes, hasBackslashes } = structure;
 
     return (csv, onRow) => {
-      let currentRow = [];
-      let currentField = '';
-      let rowHasData = false;
-      let insideQuotes = false;
-      let i = 0;
+      const iterator = hasBackslashes
+        ? this._quoteAwareEscapedRowsGenerator(csv, delimiter, hasEscapedQuotes)
+        : this._quoteAwareRowsGenerator(csv, delimiter, hasEscapedQuotes);
 
-      while (i < csv.length) {
-        const char = csv[i];
-        const nextChar = csv[i + 1];
-
-        if (char === '"') {
-          if (insideQuotes) {
-            if (hasEscapedQuotes && nextChar === '"') {
-              currentField += '"';
-              i += 2;
-            } else {
-              insideQuotes = false;
-              i++;
-            }
-          } else {
-            insideQuotes = true;
-            i++;
-          }
-        } else if (char === delimiter && !insideQuotes) {
-          if (currentField.length > 0) {
-            rowHasData = true;
-          }
-          currentRow.push(currentField);
-          currentField = '';
-          i++;
-        } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && !insideQuotes) {
-          if (currentField.length > 0) {
-            rowHasData = true;
-          }
-          currentRow.push(currentField);
-          if (rowHasData) {
-            onRow(currentRow);
-          }
-          currentRow = [];
-          currentField = '';
-          rowHasData = false;
-          i += (char === '\r' && nextChar === '\n') ? 2 : 1;
-        } else {
-          currentField += char;
-          i++;
-        }
-      }
-
-      if (currentField.length > 0) {
-        rowHasData = true;
-      }
-      if (currentField !== '' || currentRow.length > 0) {
-        currentRow.push(currentField);
-        if (rowHasData) {
-          onRow(currentRow);
-        }
+      for (const row of iterator) {
+        onRow(row);
       }
     };
   }
 
-  /**
-   * Стандартный парсер (fallback)
-   */
-  _createStandardParser(structure) {
-    const { delimiter } = structure;
-    
-    return (csv) => {
-      const rows = [];
-      const lines = csv.split('\n');
-      let insideQuotes = false;
-      let currentLine = '';
-      
-      for (const line of lines) {
-        const quoteCount = (line.match(/"/g) || []).length;
-        
-        if (insideQuotes) {
-          currentLine += '\n' + line;
-          if (quoteCount % 2 !== 0) {
-            insideQuotes = false;
-            rows.push(this._parseLineWithQuotes(currentLine, delimiter));
-            currentLine = '';
-          }
-        } else {
-          if (quoteCount % 2 !== 0) {
-            insideQuotes = true;
-            currentLine = line;
-          } else {
-            rows.push(this._parseLineWithQuotes(line, delimiter));
-          }
-        }
-      }
-      
-      return rows;
-    };
-  }
-
-  /**
-   * Парсит строку с учетом кавычек
-   */
-  _parseLineWithQuotes(line, delimiter) {
-    const fields = [];
+  *_quoteAwareRowsGenerator(csv, delimiter, hasEscapedQuotes) {
+    let currentRow = [];
     let currentField = '';
+    let rowHasData = false;
     let insideQuotes = false;
+    let lineNumber = 1;
     let i = 0;
 
-    while (i < line.length) {
-      const char = line[i];
-      const nextChar = line[i + 1];
+    while (i < csv.length) {
+      const char = csv[i];
+      const nextChar = csv[i + 1];
+
+      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+        rowHasData = true;
+      }
 
       if (char === '"') {
-        if (insideQuotes && nextChar === '"') {
+        if (insideQuotes) {
+          if (hasEscapedQuotes && nextChar === '"') {
+            const afterNext = csv[i + 2];
+            const isLineEnd = i + 2 >= csv.length || afterNext === '\n' || afterNext === '\r';
+
+            currentField += '"';
+            if (isLineEnd) {
+              insideQuotes = false;
+              i += 2;
+              continue;
+            }
+
+            i += 2;
+
+            let j = i;
+            while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
+              j++;
+            }
+            if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+              insideQuotes = false;
+            }
+            continue;
+          }
+
+          let j = i + 1;
+          while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
+            j++;
+          }
+          if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+            insideQuotes = false;
+            i++;
+            continue;
+          }
+
           currentField += '"';
-          i += 2;
-        } else {
-          insideQuotes = !insideQuotes;
           i++;
+          continue;
         }
-      } else if (char === delimiter && !insideQuotes) {
-        fields.push(currentField);
-        currentField = '';
+
+        insideQuotes = true;
         i++;
-      } else {
-        currentField += char;
-        i++;
+        continue;
       }
+
+      if (!insideQuotes && (char === delimiter || char === '\n' || char === '\r')) {
+        currentRow.push(currentField);
+        currentField = '';
+
+        if (char === '\n' || char === '\r') {
+          if (rowHasData) {
+            yield currentRow;
+          }
+          currentRow = [];
+          rowHasData = false;
+          lineNumber++;
+
+          if (char === '\r' && nextChar === '\n') {
+            i++;
+          }
+        }
+
+        i++;
+        continue;
+      }
+
+      currentField += char;
+      i++;
     }
 
-    fields.push(currentField);
-    return fields;
+    if (insideQuotes) {
+      const error = new Error('Unclosed quotes in CSV');
+      error.code = 'FAST_PATH_UNCLOSED_QUOTES';
+      error.lineNumber = lineNumber;
+      throw error;
+    }
+
+    if (currentField !== '' || currentRow.length > 0) {
+      currentRow.push(currentField);
+      if (rowHasData) {
+        yield currentRow;
+      }
+    }
   }
 
-  /**
-   * Компилирует парсер на основе структуры CSV
-   */
+  *_quoteAwareEscapedRowsGenerator(csv, delimiter, hasEscapedQuotes) {
+    let currentRow = [];
+    let currentField = '';
+    let rowHasData = false;
+    let insideQuotes = false;
+    let escapeNext = false;
+    let lineNumber = 1;
+    let i = 0;
+
+    while (i < csv.length) {
+      const char = csv[i];
+      const nextChar = csv[i + 1];
+
+      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+        rowHasData = true;
+      }
+
+      if (escapeNext) {
+        currentField += char;
+        escapeNext = false;
+        i++;
+        continue;
+      }
+
+      if (char === '\\') {
+        if (i + 1 >= csv.length) {
+          currentField += '\\';
+          i++;
+          continue;
+        }
+
+        if (!insideQuotes && (nextChar === '\n' || nextChar === '\r')) {
+          currentField += '\\';
+          i++;
+          continue;
+        }
+
+        if (nextChar === '\\') {
+          currentField += '\\';
+          i += 2;
+          continue;
+        }
+
+        escapeNext = true;
+        i++;
+        continue;
+      }
+
+      if (char === '"') {
+        if (insideQuotes) {
+          if (hasEscapedQuotes && nextChar === '"') {
+            const afterNext = csv[i + 2];
+            const isLineEnd = i + 2 >= csv.length || afterNext === '\n' || afterNext === '\r';
+
+            currentField += '"';
+            if (isLineEnd) {
+              insideQuotes = false;
+              i += 2;
+              continue;
+            }
+
+            i += 2;
+
+            let j = i;
+            while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
+              j++;
+            }
+            if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+              insideQuotes = false;
+            }
+            continue;
+          }
+
+          let j = i + 1;
+          while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
+            j++;
+          }
+          if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+            insideQuotes = false;
+            i++;
+            continue;
+          }
+
+          currentField += '"';
+          i++;
+          continue;
+        }
+
+        insideQuotes = true;
+        i++;
+        continue;
+      }
+
+      if (!insideQuotes && (char === delimiter || char === '\n' || char === '\r')) {
+        currentRow.push(currentField);
+        currentField = '';
+
+        if (char === '\n' || char === '\r') {
+          if (rowHasData) {
+            yield currentRow;
+          }
+          currentRow = [];
+          rowHasData = false;
+          lineNumber++;
+
+          if (char === '\r' && nextChar === '\n') {
+            i++;
+          }
+        }
+
+        i++;
+        continue;
+      }
+
+      currentField += char;
+      i++;
+    }
+
+    if (escapeNext) {
+      currentField += '\\';
+    }
+
+    if (insideQuotes) {
+      const error = new Error('Unclosed quotes in CSV');
+      error.code = 'FAST_PATH_UNCLOSED_QUOTES';
+      error.lineNumber = lineNumber;
+      throw error;
+    }
+
+    if (currentField !== '' || currentRow.length > 0) {
+      currentRow.push(currentField);
+      if (rowHasData) {
+        yield currentRow;
+      }
+    }
+  }
+
   compileParser(structure) {
     const cacheKey = JSON.stringify(structure);
     
@@ -424,11 +706,11 @@ class FastPathEngine {
       this.stats.quoteAwareParserCount++;
       break;
     case 'STANDARD':
-      parser = this._createStandardParser(structure);
+      parser = this._createQuoteAwareParser(structure);
       this.stats.standardParserCount++;
       break;
     default:
-      parser = this._createStandardParser(structure);
+      parser = this._createQuoteAwareParser(structure);
       this.stats.standardParserCount++;
     }
     
@@ -468,6 +750,44 @@ class FastPathEngine {
   }
 
   /**
+   * Iterates rows without allocating the full result set.
+   */
+  *iterateRows(csv, options = {}) {
+    const structure = this._getStructureForParse(csv, options);
+    const useEscapes = structure.hasBackslashes;
+
+    switch (structure.recommendedEngine) {
+    case 'SIMPLE':
+      if (useEscapes) {
+        yield* this._simpleEscapedRowsGenerator(csv, structure.delimiter);
+      } else {
+        yield* this._simpleRowsGenerator(csv, structure.delimiter);
+      }
+      break;
+    case 'QUOTE_AWARE':
+      if (useEscapes) {
+        yield* this._quoteAwareEscapedRowsGenerator(csv, structure.delimiter, structure.hasEscapedQuotes);
+      } else {
+        yield* this._quoteAwareRowsGenerator(csv, structure.delimiter, structure.hasEscapedQuotes);
+      }
+      break;
+    case 'STANDARD':
+      if (useEscapes) {
+        yield* this._quoteAwareEscapedRowsGenerator(csv, structure.delimiter, structure.hasEscapedQuotes);
+      } else {
+        yield* this._quoteAwareRowsGenerator(csv, structure.delimiter, structure.hasEscapedQuotes);
+      }
+      break;
+    default:
+      if (useEscapes) {
+        yield* this._quoteAwareEscapedRowsGenerator(csv, structure.delimiter, structure.hasEscapedQuotes);
+      } else {
+        yield* this._quoteAwareRowsGenerator(csv, structure.delimiter, structure.hasEscapedQuotes);
+      }
+    }
+  }
+
+  /**
    * Парсит CSV с использованием оптимального парсера
    */
   parse(csv, options = {}) {
@@ -481,10 +801,9 @@ class FastPathEngine {
    * Parses CSV and emits rows via a callback to reduce memory usage.
    */
   parseRows(csv, options = {}, onRow) {
-    const structure = this._getStructureForParse(csv, options);
-    const emitter = this.compileRowEmitter(structure);
-
-    emitter(csv, onRow);
+    for (const row of this.iterateRows(csv, options)) {
+      onRow(row);
+    }
   }
 
   /**

@@ -735,7 +735,7 @@ export class JtcsvIntegration {
       ],
       supportedOptions: {
         jsonToCsv: ['delimiter', 'includeHeaders', 'renameMap', 'template', 'maxRecords', 'preventCsvInjection', 'rfc4180Compliant'],
-        csvToJson: ['delimiter', 'autoDetect', 'candidates', 'hasHeaders', 'renameMap', 'trim', 'parseNumbers', 'parseBooleans', 'maxRows'],
+        csvToJson: ['delimiter', 'autoDetect', 'candidates', 'hasHeaders', 'renameMap', 'trim', 'parseNumbers', 'parseBooleans', 'maxRows', 'useFastPath', 'fastPathMode'],
         preprocessing: ['maxDepth', 'unwrapArrays', 'stringifyObjects'],
         streaming: ['chunkSize', 'bufferSize', 'addBOM'],
         batch: ['parallel', 'outputDir', 'overwrite']

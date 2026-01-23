@@ -77,14 +77,13 @@ function validateCsvInput(csv, options) {
     throw new ConfigurationError('useFastPath must be a boolean');
   }
 
-  if (options?.fastPathMode !== undefined && options.fastPathMode !== 'objects' && options.fastPathMode !== 'compact') {
-    throw new ConfigurationError('fastPathMode must be "objects" or "compact"');
+  if (options?.fastPathMode !== undefined
+    && options.fastPathMode !== 'objects'
+    && options.fastPathMode !== 'compact'
+    && options.fastPathMode !== 'stream') {
+    throw new ConfigurationError('fastPathMode must be "objects", "compact", or "stream"');
   }
 
-  if (options?.fastPathStream !== undefined && typeof options.fastPathStream !== 'boolean') {
-    throw new ConfigurationError('fastPathStream must be a boolean');
-  }
-  
   // Validate hooks
   if (options?.hooks) {
     if (typeof options.hooks !== 'object') {
@@ -109,132 +108,6 @@ function validateCsvInput(csv, options) {
   }
   
   return true;
-}
-
-/**
- * Parses a single CSV line with proper escaping
- * @private
- */
-function parseCsvLine(line, lineNumber, delimiter) {
-  const fields = [];
-  let currentField = '';
-  let insideQuotes = false;
-  let escapeNext = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    
-    if (escapeNext) {
-      currentField += char;
-      escapeNext = false;
-      continue;
-    }
-
-    if (char === '\\') {
-      if (i + 1 === line.length) {
-        // Backslash at end of line - treat as literal
-        currentField += char;
-      } else if (line[i + 1] === '\\') {
-        // Double backslash - add one backslash to field and skip next
-        currentField += char;
-        i++; // Skip next backslash
-      } else {
-        // Escape next character
-        escapeNext = true;
-      }
-      continue;
-    }
-
-    if (char === '"') {
-      if (insideQuotes) {
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          // Could be escaped quote ("") or double quote at end ("")
-          if (i + 2 === line.length) {
-            // This is the pattern "" at the end of the line
-            // First quote is part of field, second is closing quote
-            currentField += '"';
-            i++; // Skip the closing quote
-            insideQuotes = false;
-          } else {
-            // Escaped quote inside quotes ("" -> ")
-            currentField += '"';
-            i++; // Skip next quote
-            // Check if this is the end of the quoted field
-            // Look ahead to see if next char is delimiter or end of line
-            let isEndOfField = false;
-            let j = i + 1;
-            // Skip whitespace
-            while (j < line.length && (line[j] === ' ' || line[j] === '\t')) {
-              j++;
-            }
-            if (j === line.length || line[j] === delimiter) {
-              isEndOfField = true;
-            }
-            
-            if (isEndOfField) {
-              // This is the closing quote
-              insideQuotes = false;
-            }
-          }
-        } else {
-          // Check if this is really the end of the quoted field
-          // Look ahead to see if next char is delimiter or end of line
-          let isEndOfField = false;
-          let j = i + 1;
-          // Skip whitespace
-          while (j < line.length && (line[j] === ' ' || line[j] === '\t')) {
-            j++;
-          }
-          if (j === line.length || line[j] === delimiter) {
-            isEndOfField = true;
-          }
-          
-          if (isEndOfField) {
-            // This is the closing quote
-            insideQuotes = false;
-          } else {
-            // This quote is part of the field content
-            currentField += '"';
-          }
-        }
-      } else {
-        // Start of quoted field
-        insideQuotes = true;
-      }
-      continue;
-    }
-
-    if (!insideQuotes && char === delimiter) {
-      // End of field
-      fields.push(currentField);
-      currentField = '';
-      continue;
-    }
-
-    currentField += char;
-  }
-
-  // Handle case where escapeNext is still true at end of line
-  if (escapeNext) {
-    // This happens when line ends with backslash
-    // Add the backslash as literal character
-    currentField += '\\';
-  }
-
-  // Add last field
-  fields.push(currentField);
-
-  // Check for unclosed quotes
-  if (insideQuotes) {
-    throw new ParsingError('Unclosed quotes in CSV', lineNumber);
-  }
-
-  // Validate field count consistency
-  if (fields.length === 0) {
-    throw new ParsingError('No fields found', lineNumber);
-  }
-
-  return fields;
 }
 
 /**
@@ -355,11 +228,14 @@ function csvToJson(csv, options = {}) {
       maxRows,
       useCache = true,
       cache: customCache,
-      useFastPath = false,
+      useFastPath = true,
       fastPathMode = 'objects',
-      fastPathStream = false,
       hooks = {}
     } = opts;
+
+    if (fastPathMode === 'stream') {
+      return csvToJsonIterator(csv, { ...opts, useFastPath, fastPathMode: 'objects' });
+    }
 
     // Выбираем кэш для использования
     const cacheToUse = useCache ? (customCache || globalDelimiterCache) : null;
@@ -401,13 +277,18 @@ function csvToJson(csv, options = {}) {
       return [];
     }
 
-    if (useFastPath) {
-      let headers = null;
-      let totalRows = 0;
-      let dataRowIndex = 0;
-      const result = [];
+    let headers = null;
+    let totalRows = 0;
+    let dataRowIndex = 0;
+    const result = [];
 
-      globalFastPathEngine.parseRows(processedCsv, { delimiter: finalDelimiter }, (fields) => {
+    try {
+      const parseOptions = { delimiter: finalDelimiter };
+      if (useFastPath === false) {
+        parseOptions.forceEngine = 'STANDARD';
+      }
+
+      globalFastPathEngine.parseRows(processedCsv, parseOptions, (fields) => {
         totalRows++;
 
         if (!headers) {
@@ -422,11 +303,6 @@ function csvToJson(csv, options = {}) {
         }
 
         if (!fields || fields.length === 0) {
-          return;
-        }
-
-        const isEmptyRow = fields.every(field => (trim ? field.trim() : field) === '');
-        if (isEmptyRow) {
           return;
         }
 
@@ -460,180 +336,172 @@ function csvToJson(csv, options = {}) {
         });
 
         dataRowIndex++;
-        if (!fastPathStream) {
-          result.push(processedRow);
-        }
+        result.push(processedRow);
 
         if (fields.length > headers.length && process.env.NODE_ENV === 'development') {
           console.warn(`[jtcsv] Line ${totalRows}: ${fields.length - headers.length} extra fields ignored`);
         }
       });
-
-      if (!headers) {
-        return [];
+    } catch (error) {
+      if (error && error.code === 'FAST_PATH_UNCLOSED_QUOTES') {
+        throw new ParsingError(error.message, error.lineNumber);
       }
-
-      if (totalRows > 1000000 && !maxRows && process.env.NODE_ENV !== 'test') {
-        console.warn(
-          'Warning: Processing >1M records in memory may be slow.\n' +
-          'Consider using createCsvToJsonStream() for better performance with large files.\n' +
-          'Current size: ' + totalRows.toLocaleString() + ' rows\n' +
-          'Tip: Use { maxRows: N } option to set a custom limit if needed.'
-        );
-      }
-
-      return finalHooks.applyAfterConvert(result, {
-        operation: 'csvToJson',
-        totalRows: fastPathStream ? dataRowIndex : result.length,
-        options: opts
-      });
+      throw error;
     }
 
-    // Parse CSV with proper handling of quotes and newlines
-    const lines = [];
-    let currentLine = '';
-    let insideQuotes = false;
-    
-    for (let i = 0; i < processedCsv.length; i++) {
-      const char = processedCsv[i];
-      
-      if (char === '"') {
-        if (insideQuotes && i + 1 < processedCsv.length && processedCsv[i + 1] === '"') {
-          // Escaped quote inside quotes ("" -> ")
-          currentLine += '"';
-          i++; // Skip next quote
-        } else {
-          // Toggle quote mode
-          insideQuotes = !insideQuotes;
-        }
-        currentLine += char;
-        continue;
-      }
-      
-      if (char === '\n' && !insideQuotes) {
-        // End of line (outside quotes)
-        lines.push(currentLine);
-        currentLine = '';
-        continue;
-      }
-      
-      if (char === '\r') {
-        // Ignore carriage return, will be handled by \n
-        continue;
-      }
-      
-      currentLine += char;
-    }
-    
-    // Add the last line
-    if (currentLine !== '' || insideQuotes) {
-      lines.push(currentLine);
-    }
-    
-    if (lines.length === 0) {
+    if (!headers) {
       return [];
     }
 
-    // Show warning for large datasets (optional limit)
-    if (lines.length > 1000000 && !maxRows && process.env.NODE_ENV !== 'test') {
+    if (totalRows > 1000000 && !maxRows && process.env.NODE_ENV !== 'test') {
       console.warn(
-        '⚠️ Warning: Processing >1M records in memory may be slow.\n' +
-        '💡 Consider using createCsvToJsonStream() for better performance with large files.\n' +
-        '📊 Current size: ' + lines.length.toLocaleString() + ' rows\n' +
-        '🔧 Tip: Use { maxRows: N } option to set a custom limit if needed.'
+        'Warning: Processing >1M records in memory may be slow.\n' +
+        'Consider using createCsvToJsonStream() for better performance with large files.\n' +
+        'Current size: ' + totalRows.toLocaleString() + ' rows\n' +
+        'Tip: Use { maxRows: N } option to set a custom limit if needed.'
       );
     }
 
-    // Apply optional row limit if specified
-    if (maxRows && lines.length > maxRows) {
-      throw new LimitError(
-        `CSV size exceeds maximum limit of ${maxRows} rows`,
-        maxRows,
-        lines.length
-      );
-    }
-
-    let headers = [];
-    let startIndex = 0;
-    
-    // Parse headers if present
-    if (hasHeaders && lines.length > 0) {
-      try {
-        headers = parseCsvLine(lines[0], 1, finalDelimiter).map(header => {
-          const trimmed = trim ? header.trim() : header;
-          // Apply rename map
-          return renameMap[trimmed] || trimmed;
-        });
-        startIndex = 1;
-      } catch (error) {
-        if (error instanceof ParsingError) {
-          throw new ParsingError(`Failed to parse headers: ${error.message}`, 1);
-        }
-        throw error;
-      }
-    } else {
-      // Generate numeric headers from first line
-      try {
-        const firstLineFields = parseCsvLine(lines[0], 1, finalDelimiter);
-        headers = firstLineFields.map((_, index) => `column${index + 1}`);
-      } catch (error) {
-        if (error instanceof ParsingError) {
-          throw new ParsingError(`Failed to parse first line: ${error.message}`, 1);
-        }
-        throw error;
-      }
-    }
-
-    // Parse data rows
-    const result = [];
-    
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Skip empty lines
-      if (line.trim() === '') {
-        continue;
-      }
-      
-      try {
-        const fields = parseCsvLine(line, i + 1, finalDelimiter);
-        
-        // Handle mismatched field count
-        const row = {};
-        const fieldCount = Math.min(fields.length, headers.length);
-        
-        for (let j = 0; j < fieldCount; j++) {
-          row[headers[j]] = parseCsvValue(fields[j], { trim, parseNumbers, parseBooleans });
-        }
-        
-        // Apply per-row hooks
-        const processedRow = finalHooks.applyPerRow(row, i - startIndex, {
-          lineNumber: i + 1,
-          headers,
-          options: opts
-        });
-        
-        result.push(processedRow);
-        
-        // Warn about extra fields
-        if (fields.length > headers.length && process.env.NODE_ENV === 'development') {
-          console.warn(`[jtcsv] Line ${i + 1}: ${fields.length - headers.length} extra fields ignored`);
-        }
-      } catch (error) {
-        if (error instanceof ParsingError) {
-          throw new ParsingError(`Line ${i + 1}: ${error.message}`, i + 1);
-        }
-        throw error;
-      }
-    }
-
-    // Apply afterConvert hooks
     return finalHooks.applyAfterConvert(result, {
       operation: 'csvToJson',
       totalRows: result.length,
       options: opts
     });
+
   }, 'PARSE_FAILED', { function: 'csvToJson' });
+}
+
+async function* csvToJsonIterator(csv, options = {}) {
+  validateCsvInput(csv, options);
+
+  const opts = options && typeof options === 'object' ? options : {};
+
+  const {
+    delimiter,
+    autoDetect = true,
+    candidates = [';', ',', '\t', '|'],
+    hasHeaders = true,
+    renameMap = {},
+    trim = true,
+    parseNumbers = false,
+    parseBooleans = false,
+    maxRows,
+    useCache = true,
+    cache: customCache,
+    useFastPath = true,
+    fastPathMode = 'objects',
+    hooks = {}
+  } = opts;
+
+  const cacheToUse = useCache ? (customCache || globalDelimiterCache) : null;
+
+  const transformHooks = new TransformHooks();
+
+  if (hooks.beforeConvert) {
+    transformHooks.beforeConvert(hooks.beforeConvert);
+  }
+
+  if (hooks.afterConvert) {
+    transformHooks.afterConvert(hooks.afterConvert);
+  }
+
+  if (hooks.perRow) {
+    transformHooks.perRow(hooks.perRow);
+  }
+
+  const finalHooks = hooks.transformHooks || transformHooks;
+
+  const processedCsv = finalHooks.applyBeforeConvert(csv, {
+    operation: 'csvToJson',
+    options: opts
+  });
+
+  let finalDelimiter = delimiter;
+  if (!finalDelimiter && autoDetect) {
+    finalDelimiter = autoDetectDelimiter(processedCsv, candidates, cacheToUse);
+  }
+  finalDelimiter = finalDelimiter || ';';
+
+  if (processedCsv.trim() === '') {
+    return;
+  }
+
+  let headers = null;
+  let totalRows = 0;
+  let dataRowIndex = 0;
+
+  const handleFields = (fields, lineNumber) => {
+    if (!headers) {
+      if (hasHeaders) {
+        headers = fields.map(header => {
+          const trimmed = trim ? header.trim() : header;
+          return renameMap[trimmed] || trimmed;
+        });
+        return null;
+      }
+      headers = fields.map((_, index) => `column${index + 1}`);
+    }
+
+    if (!fields || fields.length === 0) {
+      return null;
+    }
+
+    const fieldCount = Math.min(fields.length, headers.length);
+    let row;
+
+    const resolvedFastPathMode = fastPathMode === 'stream' ? 'objects' : fastPathMode;
+
+    if (resolvedFastPathMode === 'compact') {
+      row = new Array(fieldCount);
+      for (let j = 0; j < fieldCount; j++) {
+        row[j] = parseCsvValue(fields[j], { trim, parseNumbers, parseBooleans });
+      }
+    } else {
+      row = {};
+      for (let j = 0; j < fieldCount; j++) {
+        row[headers[j]] = parseCsvValue(fields[j], { trim, parseNumbers, parseBooleans });
+      }
+    }
+
+    const processedRow = finalHooks.applyPerRow(row, dataRowIndex, {
+      lineNumber,
+      headers,
+      options: opts
+    });
+
+    dataRowIndex++;
+    return processedRow;
+  };
+
+  try {
+    const parseOptions = { delimiter: finalDelimiter };
+    if (useFastPath === false) {
+      parseOptions.forceEngine = 'STANDARD';
+    }
+
+    for (const fields of globalFastPathEngine.iterateRows(processedCsv, parseOptions)) {
+      totalRows++;
+      if (maxRows && totalRows > maxRows) {
+        throw new LimitError(
+          `CSV size exceeds maximum limit of ${maxRows} rows`,
+          maxRows,
+          totalRows
+        );
+      }
+      const processedRow = handleFields(fields, totalRows);
+      if (processedRow !== undefined && processedRow !== null) {
+        if (fields.length > headers.length && process.env.NODE_ENV === 'development') {
+          console.warn(`[jtcsv] Line ${totalRows}: ${fields.length - headers.length} extra fields ignored`);
+        }
+        yield processedRow;
+      }
+    }
+  } catch (error) {
+    if (error && error.code === 'FAST_PATH_UNCLOSED_QUOTES') {
+      throw new ParsingError(error.message, error.lineNumber);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -792,6 +660,7 @@ function clearDelimiterCache() {
 // Export the functions
 module.exports = {
   csvToJson,
+  csvToJsonIterator,
   readCsvAsJson,
   readCsvAsJsonSync,
   autoDetectDelimiter,

@@ -133,6 +133,7 @@ Converts an array of objects to CSV string.
 Converts CSV string to array of objects.
 
 **Options:**
+Fast path parsing is the default pipeline; use `fastPathMode` to control row shape.
 - `delimiter` (string): Delimiter (auto-detected if not specified)
 - `autoDetect` (boolean, default: true): Auto-detect delimiter
 - `hasHeaders` (boolean, default: true): CSV has header row
@@ -140,6 +141,22 @@ Converts CSV string to array of objects.
 - `parseBooleans` (boolean, default: false): Parse boolean values
 - `trim` (boolean, default: true): Trim whitespace
 - `maxRows` (number): Maximum rows to process
+- `useFastPath` (boolean, default: true): Enable fast-path parser (set `false` to force quote-aware path)
+- `fastPathMode` (string, default: 'objects'): `'objects'` for object rows, `'compact'` for arrays (lower memory), `'stream'` to return an async iterator
+
+#### `csvToJsonIterator(csv, options)`
+Convert CSV to JSON rows as an async iterator for large inputs.
+You can also call `csvToJson(csv, { fastPathMode: 'stream' })` to get the same async iterator.
+
+**Example:**
+```javascript
+const { csvToJsonIterator } = require('jtcsv');
+
+const csv = 'id,name\n1,Jane\n2,John';
+for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
+  console.log(row);
+}
+```
 
 ### Browser-Specific Functions
 
@@ -264,19 +281,34 @@ const unsafeCsv = jsonToCsv(dangerousData, { preventCsvInjection: false });
 
 ## 📊 Performance
 
-### Benchmark Results
+### Benchmark Results (Node.js 22, 10K rows/records)
 
-| File Size | Rows | Without Workers | With Workers | Improvement |
-|-----------|------|-----------------|--------------|-------------|
-| 1 MB      | 10K  | 120 ms          | 80 ms        | 33% faster  |
-| 10 MB     | 100K | 1.2 sec         | 0.8 sec      | 33% faster  |
-| 100 MB    | 1M   | 12 sec          | 7 sec        | 42% faster  |
-| 500 MB    | 5M   | 65 sec          | 35 sec       | 46% faster  |
+**CSV → JSON (10K rows)**
 
-### Memory Usage
-- **Without streaming**: Loads entire file into memory
-- **With streaming**: Processes in chunks (default 10K rows)
-- **With Web Workers**: Distributes memory across workers
+| Library | Time | Memory | Rank |
+|---------|------|--------|------|
+| **JTCSV (FastPath Compact)** | 16.79 ms | 4.47 MB | 🥇 1st |
+| **JTCSV (FastPath Stream)** | 18.27 ms | 6.03 MB | 🥈 2nd |
+| **JTCSV** | 19.76 ms | 8.96 MB | 🥉 3rd |
+| PapaParse | 21.57 ms | 6.97 MB | 4th |
+| csv-parser | 30.52 ms | 6.53 MB | 5th |
+
+**JSON → CSV (10K records)**
+
+| Library | Time | Memory | Rank |
+|---------|------|--------|------|
+| **JTCSV** | 11.21 ms | 4.77 MB | 🥇 1st |
+| json2csv | 12.27 ms | 12.11 MB | 🥈 2nd |
+
+### Scaling (JTCSV only)
+
+| Rows/Records | CSV→JSON Time (FastPath Compact) | JSON→CSV Time (JTCSV) | CSV→JSON Memory | JSON→CSV Memory |
+|--------------|----------------------------------|-----------------------|-----------------|-----------------|
+| 1,000 | 2.06 ms | 1.04 ms | 2.15 MB | 0.52 MB |
+| 10,000 | 14.68 ms | 8.23 ms | 2.11 MB | 4.14 MB |
+| 100,000 | 164.18 ms | 90.93 ms | 44.93 MB | 34.79 MB |
+
+See `BENCHMARK-RESULTS.md` and `docs/PERFORMANCE.md` for environment details and methodology.
 
 ## 🛠️ Development
 
@@ -345,7 +377,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Happy coding!** If you find this library useful, please consider giving it a star on GitHub ⭐
-
-
-
-

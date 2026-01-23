@@ -23,7 +23,9 @@ class JtcsvTUI {
       parseBooleans: false,
       preventCsvInjection: true,
       prettyPrint: false,
-      autoDetect: true
+      autoDetect: true,
+      useFastPath: true,
+      fastPathMode: 'objects'
     };
     this.inputFile = '';
     this.outputFile = '';
@@ -654,7 +656,7 @@ class JtcsvTUI {
       left: 2,
       width: '100%-4',
       height: 3,
-      content: `Options: Delimiter=${this.conversionOptions.delimiter} | AutoDetect=${this.conversionOptions.autoDetect} | ParseNumbers=${this.conversionOptions.parseNumbers}`,
+      content: `Options: Delimiter=${this.conversionOptions.delimiter} | AutoDetect=${this.conversionOptions.autoDetect} | FastPath=${this.conversionOptions.useFastPath} | Mode=${this.conversionOptions.fastPathMode}`,
       style: {
         fg: 'yellow'
       }
@@ -1228,6 +1230,8 @@ Press any key to return to main menu.
         'Toggle CSV Injection Protection',
         'Toggle Pretty Print',
         'Toggle Auto Detect',
+        'Toggle Fast Path',
+        'Cycle Fast Path Mode',
         'Back'
       ],
       keys: true,
@@ -1291,6 +1295,20 @@ Press any key to return to main menu.
           this.screen.render();
           break;
         case 7:
+          this.conversionOptions.useFastPath = !this.conversionOptions.useFastPath;
+          this.showMessage(`Fast Path: ${this.conversionOptions.useFastPath ? 'ON' : 'OFF'}`, 'success');
+          optionsMenu.destroy();
+          this.screen.render();
+          break;
+        case 8: {
+          const nextMode = this.conversionOptions.fastPathMode === 'objects' ? 'compact' : 'objects';
+          this.conversionOptions.fastPathMode = nextMode;
+          this.showMessage(`Fast Path Mode: ${nextMode}`, 'success');
+          optionsMenu.destroy();
+          this.screen.render();
+          break;
+        }
+        case 9:
           optionsMenu.destroy();
           this.screen.render();
           break;

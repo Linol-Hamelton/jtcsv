@@ -95,6 +95,8 @@ ${color('CONVERSION OPTIONS:', 'bright')}
   ${color('--parse-numbers', 'cyan')}      Parse numeric values in CSV
   ${color('--parse-booleans', 'cyan')}     Parse boolean values in CSV
   ${color('--no-trim', 'cyan')}            Don't trim whitespace from CSV values
+  ${color('--no-fast-path', 'cyan')}       Disable fast-path parser (force quote-aware)
+  ${color('--fast-path-mode=', 'cyan')}MODE  Fast path output mode (objects|compact)
   ${color('--rename=', 'cyan')}JSON       Rename columns (JSON map)
   ${color('--template=', 'cyan')}JSON      Column order template (JSON object)
   ${color('--no-injection-protection', 'cyan')}  Disable CSV injection protection
@@ -226,7 +228,9 @@ async function convertCsvToJson(inputFile, outputFile, options) {
       trim: options.trim,
       parseNumbers: options.parseNumbers,
       parseBooleans: options.parseBooleans,
-      maxRows: options.maxRows
+      maxRows: options.maxRows,
+      useFastPath: options.useFastPath,
+      fastPathMode: options.fastPathMode
     };
     
     // Read and convert CSV
@@ -859,6 +863,8 @@ function parseOptions(args) {
     trim: true,
     parseNumbers: false,
     parseBooleans: false,
+    useFastPath: true,
+    fastPathMode: 'objects',
     preventCsvInjection: true,
     rfc4180Compliant: true,
     maxRecords: undefined,
@@ -914,6 +920,18 @@ function parseOptions(args) {
         break;
       case 'no-trim':
         options.trim = false;
+        break;
+      case 'no-fast-path':
+        options.useFastPath = false;
+        break;
+      case 'fast-path':
+        options.useFastPath = value !== 'false';
+        break;
+      case 'fast-path-mode':
+        options.fastPathMode = value || 'objects';
+        if (options.fastPathMode !== 'objects' && options.fastPathMode !== 'compact') {
+          throw new Error('Invalid --fast-path-mode value (objects|compact)');
+        }
         break;
       case 'rename':
         try {

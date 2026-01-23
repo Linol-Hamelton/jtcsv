@@ -212,6 +212,21 @@
                 </label>
               </div>
 
+              <div class="control-group" v-if="inputFormat === 'csv'">
+                <label>
+                  <input type="checkbox" v-model="options.useFastPath" />
+                  Fast Path
+                </label>
+              </div>
+
+              <div class="control-group" v-if="inputFormat === 'csv'">
+                <label>Fast Path Mode:</label>
+                <select v-model="options.fastPathMode">
+                  <option value="objects">Objects</option>
+                  <option value="compact">Compact</option>
+                </select>
+              </div>
+
               <div class="control-group">
                 <label>
                   <input type="checkbox" v-model="options.rfc4180Compliant" />
@@ -1107,6 +1122,8 @@ const options = ref({
   candidates: [";", ",", "\t", "|"],
   trim: true,
   hasHeaders: true,
+  useFastPath: true,
+  fastPathMode: "objects",
 });
 
 // Batch processing state

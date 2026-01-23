@@ -44,6 +44,10 @@ declare module 'jtcsv' {
     parseBooleans?: boolean;
     /** Maximum number of rows to process (optional, no limit by default) */
     maxRows?: number;
+    /** Enable fast-path parsing (default: true) */
+    useFastPath?: boolean;
+    /** Fast-path output mode (default: 'objects') */
+    fastPathMode?: 'objects' | 'compact' | 'stream';
   }
 
   // JSON save interfaces
@@ -275,9 +279,30 @@ declare module 'jtcsv' {
    * @throws {LimitError} If row limit exceeded
    */
   export function csvToJson(
-    csv: string, 
+    csv: string,
+    options: CsvToJsonOptions & { fastPathMode: 'stream' }
+  ): AsyncGenerator<Record<string, any> | any[]>;
+
+  export function csvToJson(
+    csv: string,
+    options: CsvToJsonOptions & { fastPathMode: 'compact' }
+  ): any[][];
+
+  export function csvToJson(
+    csv: string,
     options?: CsvToJsonOptions
   ): Record<string, any>[];
+
+  /**
+   * Convert CSV string to JSON rows as async iterator
+   * @param csv CSV string to convert
+   * @param options Conversion options
+   * @returns Async generator yielding rows
+   */
+  export function csvToJsonIterator(
+    csv: string,
+    options?: CsvToJsonOptions
+  ): AsyncGenerator<Record<string, any> | any[]>;
 
   /**
    * Read CSV file and convert it to JSON array

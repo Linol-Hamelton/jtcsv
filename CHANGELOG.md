@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-23
+
+### Added
+- Fast-path options for CSV parsing: `useFastPath` and `fastPathMode` (`objects`, `compact`, `stream`).
+- Scaling benchmarks (1K/10K/100K) and public performance docs (`BENCHMARK-RESULTS.md`, `docs/PERFORMANCE.md`).
+- CLI support for `--no-fast-path` and UI exposure in TUI/GUI for fast-path toggles and mode.
+
+### Changed
+- `csvToJson()` can return an async iterator when `fastPathMode: 'stream'` is used.
+- Benchmark and documentation sections updated with latest performance results.
+
+### Fixed
+- Lint cleanup in parser utilities and option parsing paths.
+
+### Security
+- Kept optional `blessed-contrib@4.11.0` and applied an npm override for `xml2js@0.6.2` to mitigate the prototype pollution advisory from `map-canvas` (compatibility risk noted).
+
 ## [0.1.0-beta.1] - 2024-01-20
 
 ### Security Release - Critical Bug Fixes
@@ -113,6 +130,7 @@ This release addresses multiple critical security vulnerabilities and adds compr
 [0.1.0-beta.1]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v0.1.0-beta.1
 [1.0.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.0.0
 [1.2.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.2.0
+[2.1.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v2.1.0
 
 
 
