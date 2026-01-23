@@ -5,6 +5,8 @@
 import { csvToJson } from '../csv-to-json-browser.js';
 import { jsonToCsv } from '../json-to-csv-browser.js';
 
+const textDecoder = new TextDecoder('utf-8');
+
 // Кеш для повторного использования результатов
 const cache = new Map();
 const CACHE_MAX_SIZE = 50;
@@ -217,6 +219,19 @@ function clearCache() {
   stats.cacheMisses = 0;
 }
 
+function decodeCsvInput(input) {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (input instanceof ArrayBuffer) {
+    return textDecoder.decode(new Uint8Array(input));
+  }
+  if (ArrayBuffer.isView(input)) {
+    return textDecoder.decode(input);
+  }
+  throw new Error('Invalid CSV input type');
+}
+
 // Обработчик сообщений от основного потока
 self.onmessage = function (event) {
   const { data } = event;
@@ -261,7 +276,8 @@ function handleExecute(commandData) {
   try {
     switch (method) {
     case 'parseCSV': {
-      const [csv, parseOptions] = args;
+      const [csvInput, parseOptions] = args;
+      const csv = decodeCsvInput(csvInput);
         
       // Функция отправки прогресса
       const sendProgress = (progress) => {
@@ -339,7 +355,9 @@ function handleExecute(commandData) {
       type: 'ERROR',
       taskId,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      code: error.code,
+      details: error.details
     });
   }
 }

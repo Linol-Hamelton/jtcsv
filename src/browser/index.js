@@ -2,8 +2,8 @@
 // Экспортирует все функции с поддержкой браузера
 
 import { jsonToCsv, preprocessData, deepUnwrap } from './json-to-csv-browser.js';
-import { csvToJson, autoDetectDelimiter } from './csv-to-json-browser.js';
-import { downloadAsCsv, parseCsvFile } from './browser-functions.js';
+import { csvToJson, csvToJsonIterator, autoDetectDelimiter } from './csv-to-json-browser.js';
+import { downloadAsCsv, parseCsvFile, parseCsvFileStream } from './browser-functions.js';
 import { createWorkerPool, parseCSVWithWorker } from './workers/worker-pool.js';
 import {
   ValidationError,
@@ -11,8 +11,19 @@ import {
   FileSystemError,
   ParsingError,
   LimitError,
-  ConfigurationError
+  ConfigurationError,
+  ERROR_CODES
 } from './errors-browser.js';
+
+async function createWorkerPoolLazy(options = {}) {
+  const mod = await import('./workers/worker-pool.js');
+  return mod.createWorkerPool(options);
+}
+
+async function parseCSVWithWorkerLazy(csvInput, options = {}, onProgress = null) {
+  const mod = await import('./workers/worker-pool.js');
+  return mod.parseCSVWithWorker(csvInput, options, onProgress);
+}
 
 // Основной экспорт
 const jtcsv = {
@@ -24,12 +35,16 @@ const jtcsv = {
   
   // CSV to JSON функции
   csvToJson,
+  csvToJsonIterator,
   parseCsvFile,
+  parseCsvFileStream,
   autoDetectDelimiter,
   
   // Web Workers функции
   createWorkerPool,
   parseCSVWithWorker,
+  createWorkerPoolLazy,
+  parseCSVWithWorkerLazy,
   
   // Error classes
   ValidationError,
@@ -38,6 +53,7 @@ const jtcsv = {
   ParsingError,
   LimitError,
   ConfigurationError,
+  ERROR_CODES,
   
   // Удобные алиасы
   parse: csvToJson,
@@ -66,14 +82,19 @@ export {
   downloadAsCsv,
   deepUnwrap,
   csvToJson,
+  csvToJsonIterator,
   parseCsvFile,
+  parseCsvFileStream,
   autoDetectDelimiter,
   createWorkerPool,
   parseCSVWithWorker,
+  createWorkerPoolLazy,
+  parseCSVWithWorkerLazy,
   ValidationError,
   SecurityError,
   FileSystemError,
   ParsingError,
   LimitError,
-  ConfigurationError
+  ConfigurationError,
+  ERROR_CODES
 };

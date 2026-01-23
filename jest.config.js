@@ -5,6 +5,7 @@ module.exports = {
     'json-to-csv.js',
     'index.js'
   ],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup-jest.js'],
   coverageThreshold: {
     global: {
       branches: 80,

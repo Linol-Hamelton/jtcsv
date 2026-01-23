@@ -6,6 +6,40 @@ import { ValidationError, ConfigurationError } from '../errors-browser.js';
 // Проверка поддержки Web Workers
 const WORKERS_SUPPORTED = typeof Worker !== 'undefined';
 
+function isTransferableBuffer(value) {
+  if (!(value instanceof ArrayBuffer)) {
+    return false;
+  }
+  if (typeof SharedArrayBuffer !== 'undefined' && value instanceof SharedArrayBuffer) {
+    return false;
+  }
+  return true;
+}
+
+function collectTransferables(args) {
+  const transferables = [];
+
+  const collectFromValue = (value) => {
+    if (!value) {
+      return;
+    }
+    if (isTransferableBuffer(value)) {
+      transferables.push(value);
+      return;
+    }
+    if (ArrayBuffer.isView(value) && isTransferableBuffer(value.buffer)) {
+      transferables.push(value.buffer);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(collectFromValue);
+    }
+  };
+
+  args.forEach(collectFromValue);
+  return transferables.length ? transferables : null;
+}
+
 /**
  * Опции для Worker Pool
  * @typedef {Object} WorkerPoolOptions
@@ -194,7 +228,14 @@ export class WorkerPool {
       this.stats.idleWorkers++;
       
       // Завершение с ошибкой
-      task.reject(new Error(errorData.message || 'Ошибка в worker'));
+      const workerError = new Error(errorData.message || 'Ошибка в worker');
+      if (errorData.code) {
+        workerError.code = errorData.code;
+      }
+      if (errorData.details) {
+        workerError.details = errorData.details;
+      }
+      task.reject(workerError);
       this.activeTasks.delete(taskId);
       this.stats.tasksFailed++;
       
@@ -266,13 +307,19 @@ export class WorkerPool {
     this.stats.activeWorkers++;
     
     // Отправка задачи в worker
-    worker.postMessage({
+    const payload = {
       type: 'EXECUTE',
       taskId: task.id,
       method: task.method,
       args: task.args,
       options: task.options
-    });
+    };
+
+    if (task.transferList && task.transferList.length) {
+      worker.postMessage(payload, task.transferList);
+    } else {
+      worker.postMessage(payload);
+    }
   }
   
   /**
@@ -284,23 +331,21 @@ export class WorkerPool {
       return;
     }
     
-    // Поиск свободного worker
-    const idleWorker = this.workers.find(w => w.status === 'idle');
-    if (!idleWorker) {
-      // Автомасштабирование если включено
-      if (this.options.autoScale && this.workers.length < this.options.maxQueueSize) {
-        this.createWorker();
-        this.processQueue();
+    while (this.taskQueue.length > 0) {
+      const idleWorker = this.workers.find(w => w.status === 'idle');
+      if (!idleWorker) {
+        if (this.options.autoScale && this.workers.length < this.options.maxQueueSize) {
+          this.createWorker();
+          continue;
+        }
+        break;
       }
-      return;
+      
+      const task = this.taskQueue.shift();
+      this.stats.queueSize--;
+      this.executeTask(idleWorker, task);
     }
     
-    // Получение задачи из очереди
-    const task = this.taskQueue.shift();
-    this.stats.queueSize--;
-    
-    // Выполнение задачи
-    this.executeTask(idleWorker, task);
     this.updateStats();
   }
   
@@ -330,11 +375,14 @@ export class WorkerPool {
       
       // Создание задачи
       const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const { transfer, ...taskOptions } = options || {};
+      const transferList = transfer || collectTransferables(args);
       const task = {
         id: taskId,
         method,
         args,
-        options,
+        options: taskOptions,
+        transferList,
         onProgress,
         resolve,
         reject,
@@ -431,29 +479,41 @@ export async function parseCSVWithWorker(csvInput, options = {}, onProgress = nu
   const pool = parseCSVWithWorker.pool;
   
   // Подготовка CSV строки
-  let csvString;
+  // ?????????? CSV ??????
+  let csvPayload = csvInput;
+  let transfer = null;
+
   if (csvInput instanceof File) {
-    csvString = await readFileAsText(csvInput);
-  } else if (typeof csvInput === 'string') {
-    csvString = csvInput;
-  } else {
-    throw new ValidationError('Input must be a CSV string or File object');
+    const buffer = await readFileAsArrayBuffer(csvInput);
+    csvPayload = new Uint8Array(buffer);
+    transfer = [buffer];
+  } else if (csvInput instanceof ArrayBuffer) {
+    csvPayload = csvInput;
+    transfer = [csvInput];
+  } else if (ArrayBuffer.isView(csvInput)) {
+    csvPayload = csvInput;
+    if (csvInput.buffer instanceof ArrayBuffer) {
+      transfer = [csvInput.buffer];
+    }
+  } else if (typeof csvInput !== 'string') {
+    throw new ValidationError('Input must be a CSV string, File, or ArrayBuffer');
   }
-  
-  // Выполнение через pool
-  return pool.exec('parseCSV', [csvString, options], {}, onProgress);
+
+  // ????????? ?????? ????? pool
+  const execOptions = transfer ? { transfer } : {};
+  return pool.exec('parseCSV', [csvPayload, options], execOptions, onProgress);
 }
 
 /**
  * Чтение файла как текст
  * @private
  */
-async function readFileAsText(file) {
+async function readFileAsArrayBuffer(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => resolve(event.target.result);
     reader.onerror = (error) => reject(error);
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsArrayBuffer(file);
   });
 }
 
