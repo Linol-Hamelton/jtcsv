@@ -91,7 +91,9 @@ class TsvParser {
     let semicolonCount = 0;
 
     for (const line of lines) {
-      if (line.trim() === '') continue;
+      if (line.trim() === '') {
+        continue;
+      }
       
       // Считаем разделители
       tabCount += (line.match(/\t/g) || []).length;

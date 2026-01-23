@@ -135,34 +135,67 @@ function jsonToCsv(data, options = {}) {
       );
     }
 
-    // Get all unique keys from all objects
+    // Get all unique keys from all objects with minimal allocations.
     const allKeys = new Set();
-    data.forEach((item) => {
+    const originalKeys = [];
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i];
       if (!item || typeof item !== 'object') {
-        return;
+        continue;
       }
-      Object.keys(item).forEach(key => allKeys.add(key));
-    });
-    
-    // Convert Set to Array
-    const originalKeys = Array.from(allKeys);
-    
-    // Apply rename map to create header names
-    const headers = originalKeys.map(key => renameMap[key] || key);
-    
-    // Create a reverse mapping from new header to original key
-    const reverseRenameMap = {};
-    originalKeys.forEach((key, index) => {
-      reverseRenameMap[headers[index]] = key;
-    });
+      for (const key in item) {
+        if (Object.prototype.hasOwnProperty.call(item, key) && !allKeys.has(key)) {
+          allKeys.add(key);
+          originalKeys.push(key);
+        }
+      }
+    }
 
-    // Apply template ordering if provided
+    const hasRenameMap = Object.keys(renameMap).length > 0;
+    const hasTemplate = Object.keys(template).length > 0;
+
+    // Apply rename map to create header names.
+    let headers = originalKeys;
+    let reverseRenameMap = null;
+    if (hasRenameMap) {
+      headers = new Array(originalKeys.length);
+      reverseRenameMap = {};
+      for (let i = 0; i < originalKeys.length; i++) {
+        const key = originalKeys[i];
+        const header = renameMap[key] || key;
+        headers[i] = header;
+        reverseRenameMap[header] = key;
+      }
+    }
+
+    // Apply template ordering if provided.
     let finalHeaders = headers;
-    if (Object.keys(template).length > 0) {
-      // Create template headers with renaming applied
-      const templateHeaders = Object.keys(template).map(key => renameMap[key] || key);
-      const extraHeaders = headers.filter(h => !templateHeaders.includes(h));
-      finalHeaders = [...templateHeaders, ...extraHeaders];
+    if (hasTemplate) {
+      const templateKeys = Object.keys(template);
+      const templateHeaders = hasRenameMap
+        ? templateKeys.map(key => renameMap[key] || key)
+        : templateKeys;
+      const templateHeaderSet = new Set(templateHeaders);
+      const extraHeaders = [];
+      for (let i = 0; i < headers.length; i++) {
+        const header = headers[i];
+        if (!templateHeaderSet.has(header)) {
+          extraHeaders.push(header);
+        }
+      }
+      finalHeaders = templateHeaders.concat(extraHeaders);
+    }
+
+    const finalKeys = new Array(finalHeaders.length);
+    if (hasRenameMap) {
+      for (let i = 0; i < finalHeaders.length; i++) {
+        const header = finalHeaders[i];
+        finalKeys[i] = reverseRenameMap[header] || header;
+      }
+    } else {
+      for (let i = 0; i < finalHeaders.length; i++) {
+        finalKeys[i] = finalHeaders[i];
+      }
     }
 
     /**
@@ -172,65 +205,73 @@ function jsonToCsv(data, options = {}) {
      * @param {*} value - The value to escape
      * @returns {string} Escaped CSV value
      */
+    const quoteRegex = /"/g;
+    const delimiterCode = delimiter.charCodeAt(0);
+
     const escapeValue = (value) => {
       if (value === null || value === undefined || value === '') {
         return '';
       }
       
-      const stringValue = String(value);
+      let stringValue = value;
+      if (typeof stringValue !== 'string') {
+        stringValue = String(stringValue);
+      }
       
       // CSV Injection protection - escape formulas if enabled
       let escapedValue = stringValue;
-      if (preventCsvInjection && /^[=+\-@]/.test(stringValue)) {
-        // Prepend single quote to prevent formula execution in Excel
-        escapedValue = "'" + stringValue;
+      if (preventCsvInjection) {
+        const firstCharCode = stringValue.charCodeAt(0);
+        if (firstCharCode === 61 || firstCharCode === 43 || firstCharCode === 45 || firstCharCode === 64) {
+          escapedValue = "'" + stringValue;
+        }
       }
-      
-      // RFC 4180 compliance: fields containing line breaks, double quotes, or commas must be quoted
-      const needsQuoting = rfc4180Compliant 
-        ? (escapedValue.includes(delimiter) ||
-           escapedValue.includes('"') ||
-           escapedValue.includes('\n') ||
-           escapedValue.includes('\r'))
-        : (escapedValue.includes(delimiter) ||
-           escapedValue.includes('"') ||
-           escapedValue.includes('\n') ||
-           escapedValue.includes('\r'));
-      
+
+      let needsQuoting = false;
+      let hasQuote = false;
+      for (let i = 0; i < escapedValue.length; i++) {
+        const code = escapedValue.charCodeAt(i);
+        if (code === 34) {
+          hasQuote = true;
+          needsQuoting = true;
+        } else if (code === delimiterCode || code === 10 || code === 13) {
+          needsQuoting = true;
+        }
+      }
+
       if (needsQuoting) {
-        // RFC 4180: If double-quotes are used to enclose fields, then a double-quote 
-        // appearing inside a field must be escaped by preceding it with another double quote.
-        return `"${escapedValue.replace(/"/g, '""')}"`;
+        const quotedValue = hasQuote ? escapedValue.replace(quoteRegex, '""') : escapedValue;
+        return `"${quotedValue}"`;
       }
-      
+
       return escapedValue;
     };
 
-    // Build CSV rows
+    // Build CSV rows.
     const rows = [];
-    
-    // Add headers row if requested
-    if (includeHeaders && finalHeaders.length > 0) {
+    const columnCount = finalHeaders.length;
+
+    // Add headers row if requested.
+    if (includeHeaders && columnCount > 0) {
       rows.push(finalHeaders.join(delimiter));
     }
-    
-    // Add data rows
-    for (const item of data) {
+
+    // Add data rows.
+    const rowValues = new Array(columnCount);
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      const item = data[rowIndex];
       if (!item || typeof item !== 'object') {
         continue;
       }
-      
-      const row = finalHeaders.map(header => {
-        // Get the original key for this header
-        const originalKey = reverseRenameMap[header] || header;
-        const value = item[originalKey];
-        return escapeValue(value);
-      }).join(delimiter);
-      
-      rows.push(row);
+
+      for (let i = 0; i < columnCount; i++) {
+        rowValues[i] = escapeValue(item[finalKeys[i]]);
+      }
+
+      rows.push(rowValues.join(delimiter));
     }
-    
-    // RFC 4180: Each record is located on a separate line, delimited by a line break (CRLF)
+
+    // RFC 4180: Each record is located on a separate line, delimited by a line break (CRLF).
     const lineEnding = rfc4180Compliant ? '\r\n' : '\n';
     return rows.join(lineEnding);
   }, 'PARSE_FAILED', { function: 'jsonToCsv' });

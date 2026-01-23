@@ -13,6 +13,7 @@ const NdjsonParser = require('./formats/ndjson-parser');
 // Импортируем основные функции
 const coreJsonToCsv = require('../json-to-csv').jsonToCsv;
 const coreCsvToJson = require('../csv-to-json').csvToJson;
+const coreCsvToJsonIterator = require('../csv-to-json').csvToJsonIterator;
 const coreSaveAsCsv = require('../json-to-csv').saveAsCsv;
 const coreReadCsvAsJson = require('../csv-to-json').readCsvAsJson;
 
@@ -161,6 +162,38 @@ class JtcsvWithPlugins {
         return coreCsvToJson(input, opts);
       }
     );
+  }
+
+  /**
+   * Convert CSV to JSON rows as async iterator with plugin hooks.
+   * @param {string} csv - CSV input
+   * @param {Object} options - Conversion options
+   * @returns {AsyncGenerator} Async iterator of rows
+   */
+  async *csvToJsonIterator(csv, options = {}) {
+    if (!this.options.enablePlugins) {
+      for await (const row of coreCsvToJsonIterator(csv, options)) {
+        yield row;
+      }
+      return;
+    }
+
+    const iterator = await this.pluginManager.executeWithPlugins(
+      'csvToJson',
+      csv,
+      options,
+      (input, opts) => {
+        if (this.options.enableFastPath && opts?.useFastPath !== false) {
+          return coreCsvToJsonIterator(input, { ...opts, useFastPath: true });
+        }
+
+        return coreCsvToJsonIterator(input, opts);
+      }
+    );
+
+    for await (const row of iterator) {
+      yield row;
+    }
   }
 
   /**

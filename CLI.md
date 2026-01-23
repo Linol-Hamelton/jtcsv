@@ -156,6 +156,8 @@ jtcsv -v
 | `--parse-numbers` | Parse numeric values in CSV | `false` |
 | `--parse-booleans` | Parse boolean values in CSV | `false` |
 | `--no-trim` | Don't trim whitespace from CSV values | `false` |
+| `--no-fast-path` | Disable fast-path parser (force quote-aware) | `false` |
+| `--fast-path-mode=MODE` | Fast path output mode for csv-to-json (`objects` or `compact`) | `objects` |
 | `--rename=JSON` | Rename columns (JSON map) | `{}` |
 | `--template=JSON` | Column order template (JSON object) | `{}` |
 | `--no-injection-protection` | Disable CSV injection protection | `false` |
@@ -313,6 +315,16 @@ Enable verbose output to see what's happening:
 jtcsv csv-to-json data.csv output.json --verbose
 ```
 
+## Programmatic Streaming
+For in-process streaming in Node.js, use the async iterator API:
+```javascript
+const { csvToJsonIterator } = require('jtcsv');
+
+for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
+  console.log(row);
+}
+```
+
 ## 🔗 Related Documentation
 
 - [GitHub Repository](https://github.com/Linol-Hamelton/jtcsv)
@@ -332,7 +344,4 @@ Contributions are welcome! Please see the [GitHub repository](https://github.com
 ## 🐛 Reporting Issues
 
 Found a bug? Please report it on the [GitHub Issues](https://github.com/Linol-Hamelton/jtcsv/issues) page.
-
-
-
 

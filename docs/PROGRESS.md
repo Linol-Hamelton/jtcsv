@@ -40,6 +40,8 @@
    - Предупреждения для больших наборов данных
    - RFC 4180 compliance оптимизация
    - CSV injection protection оптимизация
+   - Fast-path опции: `useFastPath`, `fastPathMode` + async iterator режим
+   - Бенчмарки: `BENCHMARK-RESULTS.md`, `docs/PERFORMANCE.md`
 
 6. **Stream API** - ✅ ПОЛНОСТЬЮ
    - Создан `stream-json-to-csv.js`

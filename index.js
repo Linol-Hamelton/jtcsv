@@ -21,6 +21,7 @@ module.exports = {
   
   // CSV to JSON functions
   csvToJson: csvToJsonModule.csvToJson,
+  csvToJsonIterator: csvToJsonModule.csvToJsonIterator,
   readCsvAsJson: csvToJsonModule.readCsvAsJson,
   readCsvAsJsonSync: csvToJsonModule.readCsvAsJsonSync,
   autoDetectDelimiter: csvToJsonModule.autoDetectDelimiter,
@@ -65,4 +66,3 @@ module.exports = {
   // Error classes
   ...errorsModule
 };
-

@@ -163,6 +163,46 @@ class Benchmark {
   }
 }
 
+async function runSimpleBenchmark(fn, iterations = 3) {
+  const times = [];
+  let memoryUsage = null;
+
+  for (let i = 0; i < iterations; i++) {
+    if (global.gc) {
+      global.gc();
+    }
+
+    const startMem = process.memoryUsage().heapUsed;
+    const startTime = performance.now();
+
+    await fn();
+
+    const endTime = performance.now();
+    const endMem = process.memoryUsage().heapUsed;
+
+    times.push(endTime - startTime);
+
+    let memUsed = endMem - startMem;
+    if (Number.isFinite(memUsed)) {
+      memUsed = Math.abs(memUsed);
+      if (memoryUsage === null || memUsed > memoryUsage) {
+        memoryUsage = memUsed;
+      }
+    } else if (memoryUsage === null) {
+      memoryUsage = 0;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+
+  return {
+    avgTime,
+    memoryUsage
+  };
+}
+
 async function generateTestData(rows) {
   console.log(color(`\n📁 Generating test data (${formatNumber(rows)} rows)`, 'yellow'));
   
@@ -228,44 +268,31 @@ async function runBenchmarks() {
   });
   
   // JTCSV Fast Path (stream-only)
-  csvToJsonBenchmark.addTest('JTCSV (FastPath)', async () => {
+  csvToJsonBenchmark.addTest('JTCSV (FastPath Stream)', async () => {
     let rowCount = 0;
-    jtcsv.csvToJson(mediumData.csv, {
+    for await (const _row of jtcsv.csvToJsonIterator(mediumData.csv, {
       delimiter: ';',
       parseNumbers: true,
       parseBooleans: true,
-      useFastPath: true,
-      fastPathStream: true,
-      hooks: {
-        perRow: () => {
-          rowCount++;
-          return undefined;
-        }
-      }
-    });
+      useFastPath: true
+    })) {
+      rowCount++;
+    }
     if (rowCount === 0) {
-      throw new Error('No rows processed in fast-path benchmark');
+      throw new Error('No rows processed in fast-path stream benchmark');
     }
   });
 
-  // JTCSV Fast Path (compact mode, stream-only)
+  // JTCSV Fast Path (compact mode, real result)
   csvToJsonBenchmark.addTest('JTCSV (FastPath Compact)', async () => {
-    let rowCount = 0;
-    jtcsv.csvToJson(mediumData.csv, {
+    const result = jtcsv.csvToJson(mediumData.csv, {
       delimiter: ';',
       parseNumbers: true,
       parseBooleans: true,
       useFastPath: true,
-      fastPathMode: 'compact',
-      fastPathStream: true,
-      hooks: {
-        perRow: () => {
-          rowCount++;
-          return undefined;
-        }
-      }
+      fastPathMode: 'compact'
     });
-    if (rowCount === 0) {
+    if (result.length === 0) {
       throw new Error('No rows processed in compact fast-path benchmark');
     }
   });
@@ -339,6 +366,52 @@ async function runBenchmarks() {
   // Print results
   csvToJsonBenchmark.printResults();
   jsonToCsvBenchmark.printResults();
+
+  // Scaling benchmarks (JTCSV only)
+  const scaleSizes = [
+    { label: '1K', rows: 1000, data: smallData },
+    { label: '10K', rows: 10000, data: mediumData },
+    { label: '100K', rows: 100000, data: largeData }
+  ];
+  const scaleResults = [];
+
+  console.log(color('\n?? Scaling Benchmarks (JTCSV)', 'cyan'));
+  console.log(color('='.repeat(60), 'dim'));
+
+  for (const size of scaleSizes) {
+    const csvMetrics = await runSimpleBenchmark(() => {
+      const result = jtcsv.csvToJson(size.data.csv, {
+        delimiter: ';',
+        parseNumbers: true,
+        parseBooleans: true,
+        useFastPath: true,
+        fastPathMode: 'compact'
+      });
+      if (!result || result.length === 0) {
+        throw new Error('No rows processed in scale CSV benchmark');
+      }
+    }, 3);
+
+    const jsonMetrics = await runSimpleBenchmark(() => {
+      const csv = jtcsv.jsonToCsv(size.data.json, {
+        delimiter: ';',
+        includeHeaders: true
+      });
+      if (!csv) {
+        throw new Error('No output produced in scale JSON benchmark');
+      }
+    }, 3);
+
+    scaleResults.push({
+      rows: size.rows,
+      csvToJson: csvMetrics,
+      jsonToCsv: jsonMetrics
+    });
+
+    console.log(`\n${color('Size:', 'bright')} ${size.label} (${formatNumber(size.rows)} rows)`);
+    console.log(`  ${color('CSV → JSON (FastPath Compact):', 'dim')} ${formatTime(csvMetrics.avgTime)} | ${formatBytes(csvMetrics.memoryUsage)}`);
+    console.log(`  ${color('JSON → CSV:', 'dim')} ${formatTime(jsonMetrics.avgTime)} | ${formatBytes(jsonMetrics.memoryUsage)}`);
+  }
   
   // Generate summary table
   console.log(color('\n📈 Performance Comparison Summary', 'cyan'));
