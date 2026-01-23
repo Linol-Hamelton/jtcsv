@@ -35,7 +35,7 @@ Fast-Path Engine автоматически анализирует структ�
 - **STANDARD парсер**: Для сложных случаев (fallback)
 
 ```javascript
-const FastPathEngine = require('jtcsv-converter/plugins').FastPathEngine;
+const FastPathEngine = require('jtcsv.FastPathEngine;
 
 const engine = new FastPathEngine();
 
@@ -67,7 +67,7 @@ console.log(`Simple parsers: ${stats.simpleParserCount}`);
 ### Потоковая обработка больших JSON файлов
 
 ```javascript
-const NdjsonParser = require('jtcsv-converter/plugins').NdjsonParser;
+const NdjsonParser = require('jtcsv.NdjsonParser;
 
 // Конвертация JSON → NDJSON
 const ndjson = NdjsonParser.toNdjson(dataArray, { space: 2 });
@@ -106,7 +106,7 @@ const csvToNdjson = NdjsonParser.createCsvToNdjsonStream({
 ### Создание плагинов
 
 ```javascript
-const { PluginManager } = require('jtcsv-converter/plugins');
+const { PluginManager } = require('jtcsv;
 
 const myPlugin = {
   name: 'My Awesome Plugin',
@@ -140,7 +140,7 @@ manager.use('my-plugin', myPlugin);
 ### Использование JTCSV с плагинами
 
 ```javascript
-const JtcsvWithPlugins = require('jtcsv-converter/plugins');
+const JtcsvWithPlugins = require('jtcsv;
 
 // Создаем экземпляр с плагинами
 const jtcsv = JtcsvWithPlugins.create({
@@ -173,7 +173,7 @@ console.log('Hooks выполнено:', stats.plugins.hookExecutions);
 const { excelExporterPlugin, exampleUsage } = require('./examples/plugin-excel-exporter');
 
 // Использование
-const jtcsv = require('jtcsv-converter/plugins').create();
+const jtcsv = require('jtcsv.create();
 jtcsv.use('excel', excelExporterPlugin);
 
 const data = [
@@ -258,13 +258,13 @@ npm run benchmark:fastpath
 
 ```javascript
 // Было (2.0.0)
-const { jsonToCsv, csvToJson } = require('jtcsv-converter');
+const { jsonToCsv, csvToJson } = require('jtcsv
 
 // Стало (2.1.0) - обратная совместимость сохраняется
-const { jsonToCsv, csvToJson } = require('jtcsv-converter');
+const { jsonToCsv, csvToJson } = require('jtcsv
 
 // Новая функциональность (опционально)
-const { create, FastPathEngine, NdjsonParser } = require('jtcsv-converter/plugins');
+const { create, FastPathEngine, NdjsonParser } = require('jtcsv;
 const jtcsv = create({ enablePlugins: true });
 ```
 
@@ -396,10 +396,12 @@ MIT © Ruslan Fomenko
 ## 🔗 Ссылки
 
 - [GitHub](https://github.com/Linol-Hamelton/jtcsv)
-- [npm](https://www.npmjs.com/package/jtcsv-converter)
+- [npm](https://www.npmjs.com/package/jtcsv
 - [Документация](https://github.com/Linol-Hamelton/jtcsv#readme)
 - [Issues](https://github.com/Linol-Hamelton/jtcsv/issues)
 
 ---
 
 **JTCSV 2.1.0** - следующее поколение JSON/CSV конвертера с невероятной производительностью и расширяемостью! 🚀
+
+

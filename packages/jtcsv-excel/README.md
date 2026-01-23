@@ -5,7 +5,7 @@ Excel integration for JTCSV - Convert between JSON, CSV and Excel formats with a
 ## 📦 Установка
 
 ```bash
-npm install @jtcsv/excel exceljs jtcsv-converter
+npm install @jtcsv/excel exceljs jtcsv
 ```
 
 ## 🚀 Быстрый старт
@@ -222,7 +222,7 @@ fs.writeFileSync('template.xlsx', templateBuffer);
 ### Как плагин
 
 ```javascript
-const { JtcsvWithPlugins } = require('jtcsv-converter/plugins');
+const { JtcsvWithPlugins } = require('jtcsv;
 const { jtcsvPlugin } = require('@jtcsv/excel');
 
 const jtcsv = new JtcsvWithPlugins();
@@ -430,7 +430,7 @@ async function batchProcessExcelFiles(files) {
 ### Stream обработка больших файлов
 
 ```javascript
-const { csvToJson } = require('jtcsv-converter');
+const { csvToJson } = require('jtcsv
 
 async function processLargeExcel(filePath) {
   // Для очень больших файлов конвертируем в CSV и обрабатываем потоково
@@ -481,3 +481,5 @@ MIT
 - [Issues](https://github.com/Linol-Hamelton/jtcsv/issues)
 - [Discussions](https://github.com/Linol-Hamelton/jtcsv/discussions)
 - [Документация JTCSV](https://github.com/Linol-Hamelton/jtcsv#readme)
+
+

@@ -17,7 +17,7 @@ console.log('🚀 JTCSV 2.1.0 - Демонстрация новых возмож
 console.log('1. 📦 Базовое использование (обратная совместимость)');
 console.log('='.repeat(60));
 
-const { jsonToCsv, csvToJson } = require('jtcsv-converter');
+const { jsonToCsv, csvToJson } = require('jtcsv
 
 const sampleData = [
   { id: 1, name: 'John Doe', age: 30, city: 'New York' },
@@ -265,7 +265,7 @@ console.log('3. Попробуйте примеры: npm run example:plugins');
 console.log('4. Создайте свой плагин!');
 
 console.log('\n💡 Совет: Для production используйте:');
-console.log('  const jtcsv = require("jtcsv-converter/plugins").create();');
+console.log('  const jtcsv = require("jtcsv.create();');
 console.log('  jtcsv.use("your-plugin", yourPluginConfig);');
 
 console.log('\n📚 Документация: https://github.com/Linol-Hamelton/jtcsv');
@@ -275,3 +275,6 @@ console.log('⭐ Star на GitHub если понравилось!');
 console.log('\n' + '✨'.repeat(30));
 console.log('✨  JTCSV 2.1.0 - Next Generation JSON/CSV Converter  ✨');
 console.log('✨'.repeat(30));
+
+
+

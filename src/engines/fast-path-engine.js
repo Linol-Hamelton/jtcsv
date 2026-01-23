@@ -99,7 +99,7 @@ class FastPathEngine {
     return bestDelimiter;
   }
 
-/**
+  /**
    * Выбирает оптимальный движок парсинга
    */
   _selectEngine(hasQuotes, hasNewlinesInFields, _fieldConsistency) {
@@ -125,7 +125,9 @@ class FastPathEngine {
       const lines = csv.split('\n');
       
       for (const line of lines) {
-        if (line.trim() === '') continue;
+        if (line.trim() === '') {
+          continue;
+        }
         const fields = line.split(delimiter);
         rows.push(fields);
       }
@@ -280,21 +282,21 @@ class FastPathEngine {
     
     let parser;
     switch (structure.recommendedEngine) {
-      case 'SIMPLE':
-        parser = this._createSimpleParser(structure);
-        this.stats.simpleParserCount++;
-        break;
-      case 'QUOTE_AWARE':
-        parser = this._createQuoteAwareParser(structure);
-        this.stats.quoteAwareParserCount++;
-        break;
-      case 'STANDARD':
-        parser = this._createStandardParser(structure);
-        this.stats.standardParserCount++;
-        break;
-      default:
-        parser = this._createStandardParser(structure);
-        this.stats.standardParserCount++;
+    case 'SIMPLE':
+      parser = this._createSimpleParser(structure);
+      this.stats.simpleParserCount++;
+      break;
+    case 'QUOTE_AWARE':
+      parser = this._createQuoteAwareParser(structure);
+      this.stats.quoteAwareParserCount++;
+      break;
+    case 'STANDARD':
+      parser = this._createStandardParser(structure);
+      this.stats.standardParserCount++;
+      break;
+    default:
+      parser = this._createStandardParser(structure);
+      this.stats.standardParserCount++;
     }
     
     // Кешируем парсер

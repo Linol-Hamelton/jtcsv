@@ -29,7 +29,7 @@ class NdjsonParser {
    */
   static async *parseStream(input, options = {}) {
     const {
-      bufferSize = 64 * 1024, // 64KB буфер
+      bufferSize: _bufferSize = 64 * 1024, // 64KB буфер
       maxLineLength = 10 * 1024 * 1024, // 10MB максимальная длина строки
       onError = null
     } = options;
@@ -85,7 +85,7 @@ class NdjsonParser {
           break;
         }
 
-        // Добавляем новые данные в буфер
+        // Добавляем новые данные в буфере
         buffer += decoder.decode(value, { stream: true });
         
         // Проверяем длину буфера
@@ -203,7 +203,7 @@ class NdjsonParser {
     const {
       delimiter = ',',
       includeHeaders = true,
-      ...csvOptions
+      ..._csvOptions
     } = options;
 
     let headers = null;
@@ -258,7 +258,7 @@ class NdjsonParser {
     const {
       delimiter = ',',
       hasHeaders = true,
-      ...csvOptions
+      ..._csvOptions
     } = options;
 
     let headers = null;
@@ -365,6 +365,7 @@ class NdjsonParser {
       let buffer = '';
       
       try {
+        // eslint-disable-next-line no-constant-condition
         while (true) {
           const { done, value } = await reader.read();
           

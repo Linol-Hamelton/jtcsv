@@ -94,7 +94,7 @@ jtcsv/
 │   └── index.html          # HTML демо
 ├── test-browser-simple.html # Простой тест
 ├── test-build.js           # Тест сборки
-├── rollup.config.js        # Конфигурация сборки
+├── rollup.config.mjs        # Конфигурация сборки
 ├── package.json            # Конфигурация проекта
 ├── BUILD_INSTRUCTIONS.md   # Инструкции
 ├── README-UPDATED.md       # Обновленная документация
@@ -202,3 +202,7 @@ jtcsv/
 **Статус проекта:** ✅ ЗАВЕРШЕНО УСПЕШНО
 **Готовность к релизу:** 100%
 **Следующий шаг:** Публикация на npm
+
+
+
+

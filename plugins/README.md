@@ -9,7 +9,7 @@
 **Express middleware для автоматической конвертации CSV/JSON в HTTP запросах.**
 
 ```bash
-npm install @jtcsv/express-middleware express jtcsv-converter
+npm install @jtcsv/express-middleware express jtcsv
 ```
 
 ```javascript
@@ -37,7 +37,7 @@ app.post('/api/convert', (req, res) => {
 **Fastify plugin для автоматической конвертации CSV/JSON.**
 
 ```bash
-npm install @jtcsv/fastify fastify fastify-plugin jtcsv-converter
+npm install @jtcsv/fastify fastify fastify-plugin jtcsv
 ```
 
 ```javascript
@@ -58,7 +58,7 @@ const csv = await fastify.jtcsv.jsonToCsv([{ name: 'John' }]);
 **Next.js интеграция - API routes, React hooks и компоненты.**
 
 ```bash
-npm install @jtcsv/nextjs jtcsv-converter
+npm install @jtcsv/nextjs jtcsv
 ```
 
 ```jsx
@@ -257,7 +257,7 @@ app.use(jtcsvMiddleware());
 Все интеграции совместимы с plugin system JTCSV:
 
 ```javascript
-const jtcsv = require('jtcsv-converter/plugins');
+const jtcsv = require('jtcsv;
 
 jtcsv.use('my-plugin', {
   hooks: {
@@ -369,3 +369,5 @@ node api-convert.js
 ---
 
 **JTCSV Плагины** - делаем работу с CSV/JSON проще в любом фреймворке! 🚀
+
+

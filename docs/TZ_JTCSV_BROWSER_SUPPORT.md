@@ -57,7 +57,7 @@
 # Установить зависимости
 npm install --save-dev rollup @rollup/plugin-node-resolve
 
-# Создать rollup.config.js (см. раздел "ROLLUP КОНФИГУРАЦИЯ" ниже)
+# Создать rollup.config.mjs (см. раздел "ROLLUP КОНФИГУРАЦИЯ" ниже)
 ```
 
 **Требования**:
@@ -775,7 +775,7 @@ const json = await parser.csvToJson(csv);  // Просто и понятно!
 
 ## 📝 ROLLUP КОНФИГУРАЦИЯ
 
-Создать файл `rollup.config.js` в корне проекта:
+Создать файл `rollup.config.mjs` в корне проекта:
 
 ```javascript
 import resolve from '@rollup/plugin-node-resolve';
@@ -1148,3 +1148,7 @@ export async function exportAs(data: any[], format: 'csv' | 'tsv' | 'json') {
 **Дата**: 22 января 2026  
 **Версия**: 1.0  
 **Статус**: READY FOR IMPLEMENTATION ✅
+
+
+
+

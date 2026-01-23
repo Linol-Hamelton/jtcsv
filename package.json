@@ -1,5 +1,5 @@
 {
-  "name": "jtcsv-converter",
+  "name": "jtcsv",
   "version": "2.1.0",
   "description": "Complete JSON↔CSV and CSV↔JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and Plugin System - Zero dependencies",
   "main": "index.js",
@@ -67,10 +67,10 @@
     "prepublishOnly": "npm test && npm run build && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser src/engines src/formats src/core",
     "tui": "node cli-tui.js",
     "cli": "node bin/jtcsv.js",
-    "build": "rollup -c",
-    "build:watch": "rollup -c -w",
-    "build:prod": "NODE_ENV=production rollup -c",
-    "dev": "NODE_ENV=development rollup -c -w",
+    "build": "rollup -c rollup.config.mjs",
+    "build:watch": "rollup -c rollup.config.mjs -w",
+    "build:prod": "NODE_ENV=production rollup -c rollup.config.mjs",
+    "dev": "NODE_ENV=development rollup -c rollup.config.mjs -w",
     "demo": "node run-demo.js",
     "demo:web": "cd demo && npm run dev",
     "demo:serve": "cd demo && npm run serve",
@@ -196,3 +196,6 @@
     "maintained node versions"
   ]
 }
+
+
+

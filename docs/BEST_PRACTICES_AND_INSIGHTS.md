@@ -580,3 +580,7 @@ const csv = jtcsv.jsonToCsv(data, {
 **Документ подготовлен**: AI Deep Analytics + Production Feedback  
 **Дата**: 22 января 2026  
 **Версия**: 2.0
+
+
+
+

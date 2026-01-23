@@ -128,3 +128,4 @@ validateCsvExample().then(() => {
 
   console.log('\n✅ Все примеры выполнены успешно!');
 }).catch(console.error);
+

@@ -114,3 +114,7 @@ This release addresses multiple critical security vulnerabilities and adds compr
 [1.0.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.0.0
 [1.2.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.2.0
 
+
+
+
+

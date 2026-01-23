@@ -50,7 +50,7 @@ jtcsv/
 │   └── jtcsv.cjs.js        # CJS версия (для Node.js)
 ├── demo/                    # Демо приложение
 │   └── index.html          # HTML демо
-├── rollup.config.js        # Конфигурация Rollup
+├── rollup.config.mjs        # Конфигурация Rollup
 └── package.json            # Конфигурация проекта
 ```
 
@@ -131,7 +131,7 @@ npm publish
 
 ### В браузере (через CDN)
 ```html
-<script src="https://cdn.jsdelivr.net/npm/jtcsv-converter@latest/dist/jtcsv.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jtcsvst/jtcsv.umd.js"></script>
 <script>
   // Использование глобальной переменной jtcsv
   const csv = jtcsv.jsonToCsv([{id: 1, name: 'John'}]);
@@ -141,21 +141,21 @@ npm publish
 ### В браузере (ES модули)
 ```html
 <script type="module">
-  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsv-converter@latest/dist/jtcsv.esm.js';
+  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsvst/jtcsv.esm.js';
   const csv = jsonToCsv([{id: 1, name: 'John'}]);
 </script>
 ```
 
 ### В Node.js
 ```javascript
-const { jsonToCsv, csvToJson } = require('jtcsv-converter');
+const { jsonToCsv, csvToJson } = require('jtcsv
 // или для браузерной версии
-const { downloadAsCsv } = require('jtcsv-converter/browser');
+const { downloadAsCsv } = require('jtcsv;
 ```
 
 ### В современных бандлерах (Webpack, Vite, Rollup)
 ```javascript
-import { jsonToCsv, parseCsvFile } from 'jtcsv-converter/browser';
+import { jsonToCsv, parseCsvFile } from 'jtcsv
 ```
 
 ## Оптимизация
@@ -216,3 +216,7 @@ Web Workers загружаются отдельно и не увеличиваю
 
 ### Безопасность файлов
 Проверяются расширения файлов и предотвращаются path traversal атаки.
+
+
+
+
