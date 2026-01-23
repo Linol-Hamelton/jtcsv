@@ -38,6 +38,14 @@ Zero-deps core with optional add-ons (TUI, Excel) for advanced workflows.
 - **Multiple Formats**: CSV, TSV, Excel-compatible output
 - **Error Handling**: Comprehensive error reporting and recovery
 
+### 🔌 Framework Integrations (Optional)
+- **NestJS**: `@jtcsv/nestjs`
+- **Remix**: `@jtcsv/remix`
+- **Nuxt**: `@jtcsv/nuxt`
+- **SvelteKit**: `@jtcsv/sveltekit`
+- **Hono**: `@jtcsv/hono`
+- **tRPC**: `@jtcsv/trpc`
+
 ## 📦 Installation
 
 ### Node.js
