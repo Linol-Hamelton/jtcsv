@@ -1,0 +1,35 @@
+{
+  "name": "@jtcsv/nuxt",
+  "version": "1.0.0",
+  "description": "Nuxt module for JTCSV (auto-imported composable)",
+  "main": "index.js",
+  "keywords": [
+    "nuxt",
+    "module",
+    "csv",
+    "json",
+    "converter",
+    "jtcsv"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "plugins/nuxt"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/nuxt#readme",
+  "peerDependencies": {
+    "@nuxt/kit": "^3.0.0",
+    "jtcsv": "^2.1.3",
+    "nuxt": "^3.0.0"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "runtime/"
+  ]
+}

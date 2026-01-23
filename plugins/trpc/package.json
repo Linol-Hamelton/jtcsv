@@ -1,0 +1,34 @@
+{
+  "name": "@jtcsv/trpc",
+  "version": "1.0.0",
+  "description": "tRPC helper for JTCSV CSV parsing",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "trpc",
+    "csv",
+    "json",
+    "converter",
+    "jtcsv"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "plugins/trpc"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/trpc#readme",
+  "peerDependencies": {
+    "@trpc/server": "^10.0.0",
+    "jtcsv": "^2.1.3"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ]
+}

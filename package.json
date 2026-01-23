@@ -1,6 +1,6 @@
 {
   "name": "jtcsv",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "Complete JSON<->CSV and CSV<->JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and optional ecosystem (zero-deps core)",
   "main": "index.js",
   "browser": "dist/jtcsv.umd.js",
@@ -46,6 +46,36 @@
       "require": "./plugins/nextjs-api/route.js",
       "import": "./plugins/nextjs-api/route.js",
       "default": "./plugins/nextjs-api/route.js"
+    },
+    "./nestjs": {
+      "require": "./plugins/nestjs/index.js",
+      "import": "./plugins/nestjs/index.js",
+      "default": "./plugins/nestjs/index.js"
+    },
+    "./remix": {
+      "require": "./plugins/remix/index.js",
+      "import": "./plugins/remix/index.js",
+      "default": "./plugins/remix/index.js"
+    },
+    "./nuxt": {
+      "require": "./plugins/nuxt/index.js",
+      "import": "./plugins/nuxt/index.js",
+      "default": "./plugins/nuxt/index.js"
+    },
+    "./sveltekit": {
+      "require": "./plugins/sveltekit/index.js",
+      "import": "./plugins/sveltekit/index.js",
+      "default": "./plugins/sveltekit/index.js"
+    },
+    "./hono": {
+      "require": "./plugins/hono/index.js",
+      "import": "./plugins/hono/index.js",
+      "default": "./plugins/hono/index.js"
+    },
+    "./trpc": {
+      "require": "./plugins/trpc/index.js",
+      "import": "./plugins/trpc/index.js",
+      "default": "./plugins/trpc/index.js"
     }
   },
   "scripts": {
