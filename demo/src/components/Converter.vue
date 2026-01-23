@@ -2143,7 +2143,7 @@ onMounted(() => {
   applyTheme(settings.value.theme);
 
   // Start memory monitoring
-  const memoryInterval = setInterval(monitorMemory, 500000);
+  const memoryInterval = setInterval(monitorMemory, 5000);
 
   // Cleanup on unmount
   onUnmounted(() => {

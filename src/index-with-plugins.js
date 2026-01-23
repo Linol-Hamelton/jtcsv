@@ -155,21 +155,9 @@ class JtcsvWithPlugins {
       options,
       (input, opts) => {
         if (this.options.enableFastPath && opts?.useFastPath !== false) {
-          // Используем fast path engine
-          const parsed = this.fastPathEngine.parse(input, opts);
-          
-          // Преобразуем в объекты
-          const headers = parsed[0];
-          return parsed.slice(1).map(row => {
-            const obj = {};
-            headers.forEach((header, index) => {
-              obj[header] = row[index];
-            });
-            return obj;
-          });
+          return coreCsvToJson(input, { ...opts, useFastPath: true });
         }
-        
-        // Используем стандартный парсер
+
         return coreCsvToJson(input, opts);
       }
     );
@@ -345,5 +333,6 @@ module.exports.NdjsonParser = NdjsonParser;
 
 // Экспортируем фабричный метод
 module.exports.create = JtcsvWithPlugins.create;
+
 
 

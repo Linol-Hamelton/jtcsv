@@ -227,6 +227,49 @@ async function runBenchmarks() {
     });
   });
   
+  // JTCSV Fast Path (stream-only)
+  csvToJsonBenchmark.addTest('JTCSV (FastPath)', async () => {
+    let rowCount = 0;
+    jtcsv.csvToJson(mediumData.csv, {
+      delimiter: ';',
+      parseNumbers: true,
+      parseBooleans: true,
+      useFastPath: true,
+      fastPathStream: true,
+      hooks: {
+        perRow: () => {
+          rowCount++;
+          return undefined;
+        }
+      }
+    });
+    if (rowCount === 0) {
+      throw new Error('No rows processed in fast-path benchmark');
+    }
+  });
+
+  // JTCSV Fast Path (compact mode, stream-only)
+  csvToJsonBenchmark.addTest('JTCSV (FastPath Compact)', async () => {
+    let rowCount = 0;
+    jtcsv.csvToJson(mediumData.csv, {
+      delimiter: ';',
+      parseNumbers: true,
+      parseBooleans: true,
+      useFastPath: true,
+      fastPathMode: 'compact',
+      fastPathStream: true,
+      hooks: {
+        perRow: () => {
+          rowCount++;
+          return undefined;
+        }
+      }
+    });
+    if (rowCount === 0) {
+      throw new Error('No rows processed in compact fast-path benchmark');
+    }
+  });
+  
   // PapaParse if available
   if (Papa) {
     csvToJsonBenchmark.addTest('PapaParse', async () => {

@@ -9,6 +9,7 @@
 class FastPathEngine {
   constructor() {
     this.compilers = new Map();
+    this.rowCompilers = new Map();
     this.stats = {
       simpleParserCount: 0,
       quoteAwareParserCount: 0,
@@ -16,6 +17,32 @@ class FastPathEngine {
       cacheHits: 0,
       cacheMisses: 0
     };
+  }
+
+  _hasQuotes(csv) {
+    return csv.indexOf('"') !== -1;
+  }
+
+  _hasEscapedQuotes(csv) {
+    return csv.indexOf('""') !== -1;
+  }
+
+  _getStructureForParse(csv, options) {
+    const sampleSize = Math.min(1000, csv.length);
+    const sample = csv.substring(0, sampleSize);
+    const structure = this.analyzeStructure(sample, options);
+
+    if (structure.recommendedEngine === 'SIMPLE' && this._hasQuotes(csv)) {
+      return {
+        ...structure,
+        hasQuotes: true,
+        hasEscapedQuotes: this._hasEscapedQuotes(csv),
+        hasNewlinesInFields: true,
+        recommendedEngine: 'QUOTE_AWARE'
+      };
+    }
+
+    return structure;
   }
 
   /**
@@ -122,17 +149,56 @@ class FastPathEngine {
     
     return (csv) => {
       const rows = [];
-      const lines = csv.split('\n');
-      
-      for (const line of lines) {
-        if (line.trim() === '') {
-          continue;
-        }
-        const fields = line.split(delimiter);
-        rows.push(fields);
-      }
+      this._emitSimpleRows(csv, delimiter, (row) => rows.push(row));
 
       return rows;
+    };
+  }
+
+  _emitSimpleRows(csv, delimiter, onRow) {
+    let currentRow = [];
+    let rowHasData = false;
+    let fieldStart = 0;
+    let i = 0;
+
+    while (i <= csv.length) {
+      const char = i < csv.length ? csv[i] : '\n';
+
+      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+        rowHasData = true;
+      }
+
+      if (char === delimiter || char === '\n' || char === '\r' || i === csv.length) {
+        const field = csv.slice(fieldStart, i);
+        currentRow.push(field);
+
+        if (char === '\n' || char === '\r' || i === csv.length) {
+          if (rowHasData) {
+            onRow(currentRow);
+          }
+          currentRow = [];
+          rowHasData = false;
+        }
+
+        if (char === '\r' && csv[i + 1] === '\n') {
+          i++;
+        }
+
+        fieldStart = i + 1;
+      }
+
+      i++;
+    }
+  }
+
+  /**
+   * Simple row emitter that avoids storing all rows in memory.
+   */
+  _createSimpleRowEmitter(structure) {
+    const { delimiter } = structure;
+
+    return (csv, onRow) => {
+      this._emitSimpleRows(csv, delimiter, onRow);
     };
   }
 
@@ -192,6 +258,73 @@ class FastPathEngine {
       }
 
       return rows;
+    };
+  }
+
+  /**
+   * Quote-aware row emitter that avoids storing all rows in memory.
+   */
+  _createQuoteAwareRowEmitter(structure) {
+    const { delimiter, hasEscapedQuotes } = structure;
+
+    return (csv, onRow) => {
+      let currentRow = [];
+      let currentField = '';
+      let rowHasData = false;
+      let insideQuotes = false;
+      let i = 0;
+
+      while (i < csv.length) {
+        const char = csv[i];
+        const nextChar = csv[i + 1];
+
+        if (char === '"') {
+          if (insideQuotes) {
+            if (hasEscapedQuotes && nextChar === '"') {
+              currentField += '"';
+              i += 2;
+            } else {
+              insideQuotes = false;
+              i++;
+            }
+          } else {
+            insideQuotes = true;
+            i++;
+          }
+        } else if (char === delimiter && !insideQuotes) {
+          if (currentField.length > 0) {
+            rowHasData = true;
+          }
+          currentRow.push(currentField);
+          currentField = '';
+          i++;
+        } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && !insideQuotes) {
+          if (currentField.length > 0) {
+            rowHasData = true;
+          }
+          currentRow.push(currentField);
+          if (rowHasData) {
+            onRow(currentRow);
+          }
+          currentRow = [];
+          currentField = '';
+          rowHasData = false;
+          i += (char === '\r' && nextChar === '\n') ? 2 : 1;
+        } else {
+          currentField += char;
+          i++;
+        }
+      }
+
+      if (currentField.length > 0) {
+        rowHasData = true;
+      }
+      if (currentField !== '' || currentRow.length > 0) {
+        currentRow.push(currentField);
+        if (rowHasData) {
+          onRow(currentRow);
+        }
+      }
     };
   }
 
@@ -306,16 +439,52 @@ class FastPathEngine {
   }
 
   /**
+   * Compiles a row-emitter parser for streaming conversion.
+   */
+  compileRowEmitter(structure) {
+    const cacheKey = JSON.stringify(structure);
+
+    if (this.rowCompilers.has(cacheKey)) {
+      return this.rowCompilers.get(cacheKey);
+    }
+
+    let emitter;
+    switch (structure.recommendedEngine) {
+    case 'SIMPLE':
+      emitter = this._createSimpleRowEmitter(structure);
+      break;
+    case 'QUOTE_AWARE':
+      emitter = this._createQuoteAwareRowEmitter(structure);
+      break;
+    case 'STANDARD':
+      emitter = this._createQuoteAwareRowEmitter(structure);
+      break;
+    default:
+      emitter = this._createQuoteAwareRowEmitter(structure);
+    }
+
+    this.rowCompilers.set(cacheKey, emitter);
+    return emitter;
+  }
+
+  /**
    * Парсит CSV с использованием оптимального парсера
    */
   parse(csv, options = {}) {
-    const sampleSize = Math.min(1000, csv.length);
-    const sample = csv.substring(0, sampleSize);
-    
-    const structure = this.analyzeStructure(sample, options);
+    const structure = this._getStructureForParse(csv, options);
     const parser = this.compileParser(structure);
     
     return parser(csv);
+  }
+
+  /**
+   * Parses CSV and emits rows via a callback to reduce memory usage.
+   */
+  parseRows(csv, options = {}, onRow) {
+    const structure = this._getStructureForParse(csv, options);
+    const emitter = this.compileRowEmitter(structure);
+
+    emitter(csv, onRow);
   }
 
   /**
@@ -334,6 +503,7 @@ class FastPathEngine {
    */
   reset() {
     this.compilers.clear();
+    this.rowCompilers.clear();
     this.stats = {
       simpleParserCount: 0,
       quoteAwareParserCount: 0,
