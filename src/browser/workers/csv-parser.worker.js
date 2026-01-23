@@ -11,7 +11,7 @@ const CACHE_MAX_SIZE = 50;
 const CACHE_TTL = 5 * 60 * 1000; // 5 минут
 
 // Статистика worker
-let stats = {
+const stats = {
   tasksProcessed: 0,
   cacheHits: 0,
   cacheMisses: 0,
@@ -218,36 +218,36 @@ function clearCache() {
 }
 
 // Обработчик сообщений от основного потока
-self.onmessage = function(event) {
+self.onmessage = function (event) {
   const { data } = event;
   
   switch (data.type) {
-    case 'EXECUTE':
-      handleExecute(data);
-      break;
+  case 'EXECUTE':
+    handleExecute(data);
+    break;
       
-    case 'GET_STATS':
-      self.postMessage({
-        type: 'STATS',
-        taskId: data.taskId,
-        data: getStats()
-      });
-      break;
+  case 'GET_STATS':
+    self.postMessage({
+      type: 'STATS',
+      taskId: data.taskId,
+      data: getStats()
+    });
+    break;
       
-    case 'CLEAR_CACHE':
-      clearCache();
-      self.postMessage({
-        type: 'CACHE_CLEARED',
-        taskId: data.taskId
-      });
-      break;
+  case 'CLEAR_CACHE':
+    clearCache();
+    self.postMessage({
+      type: 'CACHE_CLEARED',
+      taskId: data.taskId
+    });
+    break;
       
-    default:
-      self.postMessage({
-        type: 'ERROR',
-        taskId: data.taskId,
-        message: `Unknown command: ${data.type}`
-      });
+  default:
+    self.postMessage({
+      type: 'ERROR',
+      taskId: data.taskId,
+      message: `Unknown command: ${data.type}`
+    });
   }
 };
 
@@ -260,79 +260,79 @@ function handleExecute(commandData) {
   
   try {
     switch (method) {
-      case 'parseCSV': {
-        const [csv, parseOptions] = args;
+    case 'parseCSV': {
+      const [csv, parseOptions] = args;
         
-        // Функция отправки прогресса
-        const sendProgress = (progress) => {
-          self.postMessage({
-            type: 'PROGRESS',
-            taskId,
-            ...progress
-          });
-        };
-        
-        const result = parseCSVWithProgress(csv, { ...options, ...parseOptions }, sendProgress);
-        
+      // Функция отправки прогресса
+      const sendProgress = (progress) => {
         self.postMessage({
-          type: 'RESULT',
+          type: 'PROGRESS',
           taskId,
-          data: result
+          ...progress
         });
-        break;
-      }
+      };
         
-      case 'jsonToCSV': {
-        const [jsonData, csvOptions] = args;
-        const result = convertJSONToCSV(jsonData, { ...options, ...csvOptions });
+      const result = parseCSVWithProgress(csv, { ...options, ...parseOptions }, sendProgress);
         
-        self.postMessage({
-          type: 'RESULT',
-          taskId,
-          data: result
-        });
-        break;
-      }
+      self.postMessage({
+        type: 'RESULT',
+        taskId,
+        data: result
+      });
+      break;
+    }
         
-      case 'validateCSV': {
-        const [csv, validateOptions] = args;
-        const result = validateCSV(csv, { ...options, ...validateOptions });
+    case 'jsonToCSV': {
+      const [jsonData, csvOptions] = args;
+      const result = convertJSONToCSV(jsonData, { ...options, ...csvOptions });
         
-        self.postMessage({
-          type: 'RESULT',
-          taskId,
-          data: result
-        });
-        break;
-      }
+      self.postMessage({
+        type: 'RESULT',
+        taskId,
+        data: result
+      });
+      break;
+    }
         
-      case 'autoDetectDelimiter': {
-        const [csv] = args;
-        // Простая реализация автоопределения
-        const delimiters = [';', ',', '\t', '|'];
-        let bestDelimiter = ';';
-        let maxCount = 0;
+    case 'validateCSV': {
+      const [csv, validateOptions] = args;
+      const result = validateCSV(csv, { ...options, ...validateOptions });
         
-        const firstLine = csv.split('\n')[0] || '';
+      self.postMessage({
+        type: 'RESULT',
+        taskId,
+        data: result
+      });
+      break;
+    }
         
-        for (const delim of delimiters) {
-          const count = (firstLine.match(new RegExp(`[${delim}]`, 'g')) || []).length;
-          if (count > maxCount) {
-            maxCount = count;
-            bestDelimiter = delim;
-          }
+    case 'autoDetectDelimiter': {
+      const [csv] = args;
+      // Простая реализация автоопределения
+      const delimiters = [';', ',', '\t', '|'];
+      let bestDelimiter = ';';
+      let maxCount = 0;
+        
+      const firstLine = csv.split('\n')[0] || '';
+        
+      for (const delim of delimiters) {
+        const count = (firstLine.match(new RegExp(`[${delim}]`, 'g')) || []).length;
+        if (count > maxCount) {
+          maxCount = count;
+          bestDelimiter = delim;
         }
-        
-        self.postMessage({
-          type: 'RESULT',
-          taskId,
-          data: bestDelimiter
-        });
-        break;
       }
         
-      default:
-        throw new Error(`Unknown method: ${method}`);
+      self.postMessage({
+        type: 'RESULT',
+        taskId,
+        data: bestDelimiter
+      });
+      break;
+    }
+        
+    default:
+      throw new Error(`Unknown method: ${method}`);
     }
   } catch (error) {
     self.postMessage({

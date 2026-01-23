@@ -1,0 +1,26 @@
+{
+    "name": "jtcsv-web-demo",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Modern Web UI Demo for JTCSV Converter",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "serve": "vite preview --port 3000"
+    },
+    "dependencies": {
+        "vue": "^3.4.0",
+        "jtcsv-converter": "file:..",
+        "@vueuse/core": "^10.7.0",
+        "axios": "^1.6.0"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^5.0.0",
+        "vite": "^5.0.0",
+        "sass": "^1.69.0"
+    },
+    "author": "JTCSV Team",
+    "license": "MIT"
+}

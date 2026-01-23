@@ -846,7 +846,7 @@ npm run test:browser  # Jest с jsdom
   <title>jtcsv Browser Integration Tests</title>
 </head>
 <body>
-  <h1>🧪 jtcsv Browser Tests</h1>
+  <h1> 🧪 jtcsv Browser Tests</h1>
   
   <!-- Test 1: JSON → CSV -->
   <h2>Test 1: JSON to CSV</h2>

@@ -1,0 +1,61 @@
+{
+  "name": "@jtcsv/nextjs",
+  "version": "1.0.0",
+  "description": "Next.js интеграция для JTCSV - API routes, React hooks и компоненты",
+  "main": "index.js",
+  "module": "index.esm.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint index.js route.js",
+    "build": "rollup -c",
+    "dev": "rollup -c -w"
+  },
+  "keywords": [
+    "nextjs",
+    "react",
+    "csv",
+    "json",
+    "converter",
+    "jtcsv",
+    "api",
+    "route",
+    "hook",
+    "component",
+    "typescript"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "plugins/nextjs-api"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/nextjs-api#readme",
+  "peerDependencies": {
+    "next": "^13.0.0 || ^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "jtcsv-converter": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.0.0",
+    "eslint": "^8.57.0",
+    "rollup": "^4.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0"
+  },
+  "files": [
+    "index.js",
+    "index.esm.js",
+    "index.d.ts",
+    "route.js",
+    "README.md",
+    "examples/"
+  ]
+}
