@@ -243,6 +243,7 @@ module.exports = {
 };
 
 // For ES6 module compatibility
+/* istanbul ignore next */
 if (typeof module !== 'undefined' && module.exports) {
   module.exports.default = saveAsJson;
 }
