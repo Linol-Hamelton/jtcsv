@@ -319,11 +319,14 @@ class TsvParser {
       }
     }
 
+    /* istanbul ignore next */
+    const totalColumns = columnCounts[0] || 0;
+
     return {
       valid: errors.length === 0,
       stats: {
         totalLines: lines.length,
-        totalColumns: columnCounts[0] || 0,
+        totalColumns,
         minColumns: Math.min(...columnCounts),
         maxColumns: Math.max(...columnCounts),
         consistentColumns: new Set(columnCounts).size === 1

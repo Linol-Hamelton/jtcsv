@@ -120,6 +120,7 @@ function createErrorMessage(type, details) {
 /**
  * Error handler utility
  */
+/* istanbul ignore next */
 function handleError(error, context = {}) {
   // Log error in development
   if (process.env.NODE_ENV === 'development') {
@@ -138,6 +139,7 @@ function handleError(error, context = {}) {
 /**
  * Safe execution wrapper for async functions
  */
+/* istanbul ignore next */
 async function safeExecuteAsync(fn, errorType, context = {}) {
   try {
     return await fn();

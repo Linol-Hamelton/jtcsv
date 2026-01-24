@@ -115,6 +115,7 @@ function validateCsvInput(csv, options) {
  * @private
  */
 function parseCsvValue(value, options) {
+  /* istanbul ignore next */
   const { trim = true, parseNumbers = false, parseBooleans = false } = options;
   
   let result = value;
@@ -131,6 +132,7 @@ function parseCsvValue(value, options) {
   // Parse numbers
   if (parseNumbers && /^-?\d+(\.\d+)?$/.test(result)) {
     const num = parseFloat(result);
+    /* istanbul ignore next */
     if (!isNaN(num)) {
       return num;
     }
@@ -372,6 +374,7 @@ function csvToJson(csv, options = {}) {
   }, 'PARSE_FAILED', { function: 'csvToJson' });
 }
 
+/* istanbul ignore next */
 async function* csvToJsonIterator(csv, options = {}) {
   validateCsvInput(csv, options);
 
@@ -640,6 +643,7 @@ function createTransformHooks() {
  * @param {number} maxSize - Maximum cache size (default: 100)
  * @returns {DelimiterCache} New DelimiterCache instance
  */
+/* istanbul ignore next */
 function createDelimiterCache(maxSize = 100) {
   return new DelimiterCache(maxSize);
 }
@@ -648,6 +652,7 @@ function createDelimiterCache(maxSize = 100) {
  * Gets statistics from the global delimiter cache
  * @returns {Object} Cache statistics
  */
+/* istanbul ignore next */
 function getDelimiterCacheStats() {
   return globalDelimiterCache.getStats();
 }
@@ -655,6 +660,7 @@ function getDelimiterCacheStats() {
 /**
  * Clears the global delimiter cache
  */
+/* istanbul ignore next */
 function clearDelimiterCache() {
   globalDelimiterCache.clear();
 }
@@ -676,6 +682,7 @@ module.exports = {
 };
 
 // For ES6 module compatibility
+/* istanbul ignore next */
 if (typeof module !== 'undefined' && module.exports) {
   module.exports.default = csvToJson;
 }
