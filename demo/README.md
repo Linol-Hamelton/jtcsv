@@ -4,7 +4,7 @@ Modern, interactive web interface for JTCSV Converter with real-time JSON ↔ CS
 
 ## 🌐 Live Demo
 
-Access the demo at: [http://localhost:3002](http://localhost:3002)
+Access the demo at: [http://localhost:3000](http://localhost:3000)
 
 ## ✨ Features
 
@@ -48,6 +48,11 @@ npm install
 npm run dev
 ```
 
+From the repo root you can also run:
+```bash
+npm run demo:web
+```
+
 ### Build for Production
 ```bash
 # Build optimized version
@@ -55,6 +60,9 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Preview production build on port 3000
+npm run serve
 ```
 
 ## 🎮 Usage Guide
@@ -62,7 +70,7 @@ npm run preview
 ### 1. Input Data
 - **Paste Directly**: Copy and paste JSON or CSV data into the input area
 - **Load Example**: Click "Load Example" for sample data
-- **Upload File**: Use the upload button for file processing (coming soon)
+- **Upload File**: Use the upload button for file processing
 
 ### 2. Configure Options
 - **Select Format**: Choose input format (JSON or CSV)
@@ -167,11 +175,9 @@ npm run build
 # Preview production build
 npm run preview
 
-# Lint code
-npm run lint
+# Preview production build on port 3000
+npm run serve
 
-# Format code
-npm run format
 ```
 
 ### Adding Features

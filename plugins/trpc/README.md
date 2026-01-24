@@ -1,6 +1,6 @@
 # @jtcsv/trpc
 
-tRPC helper for JTCSV.
+Middleware helper that parses CSV input for tRPC procedures.
 
 ## Install
 ```bash
@@ -8,15 +8,18 @@ npm install @jtcsv/trpc jtcsv
 ```
 
 ## Usage
-```typescript
+```javascript
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
-import { createCsvProcedure } from 'jtcsv/trpc';
+import { createCsvProcedure } from '@jtcsv/trpc';
 
 const t = initTRPC.create();
 
 export const router = t.router({
-  parseCsv: createCsvProcedure(t, z.string(), { delimiter: ',' })
-    .mutation(async ({ input }) => ({ parsed: input }))
+  parseCsv: createCsvProcedure(t, z.string())
+    .mutation(async ({ input }) => ({ rows: input }))
 });
 ```
+
+## Exports
+- createCsvProcedure

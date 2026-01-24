@@ -45,7 +45,7 @@ console.log();
 console.log('\n2. ⚡ Fast-Path Engine (оптимизированный парсинг)');
 console.log('='.repeat(60));
 
-const { FastPathEngine } = require('../src/engines/fast-path-engine');
+const FastPathEngine = require('../src/engines/fast-path-engine');
 const engine = new FastPathEngine();
 
 // Создаем тестовый CSV
@@ -88,7 +88,7 @@ console.log(`  Hit rate: ${(stats.hitRate * 100).toFixed(1)}%`);
 console.log('\n3. 📝 NDJSON поддержка (потоковая обработка)');
 console.log('='.repeat(60));
 
-const { NdjsonParser } = require('../src/formats/ndjson-parser');
+const NdjsonParser = require('../src/formats/ndjson-parser');
 
 // Конвертация в NDJSON
 const ndjson = NdjsonParser.toNdjson(sampleData, { space: 2 });
@@ -116,7 +116,7 @@ console.log(`  Успешность: ${ndjsonStats.successRate}%`);
 console.log('\n4. 🔌 Plugin System (расширяемость)');
 console.log('='.repeat(60));
 
-const { PluginManager } = require('../src/core/plugin-system');
+const PluginManager = require('../src/core/plugin-system');
 
 // Создаем простой плагин для логирования
 const loggingPlugin = {
@@ -266,7 +266,7 @@ console.log('3. Попробуйте примеры: npm run example:plugins');
 console.log('4. Создайте свой плагин!');
 
 console.log('\n💡 Совет: Для production используйте:');
-console.log('  const jtcsv = require("jtcsv.create();');
+console.log('  const jtcsv = require("jtcsv/plugins").create();');
 console.log('  jtcsv.use("your-plugin", yourPluginConfig);');
 
 console.log('\n📚 Документация: https://github.com/Linol-Hamelton/jtcsv');
@@ -280,4 +280,3 @@ console.log('✨'.repeat(30));
   console.error('Demo failed:', error);
   process.exitCode = 1;
 });
-

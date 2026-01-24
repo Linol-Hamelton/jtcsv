@@ -344,7 +344,8 @@ function csvToJson(csv, options = {}) {
       });
     } catch (error) {
       if (error && error.code === 'FAST_PATH_UNCLOSED_QUOTES') {
-        throw new ParsingError(error.message, error.lineNumber);
+        const lineInfo = error.lineNumber ? ` at line ${error.lineNumber}` : '';
+        throw new ParsingError(`Unclosed quotes in CSV${lineInfo}`, error.lineNumber);
       }
       throw error;
     }
@@ -498,7 +499,8 @@ async function* csvToJsonIterator(csv, options = {}) {
     }
   } catch (error) {
     if (error && error.code === 'FAST_PATH_UNCLOSED_QUOTES') {
-      throw new ParsingError(error.message, error.lineNumber);
+      const lineInfo = error.lineNumber ? ` at line ${error.lineNumber}` : '';
+      throw new ParsingError(`Unclosed quotes in CSV${lineInfo}`, error.lineNumber);
     }
     throw error;
   }

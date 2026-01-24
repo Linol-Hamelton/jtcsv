@@ -25,6 +25,7 @@ class JtcsvTUI {
     this.screen = null;
     this.grid = null;
     this.currentMode = 'main';
+    this.boundKeys = [];
     this.conversionOptions = {
       delimiter: ';',
       includeHeaders: true,
@@ -35,6 +36,9 @@ class JtcsvTUI {
       autoDetect: true,
       useFastPath: true,
       fastPathMode: 'objects'
+    };
+    this.preprocessOptions = {
+      maxDepth: 5
     };
     this.inputFile = '';
     this.outputFile = '';
@@ -58,6 +62,13 @@ class JtcsvTUI {
       }
     });
 
+    // Allow global hotkeys even when text inputs grab keys.
+    this.screen.ignoreLocked = (this.screen.ignoreLocked || []).concat([
+      'f1', 'f2', 'f3', 'f4', 'f6', 'S-f6',
+      'tab', 'S-tab', 'backtab', 'escape',
+      'C-o', 'C-r', 'C-p', 'C-b', 'C-q', 'C-c'
+    ]);
+
     // Create grid layout
     this.grid = new contrib.grid({ 
       rows: 12, 
@@ -65,8 +76,16 @@ class JtcsvTUI {
       screen: this.screen 
     });
 
-    // Quit on Escape, q, or Ctrl+C
-    this.screen.key(['escape', 'q', 'C-c'], () => process.exit(0));
+    // Global key bindings
+    this.screen.key(['C-c', 'C-q'], () => process.exit(0));
+    this.screen.key(['escape'], () => {
+      if (this.currentMode === 'main') {
+        process.exit(0);
+      } else {
+        this.showMainMenu();
+      }
+    });
+    this.screen.key(['f1'], () => this.showHelp());
 
     // Show main menu
     this.showMainMenu();
@@ -81,6 +100,7 @@ class JtcsvTUI {
   showMainMenu() {
     this.currentMode = 'main';
     this.screen.title = 'JTCSV - Main Menu';
+    this.clearScreenKeys();
 
     // Clear screen
     this.screen.children.slice().forEach(child => child.destroy());
@@ -175,7 +195,7 @@ class JtcsvTUI {
       left: 0,
       width: '100%',
       height: 1,
-      content: '←→ Navigate | ↑↓ Select | Enter Confirm | q Quit',
+      content: 'Arrows: navigate | Enter: select | Esc: quit | Ctrl+Q: quit | F1: help',
       style: {
         fg: 'yellow',
         bg: 'black'
@@ -193,6 +213,7 @@ class JtcsvTUI {
    */
   showJsonToCsv() {
     this.currentMode = 'json2csv';
+    this.clearScreenKeys();
     this.screen.title = 'JTCSV - JSON → CSV';
 
     // Clear screen
@@ -254,7 +275,9 @@ class JtcsvTUI {
       width: '100%-2',
       height: '100%-2',
       value: this.inputText || 'Paste JSON here or load from file...',
-      inputOnFocus: true,
+      inputOnFocus: false,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'black'
@@ -295,6 +318,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Load File{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'blue',
@@ -315,6 +340,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Convert{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'green',
@@ -335,6 +362,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Save As...{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'magenta',
@@ -355,6 +384,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Back{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'red',
@@ -377,6 +408,18 @@ class JtcsvTUI {
       content: `Options: Delimiter=${this.conversionOptions.delimiter} | Headers=${this.conversionOptions.includeHeaders} | ParseNumbers=${this.conversionOptions.parseNumbers}`,
       style: {
         fg: 'yellow'
+      }
+    });
+
+    const statusBar = blessed.box({
+      parent: controlsBox,
+      bottom: 0,
+      left: 2,
+      width: '100%-4',
+      height: 1,
+      content: 'Enter edit | F2/Ctrl+O Load | F3/Ctrl+R Convert | F4/Ctrl+P Save | Esc/Ctrl+B Back | Tab/F6 Next',
+      style: {
+        fg: 'cyan'
       }
     });
 
@@ -459,22 +502,14 @@ class JtcsvTUI {
       this.showOptionsMenu();
     });
 
+    this.setupFocusCycle([inputText, loadButton, convertButton, saveButton, backButton]);
+    this.bindScreenKey(['f2', 'C-o'], () => this.triggerButton(loadButton));
+    this.bindScreenKey(['f3', 'C-r'], () => this.triggerButton(convertButton));
+    this.bindScreenKey(['f4', 'C-p'], () => this.triggerButton(saveButton));
+    this.bindScreenKey(['C-b'], () => this.triggerButton(backButton));
+
     // Focus input textarea
     inputText.focus();
-    
-    // Handle keyboard navigation
-    this.screen.key(['tab'], () => {
-      if (this.screen.focused === inputText) {
-        convertButton.focus();
-      } else if (this.screen.focused === convertButton) {
-        saveButton.focus();
-      } else if (this.screen.focused === saveButton) {
-        backButton.focus();
-      } else {
-        inputText.focus();
-      }
-      this.screen.render();
-    });
 
     this.screen.render();
   }
@@ -484,6 +519,7 @@ class JtcsvTUI {
    */
   showCsvToJson() {
     this.currentMode = 'csv2json';
+    this.clearScreenKeys();
     this.screen.title = 'JTCSV - CSV → JSON';
 
     // Clear screen
@@ -545,7 +581,9 @@ class JtcsvTUI {
       width: '100%-2',
       height: '100%-2',
       value: this.inputText || 'Paste CSV here or load from file...',
-      inputOnFocus: true,
+      inputOnFocus: false,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'black'
@@ -586,6 +624,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Load File{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'blue',
@@ -606,6 +646,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Convert{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'green',
@@ -626,6 +668,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Save As...{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'magenta',
@@ -646,6 +690,8 @@ class JtcsvTUI {
       height: buttonHeight,
       content: '{center}Back{/center}',
       tags: true,
+      keys: true,
+      mouse: true,
       style: {
         fg: 'white',
         bg: 'red',
@@ -668,6 +714,18 @@ class JtcsvTUI {
       content: `Options: Delimiter=${this.conversionOptions.delimiter} | AutoDetect=${this.conversionOptions.autoDetect} | FastPath=${this.conversionOptions.useFastPath} | Mode=${this.conversionOptions.fastPathMode}`,
       style: {
         fg: 'yellow'
+      }
+    });
+
+    const statusBar = blessed.box({
+      parent: controlsBox,
+      bottom: 0,
+      left: 2,
+      width: '100%-4',
+      height: 1,
+      content: 'Enter edit | F2/Ctrl+O Load | F3/Ctrl+R Convert | F4/Ctrl+P Save | Esc/Ctrl+B Back | Tab/F6 Next',
+      style: {
+        fg: 'cyan'
       }
     });
 
@@ -702,9 +760,10 @@ class JtcsvTUI {
           throw new Error('Please enter CSV data');
         }
         
-        const jsonData = jtcsv.csvToJson(csvText, this.conversionOptions);
-        const jsonOutput = this.conversionOptions.prettyPrint 
-          JSON.stringify(jsonData);
+        const jsonData = jtcsv.csvToJson(csvText, this.buildCsvToJsonOptions());
+        const jsonOutput = this.conversionOptions.prettyPrint
+          ? JSON.stringify(jsonData, null, 2)
+          : JSON.stringify(jsonData);
         
         this.outputText = jsonOutput;
         outputText.setContent(jsonOutput);
@@ -751,22 +810,14 @@ class JtcsvTUI {
       this.showOptionsMenu();
     });
 
+    this.setupFocusCycle([inputText, loadButton, convertButton, saveButton, backButton]);
+    this.bindScreenKey(['f2', 'C-o'], () => this.triggerButton(loadButton));
+    this.bindScreenKey(['f3', 'C-r'], () => this.triggerButton(convertButton));
+    this.bindScreenKey(['f4', 'C-p'], () => this.triggerButton(saveButton));
+    this.bindScreenKey(['C-b'], () => this.triggerButton(backButton));
+
     // Focus input textarea
     inputText.focus();
-    
-    // Handle keyboard navigation
-    this.screen.key(['tab'], () => {
-      if (this.screen.focused === inputText) {
-        convertButton.focus();
-      } else if (this.screen.focused === convertButton) {
-        saveButton.focus();
-      } else if (this.screen.focused === saveButton) {
-        backButton.focus();
-      } else {
-        inputText.focus();
-      }
-      this.screen.render();
-    });
 
     this.screen.render();
   }
@@ -776,36 +827,291 @@ class JtcsvTUI {
    */
   showPreprocess() {
     this.currentMode = 'preprocess';
+    this.clearScreenKeys();
     this.screen.title = 'JTCSV - Preprocess JSON';
 
     // Clear screen
     this.screen.children.slice().forEach(child => child.destroy());
 
-    const messageBox = blessed.box({
-      top: 'center',
-      left: 'center',
+    const inputBox = blessed.box({
+      top: 0,
+      left: 0,
       width: '50%',
-      height: 5,
-      content: '{center}Preprocessing feature coming soon!{/center}\n{center}Press any key to return to main menu.{/center}',
-      tags: true,
+      height: '80%',
+      label: ' Input (JSON) ',
       border: {
         type: 'line'
       },
       style: {
-        fg: 'yellow',
         border: {
-          fg: 'yellow'
+          fg: 'green'
         }
       }
     });
 
-    this.screen.append(messageBox);
-    
-    // Return to main menu on any key
-    this.screen.key(['enter', 'space', 'escape'], () => {
+    const outputBox = blessed.box({
+      top: 0,
+      left: '50%',
+      width: '50%',
+      height: '80%',
+      label: ' Output (JSON) ',
+      border: {
+        type: 'line'
+      },
+      style: {
+        border: {
+          fg: 'blue'
+        }
+      }
+    });
+
+    const controlsBox = blessed.box({
+      bottom: 0,
+      left: 0,
+      width: '100%',
+      height: '20%',
+      label: ' Controls ',
+      border: {
+        type: 'line'
+      }
+    });
+
+    this.screen.append(inputBox);
+    this.screen.append(outputBox);
+    this.screen.append(controlsBox);
+
+    const inputText = blessed.textarea({
+      parent: inputBox,
+      top: 1,
+      left: 1,
+      width: '100%-2',
+      height: '100%-2',
+      value: this.inputText || 'Paste JSON here or load from file...',
+      inputOnFocus: false,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'black'
+      }
+    });
+
+    const outputText = blessed.box({
+      parent: outputBox,
+      top: 1,
+      left: 1,
+      width: '100%-2',
+      height: '100%-2',
+      content: this.outputText || 'Preprocessed JSON output will appear here...',
+      scrollable: true,
+      alwaysScroll: true,
+      scrollbar: {
+        ch: ' ',
+        style: {
+          bg: 'blue'
+        }
+      },
+      style: {
+        fg: 'white',
+        bg: 'black'
+      }
+    });
+
+    const buttonY = 1;
+    const buttonHeight = 3;
+
+    const loadButton = blessed.button({
+      parent: controlsBox,
+      top: buttonY,
+      left: 2,
+      width: 15,
+      height: buttonHeight,
+      content: '{center}Load File{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'blue',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const preprocessButton = blessed.button({
+      parent: controlsBox,
+      top: buttonY,
+      left: 20,
+      width: 15,
+      height: buttonHeight,
+      content: '{center}Preprocess{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'green',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const saveButton = blessed.button({
+      parent: controlsBox,
+      top: buttonY,
+      left: 38,
+      width: 15,
+      height: buttonHeight,
+      content: '{center}Save As...{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'magenta',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const backButton = blessed.button({
+      parent: controlsBox,
+      top: buttonY,
+      left: 56,
+      width: 15,
+      height: buttonHeight,
+      content: '{center}Back{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'red',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const optionsText = blessed.box({
+      parent: controlsBox,
+      top: buttonY + buttonHeight + 1,
+      left: 2,
+      width: '100%-4',
+      height: 3,
+      content: `Options: MaxDepth=${this.preprocessOptions.maxDepth}`,
+      style: {
+        fg: 'yellow'
+      }
+    });
+
+    const statusBar = blessed.box({
+      parent: controlsBox,
+      bottom: 0,
+      left: 2,
+      width: '100%-4',
+      height: 1,
+      content: 'Enter edit | F2/Ctrl+O Load | F3/Ctrl+R Preprocess | F4/Ctrl+P Save | Esc/Ctrl+B Back | Tab/F6 Next',
+      style: {
+        fg: 'cyan'
+      }
+    });
+
+    loadButton.on('press', () => {
+      this.showFilePicker((filePath) => {
+        if (filePath) {
+          try {
+            const content = fs.readFileSync(filePath, 'utf8');
+            inputText.setValue(content);
+            this.inputText = content;
+            this.inputFile = filePath;
+            inputBox.setLabel(` Input (JSON) - ${path.basename(filePath)} `);
+            this.screen.render();
+          } catch (error) {
+            this.showMessage(`Error loading file: ${error.message}`, 'error');
+          }
+        }
+      });
+    });
+
+    preprocessButton.on('press', async () => {
+      try {
+        const jsonText = inputText.getValue();
+        if (!jsonText.trim()) {
+          throw new Error('Please enter JSON data');
+        }
+
+        const parsed = JSON.parse(jsonText);
+        const processed = this.preprocessJsonData(parsed, this.preprocessOptions.maxDepth);
+        const output = JSON.stringify(processed, null, 2);
+
+        this.outputText = output;
+        outputText.setContent(output);
+
+        const size = Buffer.byteLength(output, 'utf8');
+        outputBox.setLabel(` Output (JSON) - ${this.formatBytes(size)} `);
+        this.showMessage('Preprocess complete!', 'success');
+      } catch (error) {
+        this.showMessage(`Preprocess error: ${error.message}`, 'error');
+      }
+    });
+
+    saveButton.on('press', () => {
+      if (!this.outputText) {
+        this.showMessage('No output to save', 'warning');
+        return;
+      }
+
+      this.showFileSaver((filePath) => {
+        if (filePath) {
+          try {
+            fs.writeFileSync(filePath, this.outputText, 'utf8');
+            this.showMessage(`File saved: ${filePath}`, 'success');
+          } catch (error) {
+            this.showMessage(`Error saving file: ${error.message}`, 'error');
+          }
+        }
+      });
+    });
+
+    backButton.on('press', () => {
       this.showMainMenu();
     });
 
+    optionsText.on('click', async () => {
+      const value = await this.promptForValue('Max Depth', 'Enter max depth:', String(this.preprocessOptions.maxDepth));
+      const next = value ? parseInt(value, 10) : this.preprocessOptions.maxDepth;
+      if (!Number.isFinite(next) || next <= 0) {
+        this.showMessage('Max depth must be a positive number', 'warning');
+        return;
+      }
+      this.preprocessOptions.maxDepth = next;
+      optionsText.setContent(`Options: MaxDepth=${this.preprocessOptions.maxDepth}`);
+      this.screen.render();
+    });
+
+    this.setupFocusCycle([inputText, loadButton, preprocessButton, saveButton, backButton]);
+    this.bindScreenKey(['f2', 'C-o'], () => this.triggerButton(loadButton));
+    this.bindScreenKey(['f3', 'C-r'], () => this.triggerButton(preprocessButton));
+    this.bindScreenKey(['f4', 'C-p'], () => this.triggerButton(saveButton));
+    this.bindScreenKey(['C-b'], () => this.triggerButton(backButton));
+
+    inputText.focus();
     this.screen.render();
   }
 
@@ -814,36 +1120,121 @@ class JtcsvTUI {
    */
   showBatchProcessing() {
     this.currentMode = 'batch';
+    this.clearScreenKeys();
     this.screen.title = 'JTCSV - Batch Processing';
 
     // Clear screen
     this.screen.children.slice().forEach(child => child.destroy());
 
-    const messageBox = blessed.box({
-      top: 'center',
-      left: 'center',
-      width: '50%',
-      height: 5,
-      content: '{center}Batch processing feature coming soon!{/center}\n{center}Press any key to return to main menu.{/center}',
+    const infoBox = blessed.box({
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '70%',
+      content:
+        '{center}{bold}Batch Processing{/bold}{/center}\n\n' +
+        'This mode converts all files in a directory (or a single file).\n' +
+        'You will be prompted for:\n' +
+        '- mode: json-to-csv or csv-to-json\n' +
+        '- input file or directory\n' +
+        '- output directory\n' +
+        '- recursive scan (y/n)\n\n' +
+        'Output files are written to the chosen directory with matching base names.',
       tags: true,
       border: {
         type: 'line'
       },
       style: {
-        fg: 'yellow',
+        fg: 'white',
         border: {
-          fg: 'yellow'
+          fg: 'cyan'
         }
       }
     });
 
-    this.screen.append(messageBox);
-    
-    // Return to main menu on any key
-    this.screen.key(['enter', 'space', 'escape'], () => {
+    const controlsBox = blessed.box({
+      bottom: 0,
+      left: 0,
+      width: '100%',
+      height: '30%',
+      label: ' Controls ',
+      border: {
+        type: 'line'
+      }
+    });
+
+    const runButton = blessed.button({
+      parent: controlsBox,
+      top: 1,
+      left: 2,
+      width: 18,
+      height: 3,
+      content: '{center}Run Batch{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'green',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const backButton = blessed.button({
+      parent: controlsBox,
+      top: 1,
+      left: 22,
+      width: 15,
+      height: 3,
+      content: '{center}Back{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'red',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const statusBar = blessed.box({
+      parent: controlsBox,
+      bottom: 0,
+      left: 2,
+      width: '100%-4',
+      height: 1,
+      content: 'F3/Ctrl+R Run | Esc/Ctrl+B Back | Tab/F6 Next',
+      style: {
+        fg: 'cyan'
+      }
+    });
+
+    runButton.on('press', async () => {
+      await this.runBatchProcess();
+    });
+
+    backButton.on('press', () => {
       this.showMainMenu();
     });
 
+    this.screen.append(infoBox);
+    this.screen.append(controlsBox);
+
+    this.setupFocusCycle([runButton, backButton]);
+    this.bindScreenKey(['f3', 'C-r'], () => this.triggerButton(runButton));
+    this.bindScreenKey(['C-b'], () => this.triggerButton(backButton));
+
+    runButton.focus();
     this.screen.render();
   }
 
@@ -852,6 +1243,7 @@ class JtcsvTUI {
    */
   showSettings() {
     this.currentMode = 'settings';
+    this.clearScreenKeys();
     this.screen.title = 'JTCSV - Settings';
 
     // Clear screen
@@ -1113,6 +1505,7 @@ class JtcsvTUI {
    */
   showFileBrowser() {
     this.currentMode = 'filebrowser';
+    this.clearScreenKeys();
     this.screen.title = 'JTCSV - File Browser';
 
     // Clear screen
@@ -1123,7 +1516,7 @@ class JtcsvTUI {
       left: 'center',
       width: '50%',
       height: 5,
-      content: '{center}File browser feature coming soon!{/center}\n{center}Press any key to return to main menu.{/center}',
+      content: '{center}File browser feature coming soon!{/center}\n{center}Press Esc to return to main menu.{/center}',
       tags: true,
       border: {
         type: 'line'
@@ -1138,8 +1531,7 @@ class JtcsvTUI {
 
     this.screen.append(messageBox);
     
-    // Return to main menu on any key
-    this.screen.key(['enter', 'space', 'escape'], () => {
+    this.bindScreenKey(['enter', 'space'], () => {
       this.showMainMenu();
     });
 
@@ -1151,6 +1543,7 @@ class JtcsvTUI {
    */
   showHelp() {
     this.currentMode = 'help';
+    this.clearScreenKeys();
     this.screen.title = 'JTCSV - Help';
 
     // Clear screen
@@ -1160,30 +1553,32 @@ class JtcsvTUI {
 {center}{bold}JTCSV Terminal Interface Help{/bold}{/center}
 
 {underline}Navigation:{/underline}
-• Use arrow keys to navigate menus
-• Press Enter to select items
-• Press Tab to switch between controls
-• Press Escape or 'q' to quit
+- Use arrow keys to navigate menus
+- Press Enter to select items
+- Press Tab, Shift+Tab, or F6 to switch focus
+- Press Esc to return to the main menu
 
 {underline}Conversion:{/underline}
-• JSON → CSV: Convert JSON arrays to CSV format
-• CSV → JSON: Convert CSV data to JSON arrays
-• Load files using the 'Load File' button
-• Adjust settings in the Settings menu
+- JSON -> CSV: Convert JSON arrays to CSV format
+- CSV -> JSON: Convert CSV data to JSON arrays
+- Load files using the "Load File" button
+- Adjust settings in the Settings menu
 
 {underline}Options:{/underline}
-• Delimiter: Choose CSV separator character
-• Headers: Include/exclude header row in CSV
-• Parse Numbers: Convert numeric strings to numbers
-• CSV Injection Protection: Prevent formula execution
+- Delimiter: Choose CSV separator character
+- Headers: Include/exclude header row in CSV
+- Parse Numbers: Convert numeric strings to numbers
+- CSV Injection Protection: Prevent formula execution
 
 {underline}Keyboard Shortcuts:{/underline}
-• F1: Show this help
-• Ctrl+S: Save current output
-• Ctrl+L: Load file
-• Ctrl+Q: Quit application
+- F1: Show this help
+- F2 or Ctrl+O: Load file
+- F3 or Ctrl+R: Convert/Run
+- F4 or Ctrl+P: Save output
+- Esc or Ctrl+B: Back to menu
+- Ctrl+Q: Quit application
 
-Press any key to return to main menu.
+Press Esc to return to the main menu.
     `;
 
     const helpBox = blessed.box({
@@ -1213,9 +1608,7 @@ Press any key to return to main menu.
     });
 
     this.screen.append(helpBox);
-    
-    // Return to main menu on any key
-    this.screen.key(['enter', 'space', 'escape'], () => {
+    this.bindScreenKey(['enter', 'space'], () => {
       this.showMainMenu();
     });
 
@@ -1327,6 +1720,215 @@ Press any key to return to main menu.
     this.screen.append(optionsMenu);
     optionsMenu.focus();
     this.screen.render();
+  }
+
+  /**
+   * Track screen-specific key bindings so they can be cleared on mode switch.
+   */
+  bindScreenKey(keys, handler) {
+    this.screen.key(keys, handler);
+    this.boundKeys.push({ keys, handler });
+  }
+
+  clearScreenKeys() {
+    this.boundKeys.forEach(({ keys, handler }) => {
+      this.screen.unkey(keys, handler);
+    });
+    this.boundKeys = [];
+  }
+
+  setupFocusCycle(widgets = []) {
+    const focusables = widgets.filter(Boolean);
+    if (focusables.length === 0) {
+      return;
+    }
+
+    const focusNext = (direction) => {
+      const current = this.screen.focused;
+      const currentIndex = focusables.indexOf(current);
+      const startIndex = currentIndex === -1 ? 0 : currentIndex;
+      const nextIndex = (startIndex + direction + focusables.length) % focusables.length;
+      focusables[nextIndex].focus();
+      this.screen.render();
+    };
+
+    this.bindScreenKey(['tab', 'f6'], () => focusNext(1));
+    this.bindScreenKey(['S-tab', 'S-f6', 'backtab'], () => focusNext(-1));
+  }
+
+  triggerButton(button) {
+    if (button) {
+      button.emit('press');
+    }
+  }
+
+  buildJsonToCsvOptions() {
+    return {
+      delimiter: this.conversionOptions.delimiter,
+      includeHeaders: this.conversionOptions.includeHeaders,
+      preventCsvInjection: this.conversionOptions.preventCsvInjection,
+      rfc4180Compliant: true
+    };
+  }
+
+  buildCsvToJsonOptions() {
+    return {
+      delimiter: this.conversionOptions.delimiter,
+      autoDetect: this.conversionOptions.autoDetect,
+      parseNumbers: this.conversionOptions.parseNumbers,
+      parseBooleans: this.conversionOptions.parseBooleans,
+      trim: true,
+      hasHeaders: this.conversionOptions.includeHeaders,
+      useFastPath: this.conversionOptions.useFastPath,
+      fastPathMode: this.conversionOptions.fastPathMode,
+      preventCsvInjection: this.conversionOptions.preventCsvInjection,
+      rfc4180Compliant: true
+    };
+  }
+
+  preprocessJsonData(data, maxDepth = 5) {
+    const rows = Array.isArray(data) ? data : [data];
+    return rows.map((item) => {
+      if (!item || typeof item !== 'object') {
+        return {};
+      }
+      const processed = {};
+      Object.keys(item).forEach((key) => {
+        const value = item[key];
+        if (value && typeof value === 'object') {
+          processed[key] = jtcsv.deepUnwrap(value, 0, maxDepth);
+        } else {
+          processed[key] = value;
+        }
+      });
+      return processed;
+    });
+  }
+
+  collectFiles(inputPath, extension, recursive) {
+    if (!fs.existsSync(inputPath)) {
+      return [];
+    }
+
+    const stats = fs.statSync(inputPath);
+    if (stats.isFile()) {
+      return inputPath.endsWith(extension) ? [inputPath] : [];
+    }
+
+    const results = [];
+    const entries = fs.readdirSync(inputPath, { withFileTypes: true });
+    entries.forEach((entry) => {
+      const fullPath = path.join(inputPath, entry.name);
+      if (entry.isDirectory()) {
+        if (recursive) {
+          results.push(...this.collectFiles(fullPath, extension, recursive));
+        }
+        return;
+      }
+      if (entry.isFile() && fullPath.endsWith(extension)) {
+        results.push(fullPath);
+      }
+    });
+    return results;
+  }
+
+  promptForValue(title, message, defaultValue = '') {
+    return new Promise((resolve) => {
+      const dialog = blessed.prompt({
+        parent: this.screen,
+        top: 'center',
+        left: 'center',
+        width: '60%',
+        height: 7,
+        label: ` ${title} `,
+        border: {
+          type: 'line'
+        },
+        style: {
+          border: {
+            fg: 'cyan'
+          }
+        }
+      });
+
+      dialog.input(message, defaultValue, (err, value) => {
+        dialog.destroy();
+        this.screen.render();
+        if (err) {
+          resolve(null);
+          return;
+        }
+        resolve(value && value.trim() ? value.trim() : null);
+      });
+
+      this.screen.render();
+    });
+  }
+
+  async runBatchProcess() {
+    const modeInput = await this.promptForValue(
+      'Batch Mode',
+      'Enter mode (json-to-csv or csv-to-json):',
+      'json-to-csv'
+    );
+    if (!modeInput) {
+      return;
+    }
+
+    const mode = modeInput.toLowerCase();
+    const isJsonToCsv = mode === 'json-to-csv' || mode === 'json2csv';
+    const isCsvToJson = mode === 'csv-to-json' || mode === 'csv2json';
+    if (!isJsonToCsv && !isCsvToJson) {
+      this.showMessage('Invalid mode. Use json-to-csv or csv-to-json.', 'error');
+      return;
+    }
+
+    const inputPath = await this.promptForValue('Input Path', 'Enter input file or directory:');
+    if (!inputPath) {
+      return;
+    }
+
+    const outputPath = await this.promptForValue('Output Directory', 'Enter output directory:', './output');
+    if (!outputPath) {
+      return;
+    }
+
+    const recursiveInput = await this.promptForValue('Recursive', 'Recurse into subfolders? (y/n):', 'n');
+    const recursive = recursiveInput && recursiveInput.toLowerCase().startsWith('y');
+
+    const extension = isJsonToCsv ? '.json' : '.csv';
+    const files = this.collectFiles(inputPath, extension, recursive);
+    if (files.length === 0) {
+      this.showMessage(`No ${extension} files found.`, 'warning');
+      return;
+    }
+
+    fs.mkdirSync(outputPath, { recursive: true });
+    let success = 0;
+    let failed = 0;
+
+    for (const file of files) {
+      try {
+        const raw = fs.readFileSync(file, 'utf8');
+        const base = path.basename(file, extension);
+        if (isJsonToCsv) {
+          const parsed = JSON.parse(raw);
+          const rows = Array.isArray(parsed) ? parsed : [parsed];
+          const csv = jtcsv.jsonToCsv(rows, this.buildJsonToCsvOptions());
+          const outFile = path.join(outputPath, `${base}.csv`);
+          fs.writeFileSync(outFile, csv, 'utf8');
+        } else {
+          const json = jtcsv.csvToJson(raw, this.buildCsvToJsonOptions());
+          const outFile = path.join(outputPath, `${base}.json`);
+          fs.writeFileSync(outFile, JSON.stringify(json, null, 2), 'utf8');
+        }
+        success++;
+      } catch (error) {
+        failed++;
+      }
+    }
+
+    this.showMessage(`Batch completed. Success: ${success}, Failed: ${failed}`, failed ? 'warning' : 'success');
   }
 
   /**
