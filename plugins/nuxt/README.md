@@ -1,25 +1,24 @@
 # @jtcsv/nuxt
 
-Nuxt module for JTCSV.
+Nuxt module that injects `jtcsv` into the Nuxt app and provides a `useJtcsv` composable.
 
 ## Install
 ```bash
 npm install @jtcsv/nuxt jtcsv
 ```
 
-## Setup
+## Nuxt config
 ```typescript
 export default defineNuxtConfig({
   modules: ['@jtcsv/nuxt'],
-  jtcsv: {
-    autoimport: true
-  }
+  jtcsv: { autoimport: true }
 });
 ```
 
 ## Usage
 ```vue
 <script setup>
-const { csvToJson, jsonToCsv } = useJtcsv();
+const jtcsv = useJtcsv();
+const csv = jtcsv.jsonToCsv([{ id: 1 }]);
 </script>
 ```

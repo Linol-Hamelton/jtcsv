@@ -9,7 +9,7 @@
 
 const { spawn } = require('child_process');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 
 console.log('🚀 Starting jtcsv demos...\n');
 

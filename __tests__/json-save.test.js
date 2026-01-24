@@ -97,7 +97,7 @@ describe('JSON Save Functions', () => {
     
     // Clean up
     fs.unlinkSync(nestedPath);
-    fs.rmdirSync(path.dirname(nestedPath), { recursive: true });
+    fs.rmSync(path.dirname(nestedPath), { recursive: true, force: true });
   });
 });
 

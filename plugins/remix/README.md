@@ -1,6 +1,6 @@
 # @jtcsv/remix
 
-Remix helpers for JTCSV.
+Remix helpers for CSV form uploads and CSV responses.
 
 ## Install
 ```bash
@@ -8,19 +8,19 @@ npm install @jtcsv/remix jtcsv
 ```
 
 ## Usage
-```typescript
-import { parseFormData, generateCsvResponse } from 'jtcsv/remix';
+```javascript
+import { parseFormData, generateCsvResponse } from '@jtcsv/remix';
 
 export async function action({ request }) {
-  const rows = await parseFormData(request, { delimiter: ',' });
-  return { parsed: rows };
+  const rows = await parseFormData(request, { fieldName: 'file', delimiter: ',' });
+  return { rows };
 }
 
 export async function loader() {
-  return generateCsvResponse([{ id: 1, name: 'John' }], 'export.csv');
+  return generateCsvResponse([{ id: 1 }], 'export.csv');
 }
 ```
 
-## Notes
-- `parseFormData` looks for a file field named `file` by default.
-- You can override the field name with `{ fieldName: 'upload' }`.
+## Exports
+- parseFormData
+- generateCsvResponse

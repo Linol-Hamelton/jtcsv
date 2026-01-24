@@ -1,6 +1,6 @@
 # @jtcsv/sveltekit
 
-SvelteKit helpers for JTCSV.
+Helpers for parsing CSV requests and returning CSV responses in SvelteKit.
 
 ## Install
 ```bash
@@ -8,21 +8,21 @@ npm install @jtcsv/sveltekit jtcsv
 ```
 
 ## Usage
-```typescript
-import { parseCsv, generateCsv } from 'jtcsv/sveltekit';
+```javascript
+import { parseCsv, generateCsv } from '@jtcsv/sveltekit';
 
 export const actions = {
   upload: async ({ request }) => {
     const rows = await parseCsv(request, { delimiter: ',' });
-    return { success: true, rows };
+    return { rows };
   }
 };
 
 export async function GET() {
-  return generateCsv([{ id: 1, name: 'John' }], 'export.csv');
+  return generateCsv([{ id: 1 }], 'export.csv');
 }
 ```
 
-## Notes
-- `parseCsv` reads `request.text()` by default.
-- Use `{ formData: true, fieldName: 'file' }` for multipart uploads.
+## Exports
+- parseCsv
+- generateCsv

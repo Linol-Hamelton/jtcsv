@@ -707,7 +707,15 @@ export class JtcsvIntegration {
     
     try {
       const jsonData = typeof data === 'string' ? JSON.parse(data) : data
-      return this.jtcsv.jsonToCsv(jsonData, options)
+      const normalizedOptions = { ...options }
+      if (typeof normalizedOptions.maxRecords === 'string') {
+        const parsed = Number(normalizedOptions.maxRecords)
+        normalizedOptions.maxRecords = Number.isFinite(parsed) ? parsed : undefined
+      }
+      if (normalizedOptions.maxRecords === '' || normalizedOptions.maxRecords === null) {
+        delete normalizedOptions.maxRecords
+      }
+      return this.jtcsv.jsonToCsv(jsonData, normalizedOptions)
     } catch (error) {
       console.error('JSON to CSV conversion error:', error)
       throw error

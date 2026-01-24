@@ -1,6 +1,6 @@
 # @jtcsv/nestjs
 
-NestJS interceptors and decorators for JTCSV.
+NestJS interceptors for parsing CSV payloads and returning CSV responses.
 
 ## Install
 ```bash
@@ -9,25 +9,27 @@ npm install @jtcsv/nestjs jtcsv
 
 ## Usage
 ```typescript
-import { CsvParserInterceptor, CsvDownloadDecorator } from 'jtcsv/nestjs';
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Controller, Post, Body, UseInterceptors } from '@nestjs/common';
+import { CsvParserInterceptor, CsvDownloadDecorator } from '@jtcsv/nestjs';
 
 @Controller('data')
 export class DataController {
   @Post('upload')
   @CsvParserInterceptor({ delimiter: ',' })
-  uploadCsv(@Body() jsonData: any[]) {
-    return { parsed: jsonData };
+  upload(@Body() body: any[]) {
+    return { rows: body };
   }
 
-  @Get('export')
+  @Post('export')
   @CsvDownloadDecorator({ filename: 'export.csv' })
-  exportData() {
-    return [{ id: 1, name: 'John' }];
+  exportCsv() {
+    return [{ id: 1, name: 'Jane' }];
   }
 }
 ```
 
-## Notes
-- `CsvParserInterceptor` expects CSV text in the request body.
-- `CsvDownloadDecorator` converts the handler result to CSV and sets download headers.
+## Exports
+- CsvParserInterceptor
+- CsvDownloadDecorator
+- createCsvParserInterceptor
+- createCsvDownloadInterceptor
