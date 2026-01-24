@@ -15,16 +15,22 @@ export class JtcsvIntegration {
     if (this.initialized) return
     
     try {
-      // Try to load from local build
-      this.jtcsv = await import('../../../index.js')
+      // Prefer browser entry for demo
+      this.jtcsv = await import('../../../src/browser/index.js')
       this.mode = 'real'
-      console.log('✅ JTCSV loaded from local build')
+      console.log('[OK] JTCSV loaded from browser entry')
     } catch (error) {
-      console.warn('⚠️ Could not load local JTCSV, using enhanced simulation mode:', error.message)
-      this.jtcsv = this.createEnhancedSimulation()
-      this.mode = 'simulation'
+      try {
+        this.jtcsv = await import('../../../index.js')
+        this.mode = 'real'
+        console.log('[OK] JTCSV loaded from local build')
+      } catch (error2) {
+        console.warn('[WARN] Could not load JTCSV, using enhanced simulation mode:', error2.message)
+        this.jtcsv = this.createEnhancedSimulation()
+        this.mode = 'simulation'
+      }
     }
-    
+
     this.initialized = true
   }
 
@@ -33,7 +39,147 @@ export class JtcsvIntegration {
    */
   createEnhancedSimulation() {
     console.log('🔧 Using enhanced simulation mode for JTCSV')
+
+    const escapeCsvField = (value, delimiter, preventCsvInjection, rfc4180Compliant) => {
+      if (value === null || value === undefined || value === '') {
+        return ''
+      }
+
+      let strValue = String(value)
+
+      if (preventCsvInjection && /^[=+@-]/.test(strValue)) {
+        strValue = "'" + strValue
+      }
+
+      const needsQuoting = rfc4180Compliant
+        ? (strValue.includes(delimiter) ||
+           strValue.includes('"') ||
+           strValue.includes('\\n') ||
+           strValue.includes('\\r'))
+        : false
+
+      if (needsQuoting) {
+        return `"${strValue.replace(/"/g, '""')}"`
+      }
+
+      return strValue
+    }
+
+    const parseCsvLine = (line, delimiter) => {
+      const result = []
+      let current = ''
+      let inQuotes = false
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        const nextChar = line[i + 1]
+
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            current += '"'
+            i++
+          } else {
+            inQuotes = !inQuotes
+          }
+        } else if (char === delimiter && !inQuotes) {
+          result.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+
+      result.push(current.trim())
+      return result
+    }
+
+    const autoDetectDelimiter = (csv, candidates = [';', ',', '\\t', '|']) => {
+      if (!csv || typeof csv !== 'string') {
+        return ';'
+      }
+
+      const lines = csv.split('\\n').filter(line => line.trim().length > 0)
+      if (lines.length === 0) {
+        return ';'
+      }
+
+      const firstLine = lines[0]
+      const counts = {}
+
+      candidates.forEach(delim => {
+        const escapedDelim = delim.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')
+        const regex = new RegExp(escapedDelim, 'g')
+        const matches = firstLine.match(regex)
+        counts[delim] = matches ? matches.length : 0
+      })
+
+      let maxCount = -1
+      let detectedDelimiter = ';'
+
+      for (const [delim, count] of Object.entries(counts)) {
+        if (count > maxCount) {
+          maxCount = count
+          detectedDelimiter = delim
+        }
+      }
+
+      return maxCount === 0 ? ';' : detectedDelimiter
+    }
+
+    const deepUnwrap = (value, depth = 0, maxDepth = 5, visited = new Set()) => {
+      if (depth >= maxDepth) {
+        return '[Too Deep]'
+      }
+
+      if (value === null || value === undefined) {
+        return ''
+      }
+
+      if (typeof value === 'object') {
+        if (visited.has(value)) {
+          return '[Circular Reference]'
+        }
+        visited.add(value)
+      }
+
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          return ''
+        }
+        const unwrappedItems = value.map(item =>
+          deepUnwrap(item, depth + 1, maxDepth, visited)
+        ).filter(item => item !== '')
+        return unwrappedItems.join(', ')
+      }
+
+      if (typeof value === 'object') {
+        try {
+          return JSON.stringify(value)
+        } catch (error) {
+          return '[Unstringifiable Object]'
+        }
+      }
+
+      return String(value)
+    }
     
+    const createStreamFromIterator = (iterator) => {
+      return new ReadableStream({
+        async pull(controller) {
+          try {
+            const { value, done } = await iterator.next();
+            if (done) {
+              controller.close();
+              return;
+            }
+            controller.enqueue(value);
+          } catch (error) {
+            controller.error(error);
+          }
+        }
+      })
+    }
+
     const simulation = {
       // JSON → CSV functions
       jsonToCsv: (data, options = {}) => {
@@ -45,8 +191,12 @@ export class JtcsvIntegration {
         const maxRecords = options.maxRecords
         const rfc4180Compliant = options.rfc4180Compliant !== false
         
-        if (!Array.isArray(data) || data.length === 0) {
-          throw new Error('Data must be a non-empty array')
+        if (!Array.isArray(data)) {
+          throw new Error('Data must be an array')
+        }
+
+        if (data.length === 0) {
+          return ''
         }
         
         // Apply record limit
@@ -143,7 +293,7 @@ export class JtcsvIntegration {
         // Auto-detect delimiter
         let finalDelimiter = delimiter
         if (autoDetect && !delimiter) {
-          finalDelimiter = this.autoDetectDelimiter(csv, candidates)
+          finalDelimiter = autoDetectDelimiter(csv, candidates)
         }
         
         // Parse CSV
@@ -163,21 +313,21 @@ export class JtcsvIntegration {
         let startIndex = 0
         
         if (hasHeaders && processedLines.length > 0) {
-          headers = this.parseCsvLine(processedLines[0], finalDelimiter)
+          headers = parseCsvLine(processedLines[0], finalDelimiter)
             .map(header => {
               const trimmed = trim ? header.trim() : header
               return renameMap[trimmed] || trimmed
             })
           startIndex = 1
         } else {
-          const firstRow = this.parseCsvLine(processedLines[0], finalDelimiter)
+          const firstRow = parseCsvLine(processedLines[0], finalDelimiter)
           headers = firstRow.map((_, i) => `column_${i + 1}`)
         }
         
         const result = []
         
         for (let i = startIndex; i < processedLines.length; i++) {
-          const values = this.parseCsvLine(processedLines[i], finalDelimiter)
+          const values = parseCsvLine(processedLines[i], finalDelimiter)
           const row = {}
           
           headers.forEach((header, index) => {
@@ -206,6 +356,61 @@ export class JtcsvIntegration {
         }
         
         return result
+      },
+
+      csvToJsonIterator: async function* (input, options = {}) {
+        let csvText = input
+
+        if (typeof input !== 'string') {
+          if (input && typeof input.text === 'function') {
+            csvText = await input.text()
+          } else {
+            throw new Error('Input must be a CSV string or File/Blob')
+          }
+        }
+
+        const rows = this.csvToJson(csvText, options)
+        for (const row of rows) {
+          yield row
+        }
+      },
+
+      parseCsvFileStream: function (file, options = {}) {
+        return this.csvToJsonIterator(file, options)
+      },
+
+      parseCSVWithWorker: async function (input, options = {}, onProgress = null) {
+        let csvText = input
+
+        if (typeof input !== 'string') {
+          if (input && typeof input.text === 'function') {
+            csvText = await input.text()
+          } else {
+            throw new Error('Input must be a CSV string or File/Blob')
+          }
+        }
+
+        const result = this.csvToJson(csvText, options)
+        if (onProgress) {
+          onProgress({ processed: result.length, total: result.length, percentage: 100 })
+        }
+        return result
+      },
+
+      createWorkerPool: function () {
+        return {
+          exec: async () => {
+            throw new Error('Worker pool is not available in simulation mode')
+          }
+        }
+      },
+
+      createWorkerPoolLazy: async function (options = {}) {
+        return this.createWorkerPool(options)
+      },
+
+      parseCSVWithWorkerLazy: async function (input, options = {}, onProgress = null) {
+        return this.parseCSVWithWorker(input, options, onProgress)
       },
       
       // JSON save functions
@@ -237,7 +442,7 @@ export class JtcsvIntegration {
             if (Object.prototype.hasOwnProperty.call(item, key)) {
               const value = item[key]
               if (value && typeof value === 'object') {
-                processed[key] = this.deepUnwrap(value)
+                processed[key] = deepUnwrap(value)
               } else {
                 processed[key] = value
               }
@@ -271,7 +476,7 @@ export class JtcsvIntegration {
             return ''
           }
           const unwrappedItems = value.map(item => 
-            this.deepUnwrap(item, depth + 1, maxDepth, visited)
+            deepUnwrap(item, depth + 1, maxDepth, visited)
           ).filter(item => item !== '')
           return unwrappedItems.join(', ')
         }
@@ -380,8 +585,8 @@ export class JtcsvIntegration {
                 }
                 
                 const row = headers 
-                  ? headers.map(header => this.escapeCsvField(item[header], delimiter)).join(delimiter)
-                  : Object.values(item).map(val => this.escapeCsvField(val, delimiter)).join(delimiter)
+                  ? headers.map(header => escapeCsvField(item[header], delimiter)).join(delimiter)
+                  : Object.values(item).map(val => escapeCsvField(val, delimiter)).join(delimiter)
                 
                 yield row + '\n'
               }
@@ -424,7 +629,7 @@ export class JtcsvIntegration {
               for (const line of lines) {
                 if (line.trim() === '') continue
                 
-                const values = this.parseCsvLine(line, delimiter)
+                const values = parseCsvLine(line, delimiter)
                 
                 if (isFirstChunk && hasHeaders) {
                   headers = values
@@ -448,13 +653,38 @@ export class JtcsvIntegration {
             }
           }
         }
+      },
+      jsonToCsvStream: (input, options = {}) => {
+        const data = Array.isArray(input) ? input : []
+        const csv = simulation.jsonToCsv(data, options)
+        return createStreamFromIterator((async function* () {
+          yield csv
+        })())
+      },
+
+      jsonToNdjsonStream: (input, options = {}) => {
+        const data = Array.isArray(input) ? input : []
+        return createStreamFromIterator((async function* () {
+          for (const item of data) {
+            yield JSON.stringify(item) + '\n'
+          }
+        })())
+      },
+
+      csvToJsonStream: (input, options = {}) => {
+        const outputFormat = options.outputFormat || 'ndjson'
+        const jsonData = simulation.csvToJson(input, options)
+        return createStreamFromIterator((async function* () {
+          if (outputFormat === 'json' || outputFormat === 'json-array' || outputFormat === 'array') {
+            yield JSON.stringify(jsonData)
+            return
+          }
+          for (const row of jsonData) {
+            yield JSON.stringify(row) + '\n'
+          }
+        })())
       }
     }
-    
-    // Bind helper methods to simulation object
-    simulation.parseCsvLine = simulation.parseCsvLine.bind(simulation)
-    simulation.autoDetectDelimiter = simulation.autoDetectDelimiter.bind(simulation)
-    simulation.deepUnwrap = simulation.deepUnwrap.bind(simulation)
     
     return simulation
   }
@@ -491,11 +721,159 @@ export class JtcsvIntegration {
     await this.init()
     
     try {
-      return this.jtcsv.csvToJson(csv, options)
+      const normalizedOptions = { ...options }
+      if (typeof normalizedOptions.maxRows === 'string') {
+        const parsed = Number(normalizedOptions.maxRows)
+        normalizedOptions.maxRows = Number.isFinite(parsed) ? parsed : undefined
+      }
+      if (normalizedOptions.maxRows === '' || normalizedOptions.maxRows === null) {
+        delete normalizedOptions.maxRows
+      }
+
+      return this.jtcsv.csvToJson(csv, normalizedOptions)
     } catch (error) {
       console.error('CSV to JSON conversion error:', error)
       throw error
     }
+  }
+
+  /**
+   * Convert CSV to JSON as async iterator
+   */
+  async csvToJsonIterator(input, options = {}) {
+    await this.init()
+
+    if (this.jtcsv.csvToJsonIterator) {
+      return this.jtcsv.csvToJsonIterator(input, options)
+    }
+
+    let csvText = input
+    if (typeof input !== 'string') {
+      if (input && typeof input.text === 'function') {
+        csvText = await input.text()
+      } else {
+        throw new Error('Input must be a CSV string or File/Blob')
+      }
+    }
+
+    const rows = await this.csvToJson(csvText, options)
+    return (async function* () {
+      for (const row of rows) {
+        yield row
+      }
+    })()
+  }
+
+  /**
+   * Stream JSON to CSV as a ReadableStream
+   */
+  async jsonToCsvStream(input, options = {}) {
+    await this.init()
+
+    if (this.jtcsv.jsonToCsvStream) {
+      return this.jtcsv.jsonToCsvStream(input, options)
+    }
+
+    const csv = await this.jsonToCsv(input, options)
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(csv)
+        controller.close()
+      }
+    })
+  }
+
+  /**
+   * Stream JSON to NDJSON as a ReadableStream
+   */
+  async jsonToNdjsonStream(input, options = {}) {
+    await this.init()
+
+    if (this.jtcsv.jsonToNdjsonStream) {
+      return this.jtcsv.jsonToNdjsonStream(input, options)
+    }
+
+    const jsonData = typeof input === 'string' ? JSON.parse(input) : input
+    const items = Array.isArray(jsonData) ? jsonData : [jsonData]
+    return new ReadableStream({
+      start(controller) {
+        for (const item of items) {
+          controller.enqueue(JSON.stringify(item) + '\n')
+        }
+        controller.close()
+      }
+    })
+  }
+
+  /**
+   * Stream CSV to JSON as a ReadableStream
+   */
+  async csvToJsonStream(input, options = {}) {
+    await this.init()
+
+    if (this.jtcsv.csvToJsonStream) {
+      return this.jtcsv.csvToJsonStream(input, options)
+    }
+
+    const jsonData = await this.csvToJson(input, options)
+    const output = JSON.stringify(jsonData)
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(output)
+        controller.close()
+      }
+    })
+  }
+
+  /**
+   * Stream CSV File without full buffering
+   */
+  async parseCsvFileStream(file, options = {}) {
+    await this.init()
+
+    if (this.jtcsv.parseCsvFileStream) {
+      return this.jtcsv.parseCsvFileStream(file, options)
+    }
+
+    if (this.jtcsv.csvToJsonIterator) {
+      return this.jtcsv.csvToJsonIterator(file, options)
+    }
+
+    throw new Error('Streaming CSV API not available')
+  }
+
+  /**
+   * Lazy worker pool creation
+   */
+  async createWorkerPoolLazy(options = {}) {
+    await this.init()
+
+    if (this.jtcsv.createWorkerPoolLazy) {
+      return this.jtcsv.createWorkerPoolLazy(options)
+    }
+
+    if (this.jtcsv.createWorkerPool) {
+      return this.jtcsv.createWorkerPool(options)
+    }
+
+    throw new Error('Worker pool API not available')
+  }
+
+  /**
+   * Parse CSV with lazy worker helper
+   */
+  async parseCSVWithWorkerLazy(input, options = {}, onProgress = null) {
+    await this.init()
+
+    if (this.jtcsv.parseCSVWithWorkerLazy) {
+      return this.jtcsv.parseCSVWithWorkerLazy(input, options, onProgress)
+    }
+
+    if (this.jtcsv.parseCSVWithWorker) {
+      return this.jtcsv.parseCSVWithWorker(input, options, onProgress)
+    }
+
+    throw new Error('Worker parsing API not available')
   }
 
   /**
@@ -562,8 +940,9 @@ export class JtcsvIntegration {
     await this.init()
     
     try {
-      const streamProcessor = this.jtcsv.createJsonToCsvStream(options)
-      const outputStream = streamProcessor.transform(dataStream)
+      const outputStream = this.jtcsv.jsonToCsvStream
+        ? this.jtcsv.jsonToCsvStream(dataStream, options)
+        : this.jtcsv.createJsonToCsvStream(options).transform(dataStream)
       
       let result = ''
       for await (const chunk of outputStream) {
@@ -584,15 +963,25 @@ export class JtcsvIntegration {
     await this.init()
     
     try {
-      const streamProcessor = this.jtcsv.createCsvToJsonStream(options)
-      const outputStream = streamProcessor.transform(csvStream)
+      const outputStream = this.jtcsv.csvToJsonStream
+        ? this.jtcsv.csvToJsonStream(csvStream, { ...options, outputFormat: 'json' })
+        : this.jtcsv.createCsvToJsonStream(options).transform(csvStream)
       
-      const result = []
+      let resultText = ''
+      const resultObjects = []
       for await (const chunk of outputStream) {
-        result.push(chunk)
+        if (typeof chunk === 'string') {
+          resultText += chunk
+        } else {
+          resultObjects.push(chunk)
+        }
       }
-      
-      return result
+
+      if (resultText) {
+        return JSON.parse(resultText)
+      }
+
+      return resultObjects
     } catch (error) {
       console.error('Streaming CSV to JSON error:', error)
       throw error
@@ -658,25 +1047,66 @@ export class JtcsvIntegration {
   async batchProcess(files, options = {}) {
     const results = []
     const parallelLimit = options.parallel || 4
+    const outputFormat = options.outputFormat || 'same'
     
     for (let i = 0; i < files.length; i += parallelLimit) {
       const batch = files.slice(i, i + parallelLimit)
       const promises = batch.map(async (file) => {
         try {
           const content = await this.readFile(file)
-          let result
-          
-          if (file.name.endsWith('.json')) {
-            const jsonData = JSON.parse(content)
-            result = await this.jsonToCsv(jsonData, options)
-          } else if (file.name.endsWith('.csv')) {
-            result = await this.csvToJson(content, options)
+          let output = ''
+          let outputExt = 'txt'
+          let outputMime = 'text/plain'
+          let parsedJson = null
+
+          const lowerName = file.name.toLowerCase()
+          const isJson = lowerName.endsWith('.json')
+          const isNdjson = lowerName.endsWith('.ndjson') || lowerName.endsWith('.jsonl')
+          const isCsv = lowerName.endsWith('.csv')
+          const inputType = isNdjson ? 'ndjson' : (isJson ? 'json' : (isCsv ? 'csv' : 'unknown'))
+
+          const targetFormat = outputFormat === 'same'
+            ? (inputType === 'csv' ? 'json' : 'csv')
+            : outputFormat
+
+          if (targetFormat === 'csv') {
+            if (inputType === 'csv') {
+              output = content
+            } else {
+              if (inputType === 'ndjson') {
+                const lines = content.split('\n').filter((line) => line.trim())
+                parsedJson = lines.map((line) => JSON.parse(line))
+              } else {
+                parsedJson = JSON.parse(content)
+              }
+              output = await this.jsonToCsv(parsedJson, options)
+            }
+            outputExt = 'csv'
+            outputMime = 'text/csv'
+          } else if (targetFormat === 'json') {
+            if (inputType === 'json') {
+              parsedJson = JSON.parse(content)
+              output = JSON.stringify(parsedJson, null, 2)
+            } else if (inputType === 'ndjson') {
+              const lines = content.split('\n').filter((line) => line.trim())
+              parsedJson = lines.map((line) => JSON.parse(line))
+              output = JSON.stringify(parsedJson, null, 2)
+            } else if (inputType === 'csv') {
+              const jsonData = await this.csvToJson(content, options)
+              output = JSON.stringify(jsonData, null, 2)
+            }
+            outputExt = 'json'
+            outputMime = 'application/json'
           }
-          
+
           return {
             file: file.name,
             success: true,
-            result,
+            result: output,
+            output,
+            outputFormat: targetFormat,
+            outputExt,
+            outputMime,
             size: file.size
           }
         } catch (error) {
@@ -719,7 +1149,7 @@ export class JtcsvIntegration {
   getInfo() {
     return {
       name: 'JTCSV Converter',
-      version: '2.1.0',
+      version: '2.1.4',
       mode: this.mode,
       features: [
         'JSON ↔ CSV bidirectional conversion',
@@ -727,6 +1157,8 @@ export class JtcsvIntegration {
         'RFC 4180 compliant',
         'Auto delimiter detection',
         'Streaming support for large files',
+        'Browser streaming iterator',
+        'Lazy worker helpers',
         'Batch processing',
         'Deep unwrapping of nested structures',
         'Preprocessing utilities',

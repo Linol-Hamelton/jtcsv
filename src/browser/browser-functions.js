@@ -3,6 +3,7 @@
 
 import { jsonToCsv } from './json-to-csv-browser.js';
 import { csvToJson, csvToJsonIterator } from './csv-to-json-browser.js';
+import { csvToJsonStream, jsonToCsvStream, jsonToNdjsonStream } from './streams.js';
 import { ValidationError } from './errors-browser.js';
 
 /**
@@ -208,6 +209,11 @@ if (typeof module !== 'undefined' && module.exports) {
     parseCsvFile,
     parseCsvFileStream,
     createCsvBlob,
-    parseCsvBlob
+    parseCsvBlob,
+    jsonToCsvStream,
+    jsonToNdjsonStream,
+    csvToJsonStream
   };
 }
+
+export { jsonToCsvStream, jsonToNdjsonStream, csvToJsonStream };

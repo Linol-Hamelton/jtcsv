@@ -8,6 +8,7 @@
  * @date 2026-01-22
  */
 
+;(async () => {
 console.log('🚀 JTCSV 2.1.0 - Демонстрация новых возможностей\n');
 
 // ============================================================================
@@ -17,7 +18,7 @@ console.log('🚀 JTCSV 2.1.0 - Демонстрация новых возмож
 console.log('1. 📦 Базовое использование (обратная совместимость)');
 console.log('='.repeat(60));
 
-const { jsonToCsv, csvToJson } = require('jtcsv
+const { jsonToCsv, csvToJson } = require('jtcsv');
 
 const sampleData = [
   { id: 1, name: 'John Doe', age: 30, city: 'New York' },
@@ -275,5 +276,8 @@ console.log('⭐ Star на GitHub если понравилось!');
 console.log('\n' + '✨'.repeat(30));
 console.log('✨  JTCSV 2.1.0 - Next Generation JSON/CSV Converter  ✨');
 console.log('✨'.repeat(30));
-
+})().catch((error) => {
+  console.error('Demo failed:', error);
+  process.exitCode = 1;
+});
 

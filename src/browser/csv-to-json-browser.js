@@ -42,6 +42,10 @@ function validateCsvOptions(options) {
   if (options?.maxRows !== undefined && (typeof options.maxRows !== 'number' || options.maxRows <= 0)) {
     throw new ConfigurationError('maxRows must be a positive number');
   }
+
+  if (options?.warnExtraFields !== undefined && typeof options.warnExtraFields !== 'boolean') {
+    throw new ConfigurationError('warnExtraFields must be a boolean');
+  }
   
   return true;
 }
@@ -382,7 +386,8 @@ export function csvToJson(csv, options = {}) {
       trim = true,
       parseNumbers = false,
       parseBooleans = false,
-      maxRows
+      maxRows,
+      warnExtraFields = true
     } = opts;
 
     // Определение разделителя
@@ -524,7 +529,8 @@ export function csvToJson(csv, options = {}) {
         }
         
         // Предупреждение о лишних полях
-        if (fields.length > headers.length && process.env.NODE_ENV === 'development') {
+        const isDev = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development';
+        if (fields.length > headers.length && warnExtraFields && isDev) {
           console.warn(`[jtcsv] Line ${i + 1}: ${fields.length - headers.length} extra fields ignored`);
         }
         
