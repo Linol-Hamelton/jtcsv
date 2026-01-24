@@ -3,7 +3,14 @@
 
 import { jsonToCsv, preprocessData, deepUnwrap } from './json-to-csv-browser.js';
 import { csvToJson, csvToJsonIterator, autoDetectDelimiter } from './csv-to-json-browser.js';
-import { downloadAsCsv, parseCsvFile, parseCsvFileStream } from './browser-functions.js';
+import {
+  downloadAsCsv,
+  parseCsvFile,
+  parseCsvFileStream,
+  jsonToCsvStream,
+  jsonToNdjsonStream,
+  csvToJsonStream
+} from './browser-functions.js';
 import { createWorkerPool, parseCSVWithWorker } from './workers/worker-pool.js';
 import {
   ValidationError,
@@ -38,6 +45,9 @@ const jtcsv = {
   csvToJsonIterator,
   parseCsvFile,
   parseCsvFileStream,
+  jsonToCsvStream,
+  jsonToNdjsonStream,
+  csvToJsonStream,
   autoDetectDelimiter,
   
   // Web Workers функции
@@ -85,6 +95,9 @@ export {
   csvToJsonIterator,
   parseCsvFile,
   parseCsvFileStream,
+  jsonToCsvStream,
+  jsonToNdjsonStream,
+  csvToJsonStream,
   autoDetectDelimiter,
   createWorkerPool,
   parseCSVWithWorker,

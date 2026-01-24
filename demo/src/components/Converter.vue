@@ -443,7 +443,7 @@
                 </div>
                 <div
                   class="result-actions"
-                  v-if="result.success && result.result"
+                  v-if="result.success && result.output"
                 >
                   <button
                     @click="downloadSingleResult(result)"
@@ -1117,6 +1117,7 @@ const options = ref({
   rfc4180Compliant: true,
   maxRecords: null,
   maxRows: null,
+  warnExtraFields: false,
   renameMap: {},
   template: {},
   candidates: [";", ",", "\t", "|"],
@@ -1535,34 +1536,17 @@ const convertData = async () => {
 };
 
 const processWithStreaming = async () => {
-  // Implement streaming processing
   showProgressModal.value = true;
   progress.value = 0;
   progressDetails.value = "Starting streaming processing...";
 
   try {
-    const result = await jtcsv.processLargeFile(streamingFile.value, {
-      mode: inputFormat.value === "json" ? "json2csv" : "csv2json",
-      ...options.value,
-      chunkSize: streamingChunkSize.value,
-      onProgress: (processed, total) => {
-        progress.value = Math.round((processed / total) * 100);
-        progressDetails.value = `Processed ${processed} of ${total} chunks`;
-        processedItems.value = processed;
-        remainingItems.value = total - processed;
+    if (!streamingFile.value) {
+      throw new Error("No streaming file selected");
+    }
 
-        // Calculate speed
-        const elapsed = (performance.now() - startTime) / 1000;
-        processingSpeed.value = `${Math.round(processed / elapsed)} chunks/s`;
-        elapsedTime.value = `${elapsed.toFixed(1)}s`;
-
-        // Add log
-        addProgressLog(`Processed chunk ${processed}/${total}`);
-      },
-    });
-
-    outputText.value = result;
-    showNotification("Streaming processing completed!", "success");
+    const mode = inputFormat.value === "json" ? "json2csv" : "csv2json";
+    await runStreamingConversion(streamingFile.value, mode);
   } catch (error) {
     throw error;
   }
@@ -1671,6 +1655,7 @@ const startBatchProcessing = async () => {
   try {
     const results = await jtcsv.batchProcess(batchFiles.value, {
       ...options.value,
+      outputFormat: batchOutputFormat.value,
       parallel: batchParallel.value,
       onProgress: (processed, total) => {
         progress.value = Math.round((processed / total) * 100);
@@ -1694,15 +1679,41 @@ const startBatchProcessing = async () => {
 };
 
 const downloadBatchResults = () => {
-  // Create a zip file with all results
-  showNotification("Batch results download coming soon!", "info");
+  if (!batchResults.value.length) return;
+
+  const iterator = (async function* () {
+    yield "[";
+    let first = true;
+    for (const result of batchResults.value) {
+      const payload = {
+        file: result.file,
+        success: result.success,
+        size: result.size,
+        outputFormat: result.outputFormat,
+        output: result.output,
+        error: result.error,
+      };
+      const json = JSON.stringify(payload);
+      yield (first ? "" : ",") + json;
+      first = false;
+    }
+    yield "]";
+  })();
+
+  const stream = createReadableStreamFromIterator(iterator);
+  downloadStreamToFile(stream, "jtcsv-batch-results.json", "application/json")
+    .then(() => showNotification("Batch results downloaded!", "success"))
+    .catch((error) => {
+      console.error("Batch download failed:", error);
+      showNotification("Batch download failed", "error");
+    });
 };
 
 const downloadSingleResult = (result) => {
-  if (!result.result) return;
+  if (!result.output) return;
 
-  const blob = new Blob([result.result], {
-    type: result.file.endsWith(".json") ? "text/csv" : "application/json",
+  const blob = new Blob([result.output], {
+    type: result.outputMime || "text/plain",
   });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1710,13 +1721,10 @@ const downloadSingleResult = (result) => {
 
   // Determine output filename
   const inputName = result.file;
-  const outputName =
-    batchOutputFormat.value === "same"
-      ? inputName.replace(
-          /\.[^/.]+$/,
-          inputName.endsWith(".json") ? ".csv" : ".json",
-        )
-      : inputName.replace(/\.[^/.]+$/, `.${batchOutputFormat.value}`);
+  const outputName = inputName.replace(
+    /\.[^/.]+$/,
+    `.${result.outputExt || "txt"}`,
+  );
 
   a.download = outputName;
   document.body.appendChild(a);
@@ -1781,28 +1789,8 @@ const startStreamingProcessing = async () => {
       else if (fileName.endsWith(".csv")) mode = "csv2json";
     }
 
-    const result = await jtcsv.processLargeFile(streamingFile.value, {
-      mode,
-      ...options.value,
-      chunkSize: streamingChunkSize.value,
-      onProgress: (chunkIndex, totalChunks) => {
-        streamingProgress.value = Math.round((chunkIndex / totalChunks) * 100);
-
-        if (streamingShowProgress.value) {
-          addStreamingLog(
-            `Processed chunk ${chunkIndex}/${totalChunks}`,
-            "info",
-          );
-        }
-      },
-    });
-
-    outputText.value = result;
+    await runStreamingConversion(streamingFile.value, mode);
     addStreamingLog("Streaming processing completed!", "success");
-
-    if (streamingAutoDownload.value) {
-      downloadOutput();
-    }
   } catch (error) {
     addStreamingLog(`Error: ${error.message}`, "error");
     showNotification("Streaming processing failed", "error");
@@ -1822,6 +1810,140 @@ const cancelStreaming = () => {
   streamingProgress.value = 0;
   addStreamingLog("Processing cancelled", "warning");
   showNotification("Streaming processing cancelled", "warning");
+};
+
+const createReadableStreamFromIterator = (iterator) => {
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const { value, done } = await iterator.next();
+        if (done) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(value);
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+  });
+};
+
+const streamToPreview = async (stream, limit = 20000) => {
+  let preview = "";
+  let truncated = false;
+  for await (const chunk of stream) {
+    if (preview.length < limit) {
+      const remaining = limit - preview.length;
+      preview += chunk.slice(0, remaining);
+      if (chunk.length > remaining) {
+        truncated = true;
+      }
+    } else {
+      truncated = true;
+    }
+  }
+
+  return { preview, truncated };
+};
+
+const downloadStreamToFile = async (stream, filename, mimeType) => {
+  if (typeof TransformStream === "undefined" || typeof TextEncoder === "undefined") {
+    let text = "";
+    for await (const chunk of stream) {
+      text += chunk;
+    }
+    const blob = new Blob([text], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const encodedStream = stream.pipeThrough(
+    new TransformStream({
+      transform(chunk, controller) {
+        controller.enqueue(new TextEncoder().encode(chunk));
+      },
+    }),
+  );
+
+  if (window.showSaveFilePicker) {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [
+        {
+          description: mimeType,
+          accept: { [mimeType]: [`.${filename.split(".").pop()}`] },
+        },
+      ],
+    });
+    const writable = await handle.createWritable();
+    await encodedStream.pipeTo(writable);
+    return;
+  }
+
+  const blob = await new Response(encodedStream).blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+const runStreamingConversion = async (file, mode) => {
+  const fileName = file.name.toLowerCase();
+  let outputExt = "txt";
+  let outputMime = "text/plain";
+  let outputStream = null;
+
+  if (mode === "json2csv") {
+    const inputFormat = fileName.endsWith(".ndjson") || fileName.endsWith(".jsonl")
+      ? "ndjson"
+      : "json-array";
+    outputExt = "csv";
+    outputMime = "text/csv";
+    outputStream = await jtcsv.jsonToCsvStream(file, {
+      ...options.value,
+      inputFormat,
+    });
+  } else if (mode === "csv2json") {
+    outputExt = "json";
+    outputMime = "application/json";
+    outputStream = await jtcsv.csvToJsonStream(file, {
+      ...options.value,
+      outputFormat: "json",
+    });
+  } else {
+    throw new Error(`Unsupported streaming mode: ${mode}`);
+  }
+
+  const outputName = file.name.replace(/\.[^/.]+$/, `.${outputExt}`);
+  let previewStream = outputStream;
+
+  if (streamingAutoDownload.value && outputStream.tee) {
+    const tee = outputStream.tee();
+    previewStream = tee[0];
+    await downloadStreamToFile(tee[1], outputName, outputMime);
+  }
+
+  const { preview, truncated } = await streamToPreview(previewStream);
+  outputText.value = truncated ? `${preview}\n... (preview truncated)` : preview;
+  streamingProgress.value = 100;
+  progress.value = 100;
+  progressDetails.value = "Streaming conversion completed";
+
+  if (streamingAutoDownload.value && !outputStream.tee) {
+    await downloadStreamToFile(outputStream, outputName, outputMime);
+  }
 };
 
 const addStreamingLog = (message, type = "info") => {
