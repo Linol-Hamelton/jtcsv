@@ -129,16 +129,17 @@ class JtcsvTUI {
       top: 4,
       left: 'center',
       width: '50%',
-      height: 10,
+      height: 12,
       items: [
         '1. JSON → CSV Conversion',
         '2. CSV → JSON Conversion',
         '3. Preprocess JSON',
         '4. Batch Processing',
-        '5. Settings',
-        '6. File Browser',
-        '7. Help',
-        '8. Exit'
+        '5. Stream Processing',
+        '6. Settings',
+        '7. File Browser',
+        '8. Help',
+        '9. Exit'
       ],
       keys: true,
       vi: true,
@@ -173,15 +174,18 @@ class JtcsvTUI {
           this.showBatchProcessing();
           break;
         case 4:
-          this.showSettings();
+          this.showStreamProcessing();
           break;
         case 5:
-          this.showFileBrowser();
+          this.showSettings();
           break;
         case 6:
-          this.showHelp();
+          this.showFileBrowser();
           break;
         case 7:
+          this.showHelp();
+          break;
+        case 8:
           process.exit(0);
           break;
       }
@@ -1113,6 +1117,488 @@ class JtcsvTUI {
 
     inputText.focus();
     this.screen.render();
+  }
+
+  /**
+   * Show stream processing screen
+   */
+  showStreamProcessing() {
+    this.currentMode = 'stream';
+    this.clearScreenKeys();
+    this.screen.title = 'JTCSV - Stream Processing';
+
+    // Clear screen
+    this.screen.children.slice().forEach(child => child.destroy());
+
+    const infoBox = blessed.box({
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '50%',
+      content:
+        '{center}{bold}Stream Processing{/bold}{/center}\n\n' +
+        'Stream processing mode for large files (>100MB).\n' +
+        'Memory-efficient processing with real-time progress.\n\n' +
+        'Supported operations:\n' +
+        '- JSON → CSV streaming\n' +
+        '- CSV → JSON streaming\n' +
+        '- NDJSON → CSV streaming\n' +
+        '- CSV → NDJSON streaming\n\n' +
+        'Features:\n' +
+        '- Low memory footprint\n' +
+        '- Real-time progress bar\n' +
+        '- All conversion options supported\n' +
+        '- Handles files of any size',
+      tags: true,
+      border: {
+        type: 'line'
+      },
+      style: {
+        fg: 'white',
+        border: {
+          fg: 'cyan'
+        }
+      }
+    });
+
+    const progressBox = blessed.box({
+      top: '50%',
+      left: 0,
+      width: '100%',
+      height: '30%',
+      label: ' Progress ',
+      border: {
+        type: 'line'
+      },
+      style: {
+        border: {
+          fg: 'green'
+        }
+      }
+    });
+
+    const progressBar = blessed.progressbar({
+      parent: progressBox,
+      top: 1,
+      left: 2,
+      width: '100%-4',
+      height: 3,
+      orientation: 'horizontal',
+      style: {
+        bar: {
+          bg: 'green'
+        },
+        border: {
+          fg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      },
+      filled: 0
+    });
+
+    const statusText = blessed.box({
+      parent: progressBox,
+      top: 5,
+      left: 2,
+      width: '100%-4',
+      height: 3,
+      content: 'Ready to start streaming...',
+      style: {
+        fg: 'cyan'
+      }
+    });
+
+    const controlsBox = blessed.box({
+      bottom: 0,
+      left: 0,
+      width: '100%',
+      height: '20%',
+      label: ' Controls ',
+      border: {
+        type: 'line'
+      }
+    });
+
+    const runButton = blessed.button({
+      parent: controlsBox,
+      top: 1,
+      left: 2,
+      width: 18,
+      height: 3,
+      content: '{center}Start Stream{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'green',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const backButton = blessed.button({
+      parent: controlsBox,
+      top: 1,
+      left: 22,
+      width: 15,
+      height: 3,
+      content: '{center}Back{/center}',
+      tags: true,
+      keys: true,
+      mouse: true,
+      style: {
+        fg: 'white',
+        bg: 'red',
+        focus: {
+          bg: 'cyan'
+        }
+      },
+      border: {
+        type: 'line'
+      }
+    });
+
+    const statusBar = blessed.box({
+      parent: controlsBox,
+      bottom: 0,
+      left: 2,
+      width: '100%-4',
+      height: 1,
+      content: 'F3/Ctrl+R Start | Esc/Ctrl+B Back | Tab/F6 Next',
+      style: {
+        fg: 'cyan'
+      }
+    });
+
+    runButton.on('press', async () => {
+      await this.runStreamProcess(progressBar, statusText);
+    });
+
+    backButton.on('press', () => {
+      this.showMainMenu();
+    });
+
+    this.screen.append(infoBox);
+    this.screen.append(progressBox);
+    this.screen.append(controlsBox);
+
+    this.setupFocusCycle([runButton, backButton]);
+    this.bindScreenKey(['f3', 'C-r'], () => this.triggerButton(runButton));
+    this.bindScreenKey(['C-b'], () => this.triggerButton(backButton));
+
+    runButton.focus();
+    this.screen.render();
+  }
+
+  /**
+   * Run stream processing
+   */
+  async runStreamProcess(progressBar, statusText) {
+    const modeInput = await this.promptForValue(
+      'Stream Mode',
+      'Enter mode (json-to-csv, csv-to-json, ndjson-to-csv, csv-to-ndjson):',
+      'json-to-csv'
+    );
+    if (!modeInput) {
+      return;
+    }
+
+    const mode = modeInput.toLowerCase();
+    const validModes = ['json-to-csv', 'csv-to-json', 'ndjson-to-csv', 'csv-to-ndjson'];
+    if (!validModes.includes(mode)) {
+      this.showMessage('Invalid mode. Use: json-to-csv, csv-to-json, ndjson-to-csv, or csv-to-ndjson', 'error');
+      return;
+    }
+
+    const inputPath = await this.promptForValue('Input File', 'Enter input file path:');
+    if (!inputPath || !fs.existsSync(inputPath)) {
+      this.showMessage('Input file not found', 'error');
+      return;
+    }
+
+    const outputPath = await this.promptForValue('Output File', 'Enter output file path:');
+    if (!outputPath) {
+      return;
+    }
+
+    // Get file size for progress calculation
+    const stats = fs.statSync(inputPath);
+    const fileSize = stats.size;
+    let processedBytes = 0;
+
+    statusText.setContent(`Starting ${mode} streaming...`);
+    progressBar.setProgress(0);
+    this.screen.render();
+
+    try {
+      const readStream = fs.createReadStream(inputPath, 'utf8');
+      const writeStream = fs.createWriteStream(outputPath, 'utf8');
+
+      // Track progress
+      readStream.on('data', (chunk) => {
+        processedBytes += Buffer.byteLength(chunk, 'utf8');
+        const progress = Math.min(100, Math.floor((processedBytes / fileSize) * 100));
+        progressBar.setProgress(progress);
+        statusText.setContent(
+          `Processing: ${this.formatBytes(processedBytes)} / ${this.formatBytes(fileSize)} (${progress}%)`
+        );
+        this.screen.render();
+      });
+
+      let recordCount = 0;
+      const startTime = Date.now();
+
+      if (mode === 'json-to-csv' || mode === 'ndjson-to-csv') {
+        // JSON/NDJSON to CSV streaming
+        let buffer = '';
+        let headersWritten = false;
+
+        readStream.on('data', (chunk) => {
+          buffer += chunk;
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                const obj = JSON.parse(line);
+                recordCount++;
+
+                if (!headersWritten && this.conversionOptions.includeHeaders) {
+                  const headers = Object.keys(obj);
+                  writeStream.write(headers.join(this.conversionOptions.delimiter) + '\n');
+                  headersWritten = true;
+                }
+
+                const row = Object.values(obj)
+                  .map((value) => {
+                    const str = String(value);
+                    if (
+                      str.includes(this.conversionOptions.delimiter) ||
+                      str.includes('"') ||
+                      str.includes('\n')
+                    ) {
+                      return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                  })
+                  .join(this.conversionOptions.delimiter) + '\n';
+
+                writeStream.write(row);
+              } catch (error) {
+                // Skip invalid JSON lines
+              }
+            }
+          }
+        });
+
+        readStream.on('end', () => {
+          // Process remaining buffer
+          if (buffer.trim()) {
+            try {
+              const obj = JSON.parse(buffer);
+              recordCount++;
+
+              if (!headersWritten && this.conversionOptions.includeHeaders) {
+                const headers = Object.keys(obj);
+                writeStream.write(headers.join(this.conversionOptions.delimiter) + '\n');
+              }
+
+              const row = Object.values(obj)
+                .map((value) => {
+                  const str = String(value);
+                  if (
+                    str.includes(this.conversionOptions.delimiter) ||
+                    str.includes('"') ||
+                    str.includes('\n')
+                  ) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                  }
+                  return str;
+                })
+                .join(this.conversionOptions.delimiter) + '\n';
+
+              writeStream.write(row);
+            } catch (error) {
+              // Skip invalid JSON
+            }
+          }
+
+          writeStream.end();
+        });
+
+        writeStream.on('finish', () => {
+          const elapsed = Date.now() - startTime;
+          progressBar.setProgress(100);
+          statusText.setContent(
+            `✓ Complete! Processed ${recordCount.toLocaleString()} records in ${elapsed}ms\n` +
+            `Output: ${outputPath} (${this.formatBytes(fs.statSync(outputPath).size)})`
+          );
+          this.screen.render();
+          this.showMessage(`Stream processing complete! ${recordCount} records processed.`, 'success');
+        });
+
+      } else if (mode === 'csv-to-json' || mode === 'csv-to-ndjson') {
+        // CSV to JSON/NDJSON streaming
+        let buffer = '';
+        let headers = [];
+        let isFirstRow = true;
+
+        if (mode === 'csv-to-json') {
+          writeStream.write('[\n');
+        }
+
+        readStream.on('data', (chunk) => {
+          buffer += chunk;
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+
+            const fields = this.parseCsvLineSimple(line, this.conversionOptions.delimiter);
+
+            if (isFirstRow && this.conversionOptions.includeHeaders) {
+              headers = fields;
+              isFirstRow = false;
+              continue;
+            }
+
+            recordCount++;
+            const obj = {};
+            const fieldCount = Math.min(fields.length, headers.length);
+
+            for (let j = 0; j < fieldCount; j++) {
+              const header = headers[j] || `column${j + 1}`;
+              let value = fields[j];
+
+              if (this.conversionOptions.parseNumbers && /^-?\d+(\.\d+)?$/.test(value)) {
+                const num = parseFloat(value);
+                if (!isNaN(num)) {
+                  value = num;
+                }
+              }
+
+              if (this.conversionOptions.parseBooleans) {
+                const lowerValue = value.toLowerCase();
+                if (lowerValue === 'true') value = true;
+                if (lowerValue === 'false') value = false;
+              }
+
+              obj[header] = value;
+            }
+
+            const jsonStr = JSON.stringify(obj);
+            if (mode === 'csv-to-json') {
+              if (recordCount > 1) {
+                writeStream.write(',\n');
+              }
+              writeStream.write('  ' + jsonStr);
+            } else {
+              writeStream.write(jsonStr + '\n');
+            }
+          }
+        });
+
+        readStream.on('end', () => {
+          // Process remaining buffer
+          if (buffer.trim()) {
+            const fields = this.parseCsvLineSimple(buffer.trim(), this.conversionOptions.delimiter);
+
+            if (fields.length > 0 && !(isFirstRow && this.conversionOptions.includeHeaders)) {
+              recordCount++;
+              const obj = {};
+              const fieldCount = Math.min(fields.length, headers.length);
+
+              for (let j = 0; j < fieldCount; j++) {
+                const header = headers[j] || `column${j + 1}`;
+                obj[header] = fields[j];
+              }
+
+              const jsonStr = JSON.stringify(obj);
+              if (mode === 'csv-to-json') {
+                if (recordCount > 1) {
+                  writeStream.write(',\n');
+                }
+                writeStream.write('  ' + jsonStr);
+              } else {
+                writeStream.write(jsonStr + '\n');
+              }
+            }
+          }
+
+          if (mode === 'csv-to-json') {
+            writeStream.write('\n]');
+          }
+          writeStream.end();
+        });
+
+        writeStream.on('finish', () => {
+          const elapsed = Date.now() - startTime;
+          progressBar.setProgress(100);
+          statusText.setContent(
+            `✓ Complete! Processed ${recordCount.toLocaleString()} rows in ${elapsed}ms\n` +
+            `Output: ${outputPath} (${this.formatBytes(fs.statSync(outputPath).size)})`
+          );
+          this.screen.render();
+          this.showMessage(`Stream processing complete! ${recordCount} rows processed.`, 'success');
+        });
+      }
+
+      readStream.on('error', (error) => {
+        statusText.setContent(`✗ Stream error: ${error.message}`);
+        this.screen.render();
+        this.showMessage(`Stream error: ${error.message}`, 'error');
+      });
+
+      writeStream.on('error', (error) => {
+        statusText.setContent(`✗ Write error: ${error.message}`);
+        this.screen.render();
+        this.showMessage(`Write error: ${error.message}`, 'error');
+      });
+
+    } catch (error) {
+      statusText.setContent(`✗ Error: ${error.message}`);
+      this.screen.render();
+      this.showMessage(`Error: ${error.message}`, 'error');
+    }
+  }
+
+  /**
+   * Simple CSV line parser for streaming
+   */
+  parseCsvLineSimple(line, delimiter) {
+    const fields = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+          currentField += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === delimiter && !inQuotes) {
+        fields.push(currentField);
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+
+    fields.push(currentField);
+    return fields;
   }
 
   /**

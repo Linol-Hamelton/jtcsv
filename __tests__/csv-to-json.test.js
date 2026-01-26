@@ -1,6 +1,19 @@
-const { csvToJson, readCsvAsJson, readCsvAsJsonSync, ParsingError, ValidationError, SecurityError, FileSystemError } = require('../index');
+// Add imports at the top of the file
+const {
+  csvToJson,
+  readCsvAsJson,
+  readCsvAsJsonSync,
+  autoDetectDelimiter
+} = require('../csv-to-json');
 
-// Mock console to avoid output in tests
+const {
+  ValidationError,
+  SecurityError,
+  FileSystemError,
+  ParsingError,
+  LimitError
+} = require('../errors');
+
 beforeEach(() => {
   jest.spyOn(console, 'log').mockImplementation(() => {});
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -11,15 +24,16 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-// Mock fs for file reading tests
-const mockFs = {
-  promises: {
-    readFile: jest.fn()
-  },
-  readFileSync: jest.fn()
-};
-
-jest.mock('fs', () => mockFs);
+  // Mock fs for file reading tests
+  jest.mock('fs', () => {
+    const mockFs = {
+      promises: {
+        readFile: jest.fn()
+      },
+      readFileSync: jest.fn()
+    };
+    return mockFs;
+  });
 
 // Mock path module
 jest.mock('path', () => {

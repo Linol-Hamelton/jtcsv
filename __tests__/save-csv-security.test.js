@@ -5,16 +5,16 @@ jest.spyOn(console, 'log').mockImplementation(() => {});
 jest.spyOn(console, 'error').mockImplementation(() => {});
 jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-// Simple mock for fs
-const mockFs = {
-  promises: {
-    writeFile: jest.fn().mockResolvedValue(),
-    mkdir: jest.fn().mockResolvedValue()
-  }
-};
-
 // Mock the entire fs module
-jest.mock('fs', () => mockFs);
+jest.mock('fs', () => {
+  const mockFs = {
+    promises: {
+      writeFile: jest.fn().mockResolvedValue(),
+      mkdir: jest.fn().mockResolvedValue()
+    }
+  };
+  return mockFs;
+});
 
 // Mock path module to avoid issues
 jest.mock('path', () => {
@@ -249,5 +249,3 @@ describe('saveAsCsv Security', () => {
     });
   });
 });
-
-
