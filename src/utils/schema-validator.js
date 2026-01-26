@@ -407,10 +407,188 @@ function createValidationHooks(schema) {
   return hooks;
 }
 
+/**
+ * Creates schema validators from JSON schema
+ *
+ * @param {Object} schema - JSON schema
+ * @returns {Object} Validators object
+ */
+function createSchemaValidators(schema) {
+  const validators = {};
+
+  // Handle both JSON Schema format and simple format
+  const properties = schema.properties || schema;
+  const requiredFields = schema.required || [];
+
+  if (!properties || typeof properties !== 'object') {
+    return validators;
+  }
+
+  for (const [key, definition] of Object.entries(properties)) {
+    const validator = {
+      type: definition.type,
+      required: requiredFields.includes(key)
+    };
+
+    // Add format function for dates and other formats
+    if (definition.type === 'string' && definition.format) {
+      validator.format = (value) => {
+        // Handle date-time format
+        if (definition.format === 'date-time') {
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          /* istanbul ignore next */
+          if (typeof value === 'string') {
+            // Try to parse as date
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+              return date.toISOString();
+            }
+          }
+        }
+        // Handle email format
+        if (definition.format === 'email') {
+          if (typeof value === 'string') {
+            return value.toLowerCase().trim();
+          }
+        }
+        // Handle uri format
+        if (definition.format === 'uri') {
+          if (typeof value === 'string') {
+            return value.trim();
+          }
+        }
+        return value;
+      };
+    }
+
+    // Add validation function
+    validator.validate = (value) => {
+      if (value === null || value === undefined) {
+        return !validator.required;
+      }
+
+      // Type validation
+      if (definition.type === 'string' && typeof value !== 'string') {
+        // For date-time format, also accept Date objects
+        if (definition.format === 'date-time' && value instanceof Date) {
+          return true;
+        }
+        return false;
+      }
+      if (definition.type === 'number' && typeof value !== 'number') {
+        return false;
+      }
+      if (definition.type === 'integer' && (!Number.isInteger(value) || typeof value !== 'number')) {
+        return false;
+      }
+      if (definition.type === 'boolean' && typeof value !== 'boolean') {
+        return false;
+      }
+      if (definition.type === 'array' && !Array.isArray(value)) {
+        return false;
+      }
+      if (definition.type === 'object' && (typeof value !== 'object' || value === null || Array.isArray(value))) {
+        return false;
+      }
+
+      // Additional constraints for strings
+      if (definition.type === 'string') {
+        if (definition.minLength !== undefined && value.length < definition.minLength) {
+          return false;
+        }
+        if (definition.maxLength !== undefined && value.length > definition.maxLength) {
+          return false;
+        }
+        if (definition.pattern && !new RegExp(definition.pattern).test(value)) {
+          return false;
+        }
+        if (definition.format === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          return false;
+        }
+        if (definition.format === 'uri') {
+          try {
+            new URL(value);
+          } catch {
+            return false;
+          }
+        }
+      }
+
+      // Additional constraints for numbers
+      if (definition.type === 'number' || definition.type === 'integer') {
+        if (definition.minimum !== undefined && value < definition.minimum) {
+          return false;
+        }
+        if (definition.maximum !== undefined && value > definition.maximum) {
+          return false;
+        }
+        if (definition.exclusiveMinimum !== undefined && value <= definition.exclusiveMinimum) {
+          return false;
+        }
+        if (definition.exclusiveMaximum !== undefined && value >= definition.exclusiveMaximum) {
+          return false;
+        }
+        if (definition.multipleOf !== undefined && value % definition.multipleOf !== 0) {
+          return false;
+        }
+      }
+
+      // Additional constraints for arrays
+      if (definition.type === 'array') {
+        if (definition.minItems !== undefined && value.length < definition.minItems) {
+          return false;
+        }
+        if (definition.maxItems !== undefined && value.length > definition.maxItems) {
+          return false;
+        }
+        if (definition.uniqueItems && new Set(value).size !== value.length) {
+          return false;
+        }
+        // Validate array items if schema is provided
+        if (definition.items) {
+          for (const item of value) {
+            const itemValidator = createSchemaValidators({ properties: { item: definition.items } });
+            if (itemValidator.item && !itemValidator.item.validate(item)) {
+              return false;
+            }
+          }
+        }
+      }
+
+      // Additional constraints for objects
+      if (definition.type === 'object' && definition.properties) {
+        const nestedValidators = createSchemaValidators(definition);
+        for (const [nestedKey, nestedValidator] of Object.entries(nestedValidators)) {
+          if (value[nestedKey] !== undefined && !nestedValidator.validate(value[nestedKey])) {
+            return false;
+          }
+          if (nestedValidator.required && value[nestedKey] === undefined) {
+            return false;
+          }
+        }
+      }
+
+      // Check enum
+      if (definition.enum && !definition.enum.includes(value)) {
+        return false;
+      }
+
+      return true;
+    };
+
+    validators[key] = validator;
+  }
+
+  return validators;
+}
+
 module.exports = {
   loadSchema,
   createValidationHook,
   applySchemaValidation,
   createValidationHooks,
-  checkType
+  checkType,
+  createSchemaValidators  // Add this line
 };

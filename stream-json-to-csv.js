@@ -18,6 +18,9 @@ const {
 const { Transform, Readable, Writable } = require('stream');
 const { pipeline } = require('stream/promises');
 
+// Import schema validator from utils
+const { createSchemaValidators } = require('./src/utils/schema-validator');
+
 /**
  * Creates a transform stream that converts JSON objects to CSV rows
  * 
@@ -292,90 +295,6 @@ function createJsonToCsvStream(options = {}) {
 }
 
 /**
- * Creates schema validators from JSON schema
- * 
- * @private
- * @param {Object} schema - JSON schema
- * @returns {Object} Validators object
- */
-function createSchemaValidators(schema) {
-  const validators = {};
-  
-  if (!schema.properties) {
-    return validators;
-  }
-  
-  for (const [key, definition] of Object.entries(schema.properties)) {
-    const validator = {
-      type: definition.type,
-      required: schema.required && schema.required.includes(key)
-    };
-    
-    // Add format function for dates
-    if (definition.type === 'string' && definition.format === 'date-time') {
-      validator.format = (value) => {
-        if (value instanceof Date) {
-          return value.toISOString();
-        }
-        /* istanbul ignore next */
-        if (typeof value === 'string') {
-          // Try to parse as date
-          const date = new Date(value);
-          if (!isNaN(date.getTime())) {
-            return date.toISOString();
-          }
-        }
-        return value;
-      };
-    }
-    
-    // Add validation function
-    validator.validate = (value) => {
-      if (value === null || value === undefined) {
-        return !validator.required;
-      }
-      
-      // Type validation
-      if (definition.type === 'string' && typeof value !== 'string') {
-        return false;
-      }
-      if (definition.type === 'number' && typeof value !== 'number') {
-        return false;
-      }
-      if (definition.type === 'integer' && (!Number.isInteger(value) || typeof value !== 'number')) {
-        return false;
-      }
-      if (definition.type === 'boolean' && typeof value !== 'boolean') {
-        return false;
-      }
-      
-      // Additional constraints
-      if (definition.minimum !== undefined && value < definition.minimum) {
-        return false;
-      }
-      if (definition.maximum !== undefined && value > definition.maximum) {
-        return false;
-      }
-      if (definition.minLength !== undefined && value.length < definition.minLength) {
-        return false;
-      }
-      if (definition.maxLength !== undefined && value.length > definition.maxLength) {
-        return false;
-      }
-      if (definition.pattern && !new RegExp(definition.pattern).test(value)) {
-        return false;
-      }
-      
-      return true;
-    };
-    
-    validators[key] = validator;
-  }
-  
-  return validators;
-}
-
-/**
  * Converts a readable stream of JSON objects to CSV and writes to a writable stream
  * 
  * @param {Readable} inputStream - Readable stream of JSON objects
@@ -533,8 +452,9 @@ module.exports = {
   streamJsonToCsv,
   saveJsonStreamAsCsv,
   createJsonReadableStream,
-  createCsvCollectorStream,
-  createSchemaValidators
+  createCsvCollectorStream
+  // Note: createSchemaValidators is no longer exported from here
+  // It should be imported directly from './src/utils/schema-validator'
 };
 
 // For ES6 module compatibility
