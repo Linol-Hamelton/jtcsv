@@ -8,7 +8,8 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "serve": "vite preview --port 3000"
+        "serve": "vite preview --port 3000",
+        "test": "vitest run --coverage"
     },
     "dependencies": {
         "vue": "^3.4.0",
@@ -18,8 +19,12 @@
     },
     "devDependencies": {
         "@vitejs/plugin-vue": "^5.0.0",
+        "@vitest/coverage-v8": "^2.1.0",
+        "@vue/test-utils": "^2.4.3",
+        "jsdom": "^24.0.0",
+        "sass": "^1.69.0",
         "vite": "^5.0.0",
-        "sass": "^1.69.0"
+        "vitest": "^2.1.0"
     },
     "author": "JTCSV Team",
     "license": "MIT"

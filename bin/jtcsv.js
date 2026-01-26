@@ -11,6 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const { pipeline } = require('stream/promises');
 const jtcsv = require('../index.js');
+const transformLoader = require('../src/utils/transform-loader');
+const schemaValidator = require('../src/utils/schema-validator');
 
 const VERSION = require('../package.json').version;
 
@@ -44,6 +46,7 @@ ${color('MAIN COMMANDS:', 'bright')}
   ${color('json-to-csv', 'green')}     Convert JSON to CSV (alias: json2csv)
   ${color('csv-to-json', 'green')}     Convert CSV to JSON (alias: csv2json)
   ${color('save-json', 'yellow')}      Save data as JSON file
+  ${color('save-csv', 'yellow')}       Save data as CSV file
   ${color('stream', 'yellow')}         Streaming conversion for large files
   ${color('batch', 'yellow')}          Batch process multiple files
   ${color('preprocess', 'magenta')}    Preprocess JSON with deep unwrapping
@@ -71,6 +74,9 @@ ${color('EXAMPLES:', 'bright')}
 
   ${color('Save data as JSON file:', 'dim')}
   jtcsv save-json data.json output.json --pretty
+
+  ${color('Save data as CSV file:', 'dim')}
+  jtcsv save-csv data.csv output.csv --delimiter=, --transform=transform.js
 
   ${color('Stream large JSON file to CSV:', 'dim')}
   jtcsv stream json-to-csv large.json output.csv --max-records=1000000
@@ -104,8 +110,8 @@ ${color('CONVERSION OPTIONS:', 'bright')}
   ${color('--max-records=', 'cyan')}N      Maximum records to process
   ${color('--max-rows=', 'cyan')}N         Maximum rows to process
   ${color('--pretty', 'cyan')}             Pretty print JSON output
-  ${color('--schema=', 'cyan')}JSON        JSON schema for validation
-  ${color('--transform=', 'cyan')}JS       Custom transform function (JavaScript file)
+  ${color('--schema=', 'cyan')}JSON        JSON schema for validation (EXPERIMENTAL)
+  ${color('--transform=', 'cyan')}JS       Custom transform function (JavaScript file) (EXPERIMENTAL)
 
 ${color('PREPROCESS OPTIONS:', 'bright')}
   ${color('--max-depth=', 'cyan')}N        Maximum recursion depth (default: 5)
@@ -176,6 +182,26 @@ async function convertJsonToCsv(inputFile, outputFile, options) {
       console.log(color(`Converting ${jsonData.length.toLocaleString()} records...`, 'dim'));
     }
     
+    // Apply transform if specified
+    let transformedData = jsonData;
+    if (options.transform) {
+      if (!options.silent) {
+        console.log(color(`Applying transform from: ${options.transform}`, 'dim'));
+      }
+      try {
+        transformedData = transformLoader.applyTransform(jsonData, options.transform);
+        if (!options.silent) {
+          console.log(color(`✓ Transform applied to ${transformedData.length} records`, 'green'));
+        }
+      } catch (transformError) {
+        console.error(color(`✗ Transform error: ${transformError.message}`, 'red'));
+        if (options.debug) {
+          console.error(transformError.stack);
+        }
+        process.exit(1);
+      }
+    }
+    
     // Prepare options for jtcsv
     const jtcsvOptions = {
       delimiter: options.delimiter,
@@ -188,18 +214,18 @@ async function convertJsonToCsv(inputFile, outputFile, options) {
     };
     
     // Convert to CSV
-    const csvData = jtcsv.jsonToCsv(jsonData, jtcsvOptions);
+    const csvData = jtcsv.jsonToCsv(transformedData, jtcsvOptions);
     
     // Write output file
     await fs.promises.writeFile(outputFile, csvData, 'utf8');
     
     const elapsed = Date.now() - startTime;
     if (!options.silent) {
-      console.log(color(`✓ Converted ${jsonData.length.toLocaleString()} records in ${elapsed}ms`, 'green'));
+      console.log(color(`✓ Converted ${transformedData.length.toLocaleString()} records in ${elapsed}ms`, 'green'));
       console.log(color(`  Output: ${outputFile} (${csvData.length.toLocaleString()} bytes)`, 'dim'));
     }
     
-    return { records: jsonData.length, bytes: csvData.length, time: elapsed };
+    return { records: transformedData.length, bytes: csvData.length, time: elapsed };
     
   } catch (error) {
     console.error(color(`✗ Error: ${error.message}`, 'red'));
@@ -236,21 +262,109 @@ async function convertCsvToJson(inputFile, outputFile, options) {
     // Read and convert CSV
     const jsonData = await jtcsv.readCsvAsJson(inputFile, jtcsvOptions);
     
+    // Apply transform if specified
+    let transformedData = jsonData;
+    if (options.transform) {
+      if (!options.silent) {
+        console.log(color(`Applying transform from: ${options.transform}`, 'dim'));
+      }
+      try {
+        transformedData = transformLoader.applyTransform(jsonData, options.transform);
+        if (!options.silent) {
+          console.log(color(`✓ Transform applied to ${transformedData.length} rows`, 'green'));
+        }
+      } catch (transformError) {
+        console.error(color(`✗ Transform error: ${transformError.message}`, 'red'));
+        if (options.debug) {
+          console.error(transformError.stack);
+        }
+        process.exit(1);
+      }
+    }
+    
     // Format JSON
     const jsonOutput = options.pretty 
-      ? JSON.stringify(jsonData, null, 2)
-      : JSON.stringify(jsonData);
+      ? JSON.stringify(transformedData, null, 2)
+      : JSON.stringify(transformedData);
     
     // Write output file
     await fs.promises.writeFile(outputFile, jsonOutput, 'utf8');
     
     const elapsed = Date.now() - startTime;
     if (!options.silent) {
-      console.log(color(`✓ Converted ${jsonData.length.toLocaleString()} rows in ${elapsed}ms`, 'green'));
+      console.log(color(`✓ Converted ${transformedData.length.toLocaleString()} rows in ${elapsed}ms`, 'green'));
       console.log(color(`  Output: ${outputFile} (${jsonOutput.length.toLocaleString()} bytes)`, 'dim'));
     }
     
-    return { rows: jsonData.length, bytes: jsonOutput.length, time: elapsed };
+    return { rows: transformedData.length, bytes: jsonOutput.length, time: elapsed };
+    
+  } catch (error) {
+    console.error(color(`✗ Error: ${error.message}`, 'red'));
+    if (options.debug) {
+      console.error(error.stack);
+    }
+    process.exit(1);
+  }
+}
+
+async function saveAsCsv(inputFile, outputFile, options) {
+  const startTime = Date.now();
+  
+  try {
+    // Read input file
+    const inputData = await fs.promises.readFile(inputFile, 'utf8');
+    
+    if (!options.silent) {
+      console.log(color(`Saving CSV file...`, 'dim'));
+    }
+    
+    // Apply transform if specified
+    let transformedData = inputData;
+    if (options.transform) {
+      if (!options.silent) {
+        console.log(color(`Applying transform from: ${options.transform}`, 'dim'));
+      }
+      try {
+        // Для CSV нужно сначала распарсить, применить трансформацию, затем снова сериализовать
+        const parsedData = jtcsv.csvToJson(inputData, {
+          delimiter: options.delimiter,
+          autoDetect: options.autoDetect,
+          hasHeaders: options.hasHeaders,
+          trim: options.trim,
+          parseNumbers: options.parseNumbers,
+          parseBooleans: options.parseBooleans
+        });
+        
+        const transformedJson = transformLoader.applyTransform(parsedData, options.transform);
+        
+        // Конвертировать обратно в CSV
+        transformedData = jtcsv.jsonToCsv(transformedJson, {
+          delimiter: options.delimiter,
+          includeHeaders: options.includeHeaders
+        });
+        
+        if (!options.silent) {
+          console.log(color(`✓ Transform applied`, 'green'));
+        }
+      } catch (transformError) {
+        console.error(color(`✗ Transform error: ${transformError.message}`, 'red'));
+        if (options.debug) {
+          console.error(transformError.stack);
+        }
+        process.exit(1);
+      }
+    }
+    
+    // Write output file
+    await fs.promises.writeFile(outputFile, transformedData, 'utf8');
+    
+    const elapsed = Date.now() - startTime;
+    if (!options.silent) {
+      console.log(color(`✓ Saved CSV in ${elapsed}ms`, 'green'));
+      console.log(color(`  Output: ${outputFile}`, 'dim'));
+    }
+    
+    return { time: elapsed };
     
   } catch (error) {
     console.error(color(`✗ Error: ${error.message}`, 'red'));
@@ -273,13 +387,33 @@ async function saveAsJson(inputFile, outputFile, options) {
       console.log(color(`Saving ${Array.isArray(jsonData) ? jsonData.length.toLocaleString() + ' records' : 'object'}...`, 'dim'));
     }
     
+    // Apply transform if specified
+    let transformedData = jsonData;
+    if (options.transform) {
+      if (!options.silent) {
+        console.log(color(`Applying transform from: ${options.transform}`, 'dim'));
+      }
+      try {
+        transformedData = transformLoader.applyTransform(jsonData, options.transform);
+        if (!options.silent) {
+          console.log(color(`✓ Transform applied`, 'green'));
+        }
+      } catch (transformError) {
+        console.error(color(`✗ Transform error: ${transformError.message}`, 'red'));
+        if (options.debug) {
+          console.error(transformError.stack);
+        }
+        process.exit(1);
+      }
+    }
+    
     // Prepare options for jtcsv
     const jtcsvOptions = {
       prettyPrint: options.pretty
     };
     
     // Save as JSON
-    await jtcsv.saveAsJson(jsonData, outputFile, jtcsvOptions);
+    await jtcsv.saveAsJson(transformedData, outputFile, jtcsvOptions);
     
     const elapsed = Date.now() - startTime;
     if (!options.silent) {
@@ -317,10 +451,30 @@ async function preprocessJson(inputFile, outputFile, options) {
     // Preprocess data
     const processedData = jtcsv.preprocessData(jsonData);
     
+    // Apply transform if specified
+    let transformedData = processedData;
+    if (options.transform) {
+      if (!options.silent) {
+        console.log(color(`Applying transform from: ${options.transform}`, 'dim'));
+      }
+      try {
+        transformedData = transformLoader.applyTransform(processedData, options.transform);
+        if (!options.silent) {
+          console.log(color(`✓ Transform applied to ${transformedData.length} records`, 'green'));
+        }
+      } catch (transformError) {
+        console.error(color(`✗ Transform error: ${transformError.message}`, 'red'));
+        if (options.debug) {
+          console.error(transformError.stack);
+        }
+        process.exit(1);
+      }
+    }
+    
     // Apply deep unwrap if needed
     if (options.unwrapArrays || options.stringifyObjects) {
       const maxDepth = options.maxDepth || 5;
-      processedData.forEach(item => {
+      transformedData.forEach(item => {
         for (const key in item) {
           if (item[key] && typeof item[key] === 'object') {
             item[key] = jtcsv.deepUnwrap(item[key], 0, maxDepth);
@@ -331,19 +485,19 @@ async function preprocessJson(inputFile, outputFile, options) {
     
     // Format JSON
     const jsonOutput = options.pretty 
-      ? JSON.stringify(processedData, null, 2)
-      : JSON.stringify(processedData);
+      ? JSON.stringify(transformedData, null, 2)
+      : JSON.stringify(transformedData);
     
     // Write output file
     await fs.promises.writeFile(outputFile, jsonOutput, 'utf8');
     
     const elapsed = Date.now() - startTime;
     if (!options.silent) {
-      console.log(color(`✓ Preprocessed ${jsonData.length.toLocaleString()} records in ${elapsed}ms`, 'green'));
+      console.log(color(`✓ Preprocessed ${transformedData.length.toLocaleString()} records in ${elapsed}ms`, 'green'));
       console.log(color(`  Output: ${outputFile} (${jsonOutput.length.toLocaleString()} bytes)`, 'dim'));
     }
     
-    return { records: jsonData.length, bytes: jsonOutput.length, time: elapsed };
+    return { records: transformedData.length, bytes: jsonOutput.length, time: elapsed };
     
   } catch (error) {
     console.error(color(`✗ Error: ${error.message}`, 'red'));
@@ -665,7 +819,15 @@ async function batchJsonToCsv(inputPattern, outputDir, options) {
   const startTime = Date.now();
   
   try {
-    const glob = require('glob');
+    let glob;
+    try {
+      glob = require('glob');
+    } catch (error) {
+      console.error(color('✗ Error: The "glob" module is required for batch processing', 'red'));
+      console.error(color('  Install it with: npm install glob', 'cyan'));
+      console.error(color('  Or update jtcsv: npm update jtcsv', 'cyan'));
+      process.exit(1);
+    }
     const files = glob.sync(inputPattern, { 
       absolute: true,
       nodir: true 
@@ -758,7 +920,15 @@ async function batchCsvToJson(inputPattern, outputDir, options) {
   const startTime = Date.now();
   
   try {
-    const glob = require('glob');
+    let glob;
+    try {
+      glob = require('glob');
+    } catch (error) {
+      console.error(color('✗ Error: The "glob" module is required for batch processing', 'red'));
+      console.error(color('  Install it with: npm install glob', 'cyan'));
+      console.error(color('  Or update jtcsv: npm update jtcsv', 'cyan'));
+      process.exit(1);
+    }
     const files = glob.sync(inputPattern, { 
       absolute: true,
       nodir: true 
@@ -1234,6 +1404,15 @@ async function main() {
       await saveAsJson(files[0], files[1], options);
       break;
       
+    case 'save-csv':
+      if (files.length < 2) {
+        console.error(color('Error: Input and output files required', 'red'));
+        console.log(color('Usage: jtcsv save-csv input.csv output.csv', 'cyan'));
+        process.exit(1);
+      }
+      await saveAsCsv(files[0], files[1], options);
+      break;
+      
     case 'preprocess':
       if (files.length < 2) {
         console.error(color('Error: Input and output files required', 'red'));
@@ -1252,21 +1431,25 @@ async function main() {
       }
       
       const streamCommand = args[1].toLowerCase();
-      if (streamCommand === 'json-to-csv' && files.length >= 2) {
-        await streamJsonToCsv(files[0], files[1], options);
-      } else if (streamCommand === 'csv-to-json' && files.length >= 2) {
-        await streamCsvToJson(files[0], files[1], options);
-      } else if (streamCommand === 'file-to-csv' && files.length >= 2) {
+      // Для stream команд нужно парсить опции начиная с 3-го аргумента (после stream и подкоманды)
+      const streamArgs = args.slice(2);
+      const { options: streamOptions, files: streamFiles } = parseOptions(streamArgs);
+      
+      if (streamCommand === 'json-to-csv' && streamFiles.length >= 2) {
+        await streamJsonToCsv(streamFiles[0], streamFiles[1], streamOptions);
+      } else if (streamCommand === 'csv-to-json' && streamFiles.length >= 2) {
+        await streamCsvToJson(streamFiles[0], streamFiles[1], streamOptions);
+      } else if (streamCommand === 'file-to-csv' && streamFiles.length >= 2) {
         // Use jtcsv streaming API if available
         try {
-          const readStream = fs.createReadStream(files[0], 'utf8');
-          const writeStream = fs.createWriteStream(files[1], 'utf8');
+          const readStream = fs.createReadStream(streamFiles[0], 'utf8');
+          const writeStream = fs.createWriteStream(streamFiles[1], 'utf8');
           
-          if (options.addBOM) {
+          if (streamOptions.addBOM) {
             writeStream.write('\uFEFF');
           }
           
-          const transformStream = jtcsv.createJsonToCsvStream(options);
+          const transformStream = jtcsv.createJsonToCsvStream(streamOptions);
           await pipeline(readStream, transformStream, writeStream);
           
           console.log(color('✓ File streamed successfully', 'green'));
@@ -1274,13 +1457,13 @@ async function main() {
           console.error(color(`✗ Streaming error: ${error.message}`, 'red'));
           process.exit(1);
         }
-      } else if (streamCommand === 'file-to-json' && files.length >= 2) {
+      } else if (streamCommand === 'file-to-json' && streamFiles.length >= 2) {
         // Use jtcsv streaming API if available
         try {
-          const readStream = fs.createReadStream(files[0], 'utf8');
-          const writeStream = fs.createWriteStream(files[1], 'utf8');
+          const readStream = fs.createReadStream(streamFiles[0], 'utf8');
+          const writeStream = fs.createWriteStream(streamFiles[1], 'utf8');
           
-          const transformStream = jtcsv.createCsvToJsonStream(options);
+          const transformStream = jtcsv.createCsvToJsonStream(streamOptions);
           await pipeline(readStream, transformStream, writeStream);
           
           console.log(color('✓ File streamed successfully', 'green'));
@@ -1303,11 +1486,15 @@ async function main() {
       }
       
       const batchCommand = args[1].toLowerCase();
-      if (batchCommand === 'json-to-csv' && files.length >= 2) {
-        await batchJsonToCsv(files[0], files[1], options);
-      } else if (batchCommand === 'csv-to-json' && files.length >= 2) {
-        await batchCsvToJson(files[0], files[1], options);
-      } else if (batchCommand === 'process' && files.length >= 2) {
+      // Для batch команд нужно парсить опции начиная с 3-го аргумента (после batch и подкоманды)
+      const batchArgs = args.slice(2);
+      const { options: batchOptions, files: batchFiles } = parseOptions(batchArgs);
+      
+      if (batchCommand === 'json-to-csv' && batchFiles.length >= 2) {
+        await batchJsonToCsv(batchFiles[0], batchFiles[1], batchOptions);
+      } else if (batchCommand === 'csv-to-json' && batchFiles.length >= 2) {
+        await batchCsvToJson(batchFiles[0], batchFiles[1], batchOptions);
+      } else if (batchCommand === 'process' && batchFiles.length >= 2) {
         console.log(color('Mixed batch processing coming soon...', 'yellow'));
         // TODO: Implement mixed batch processing
       } else {

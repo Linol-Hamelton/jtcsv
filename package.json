@@ -192,6 +192,9 @@
     "examples/",
     "plugins/"
   ],
+  "dependencies": {
+    "glob": "^10.3.10"
+  },
   "devDependencies": {
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.22.0",
