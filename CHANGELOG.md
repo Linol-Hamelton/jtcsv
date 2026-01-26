@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [2.1.5] - 2026-01-25
+
+### Fixed
+- Critical syntax error in convertCsvToJson function (unclosed brace at line 307)
+- Improved error handling throughout the CLI application
+
+### Added
+- Transform support via 	ransform-loader module for custom data transformations
+- Schema validation support via schema-validator module (EXPERIMENTAL)
+- New save-csv command to save data as CSV file
+- New utility modules in src/utils/ directory
+- Enhanced CLI documentation and usage examples
+- Support for experimental --transform and --schema options
+
+### Changed
+- Updated demo/package.json dependencies
+- Improved CLI help text with better formatting
+- Removed outdated test files (	est-*.js, 	est-*.html)
+- Enhanced data transformation pipeline in conversion functions
+
+### Security
+- Maintained zero runtime dependencies in core package
+- Added input validation and sanitization improvements
+
 ## [2.1.4] - 2026-01-24
 
 ### Added
