@@ -1,6 +1,6 @@
 {
   "name": "jtcsv",
-  "version": "2.1.6",
+  "version": "2.2.0",
   "description": "Complete JSON<->CSV and CSV<->JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and optional ecosystem (zero-deps core)",
   "main": "index.js",
   "browser": "dist/jtcsv.umd.js",
