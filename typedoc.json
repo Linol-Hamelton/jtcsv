@@ -1,0 +1,38 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./index.d.ts"],
+  "out": "./docs/api",
+  "name": "jtcsv API Documentation",
+  "readme": "./docs/API_INTRO.md",
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Core Conversion",
+    "Streaming",
+    "NDJSON",
+    "TSV",
+    "File Operations",
+    "Error Handling",
+    "Utilities",
+    "*"
+  ],
+  "defaultCategory": "Other",
+  "sort": ["source-order", "alphabetical"],
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "theme": "default",
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "searchInComments": true,
+  "cleanOutputDir": true,
+  "hideGenerator": false,
+  "githubPages": true,
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/Linol-Hamelton/jtcsv/blob/{gitRevision}/{path}#L{line}"
+}
