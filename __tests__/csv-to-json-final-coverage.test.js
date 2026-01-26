@@ -23,14 +23,15 @@ afterEach(() => {
 });
 
 // Mock fs for file reading tests
-const mockFs = {
-  promises: {
-    readFile: jest.fn()
-  },
-  readFileSync: jest.fn()
-};
-
-jest.mock('fs', () => mockFs);
+  jest.mock('fs', () => {
+    const mockFs = {
+      promises: {
+        readFile: jest.fn()
+      },
+      readFileSync: jest.fn()
+    };
+    return mockFs;
+  });
 
 // Mock path module
 jest.mock('path', () => {

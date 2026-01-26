@@ -17,6 +17,8 @@ declare module 'jtcsv' {
     preventCsvInjection?: boolean;
     /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
     rfc4180Compliant?: boolean;
+    /** JSON schema for data validation and formatting */
+    schema?: Record<string, any>;
   }
 
   export interface SaveAsCsvOptions extends JsonToCsvOptions {

@@ -16,6 +16,8 @@ const {
   safeExecute
 } = require('./errors');
 
+// Add schema validator import
+const { createSchemaValidators } = require('./src/utils/schema-validator');
 /**
  * Validates input data and options
  * @private
@@ -62,6 +64,11 @@ function validateInput(data, options) {
     throw new ConfigurationError('rfc4180Compliant must be a boolean');
   }
   
+  // Validate schema
+  if (options?.schema && typeof options.schema !== 'object') {
+    throw new ConfigurationError('schema must be an object');
+  }
+  
   return true;
 }
 
@@ -77,6 +84,7 @@ function validateInput(data, options) {
  * @param {number} [options.maxRecords] - Maximum number of records to process (optional, no limit by default)
  * @param {boolean} [options.preventCsvInjection=true] - Prevent CSV injection attacks by escaping formulas
  * @param {boolean} [options.rfc4180Compliant=true] - Ensure RFC 4180 compliance (proper quoting, line endings)
+ * @param {Object} [options.schema] - JSON schema for data validation and formatting
  * @returns {string} CSV formatted string
  * 
  * @example
@@ -108,8 +116,15 @@ function jsonToCsv(data, options = {}) {
       template = {},
       maxRecords,
       preventCsvInjection = true,
-      rfc4180Compliant = true
+      rfc4180Compliant = true,
+      schema = null
     } = opts;
+
+    // Initialize schema validators if schema is provided
+    let schemaValidators = null;
+    if (schema) {
+      schemaValidators = createSchemaValidators(schema);
+    }
 
     // Handle empty data
     if (data.length === 0) {
@@ -264,8 +279,33 @@ function jsonToCsv(data, options = {}) {
         continue;
       }
 
+      // Apply schema validation and formatting if schema is provided
+      let processedItem = item;
+      if (schemaValidators) {
+        processedItem = { ...item };
+        for (const [key, validator] of Object.entries(schemaValidators)) {
+          if (key in processedItem) {
+            const value = processedItem[key];
+            // Validate value
+            if (!validator.validate(value)) {
+              throw new ValidationError(
+                `Row ${rowIndex + 1}: Value for field "${key}" does not match schema`
+              );
+            }
+            // Format value if formatter exists
+            if (validator.format) {
+              processedItem[key] = validator.format(value);
+            }
+          } else if (validator.required) {
+            throw new ValidationError(
+              `Row ${rowIndex + 1}: Required field "${key}" is missing`
+            );
+          }
+        }
+      }
+
       for (let i = 0; i < columnCount; i++) {
-        rowValues[i] = escapeValue(item[finalKeys[i]]);
+        rowValues[i] = escapeValue(processedItem[finalKeys[i]]);
       }
 
       rows.push(rowValues.join(delimiter));
