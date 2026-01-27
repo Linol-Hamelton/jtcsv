@@ -1,6 +1,7 @@
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
+  testMatch: ['**/__tests__/**/*.test.js', '**/?(*.)+(spec|test).js'],
+  testPathIgnorePatterns: ['/node_modules/', '/__tests__/setup-jest.js'],
   collectCoverageFrom: [
     'index.js',
     'json-to-csv.js',
@@ -24,7 +25,7 @@ module.exports = {
     '!**/dist/**',
     '!**/coverage/**'
   ],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup-jest.js'],
+  setupFilesAfterEnv: ['<rootDir>/__tests__/setup-jest.js'],
   coverageThreshold: {
     global: {
       branches: 80,

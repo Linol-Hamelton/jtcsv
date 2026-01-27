@@ -13,7 +13,7 @@ function createTextDecoder() {
   try {
     const { TextDecoder: UtilTextDecoder } = require('util');
     return new UtilTextDecoder('utf-8');
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -24,7 +24,7 @@ function getTransformStream() {
   }
   try {
     return require('stream/web').TransformStream;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -411,10 +411,9 @@ class NdjsonParser {
       let buffer = '';
       
       try {
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           const { done, value } = await reader.read();
-          
+
           if (done) {
             // Обрабатываем оставшийся буфер
             /* istanbul ignore next */
@@ -423,7 +422,7 @@ class NdjsonParser {
               try {
                 JSON.parse(buffer.trim());
                 stats.validLines++;
-              } catch (error) {
+              } catch (_error) {
                 stats.errorLines++;
               }
             }
