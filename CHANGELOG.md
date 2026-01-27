@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.7] - 2026-01-27
+
+### Changed
+- **CI/CD Optimization**: Restructured GitHub Actions workflow
+  - Separated tests and coverage checks into distinct jobs
+  - Tests run on Node.js 18.x, 20.x, 22.x without coverage overhead
+  - Coverage check runs only on Node 20.x LTS after tests pass
+  - Security audit moved to separate parallel job
+  - Benchmark runs after tests with artifact upload
+  - Updated codecov-action to v4, upload-artifact to v4
+
+### Fixed
+- Excluded unused `node-optimizations.js` from coverage collection
+- Coverage now reports 99.74% (was artificially lowered by unused file)
+
+## [2.2.6] - 2026-01-26
+
+### Fixed
+- CI workflow optimizations
+- Removed Node 24.x from matrix (not yet stable)
+
+## [2.2.5] - 2026-01-26
+
+### Fixed
+- Benchmark threshold adjustments for CI stability
+
 ## [2.1.7] - 2026-01-26
 
 ### 🎉 Major Feature Release - Full CLI Functionality & Web UI

@@ -14,6 +14,7 @@ module.exports = {
     'src/engines/**/*.js',
     'src/formats/**/*.js',
     '!src/engines/fast-path-engine-new.js',
+    '!src/core/node-optimizations.js',
     '!src/index-with-plugins.js',
     '!src/browser/**',
     '!**/__tests__/**',
