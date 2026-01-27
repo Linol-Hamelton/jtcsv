@@ -135,8 +135,8 @@ package.json.backup
 package-new.json
 package-browser.json
 
-# Test output
-*.test.js
+# Test output (but not __tests__ directory)
+!__tests__/*.test.js
 
 # Local development
 .env.local
