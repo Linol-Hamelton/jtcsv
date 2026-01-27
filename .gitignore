@@ -181,3 +181,9 @@ ehthumbs.db
 # Package lock (we want to commit package-lock.json for reproducibility)
 # package-lock.json - COMMITTED
 
+
+# Test files for Docker
+Dockerfile.test
+docker-compose.test.yml
+docker-test.md
+test-*.js

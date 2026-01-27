@@ -4,8 +4,9 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.x.x   | ✅                 |
-| 0.x.x   | ✅ (security fixes only) |
+| 2.x.x   | ✅                 |
+| 1.x.x   | ✅ (security fixes only) |
+| 0.x.x   | ❌                 |
 
 ## Reporting a Vulnerability
 
@@ -39,8 +40,10 @@ jtcsv includes several security features by default:
 
 2. **Path Traversal Protection**
    - Validation of file paths to prevent `../` attacks
-   - Restriction to `.csv` file extensions only
+   - Restriction to `.csv`/`.json` file extensions only
    - Absolute path resolution with security checks
+   - UNC path blocking (`\\server\share` and `//server/share`)
+   - Cross-platform path validation (Windows and Linux)
 
 3. **Input Validation**
    - Type checking for all input parameters
