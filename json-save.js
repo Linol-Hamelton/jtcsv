@@ -21,17 +21,22 @@ const {
  */
 function validateJsonFilePath(filePath) {
   const path = require('path');
-  
+
   // Basic validation
   if (typeof filePath !== 'string' || filePath.trim() === '') {
     throw new ValidationError('File path must be a non-empty string');
   }
-  
+
   // Ensure file has .json extension
   if (!filePath.toLowerCase().endsWith('.json')) {
     throw new ValidationError('File must have .json extension');
   }
-  
+
+  // Block UNC paths BEFORE path.resolve() to avoid network lookup timeouts
+  if (filePath.startsWith('\\\\') || filePath.startsWith('//')) {
+    throw new SecurityError('UNC paths are not allowed');
+  }
+
   // Get absolute path and check for traversal
   const absolutePath = path.resolve(filePath);
   const normalizedPath = path.normalize(filePath);

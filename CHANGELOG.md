@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.8] - 2026-01-27
+
+### Fixed
+- **Cross-platform security tests**: Fixed security-fuzzing tests for Linux compatibility
+  - `file://` URLs and UNC paths are now platform-aware in tests
+  - UNC path validation moved before `path.resolve()` to prevent network timeouts
+- Added UNC path blocking to `json-save.js` for consistency
+
+### Changed
+- Security tests now properly account for platform differences:
+  - `file:` is a valid directory name on Linux (not a URL scheme)
+  - Backslashes are valid filename characters on Linux
+
 ## [2.2.7] - 2026-01-27
 
 ### Changed

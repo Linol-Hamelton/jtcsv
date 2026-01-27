@@ -100,6 +100,7 @@ describe('Security Fuzzing Tests', () => {
 
   describe('Path Traversal Prevention', () => {
     // Only test paths that are actually blocked by the library
+    // Platform-specific paths are handled separately
     const traversalPaths = [
       '../../../etc/passwd',
       '..\\..\\..\\Windows\\System32\\config\\SAM',
@@ -108,9 +109,10 @@ describe('Security Fuzzing Tests', () => {
       '..%252f..%252f..%252fetc/passwd',
       '..%c0%af..%c0%af..%c0%afetc/passwd',
       '..\\..\\..\\..\\..\\..\\..\\..\\etc/passwd',
-      'file:///etc/passwd',
-      // UNC paths skipped on Windows - they cause network lookup timeouts
-      ...(process.platform !== 'win32' ? ['\\\\server\\share\\file.csv'] : []),
+      // file:// URLs are only blocked on Windows (on Linux, 'file:' is a valid directory name)
+      ...(process.platform === 'win32' ? ['file:///etc/passwd'] : []),
+      // UNC paths only make sense on Windows (on Linux, backslashes are valid filename chars)
+      ...(process.platform === 'win32' ? ['\\\\server\\share\\file.csv'] : []),
     ];
 
     test.each(traversalPaths)('blocks path traversal: %s', async (maliciousPath) => {
