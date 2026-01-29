@@ -20,6 +20,7 @@ const {
 const { TransformHooks, predefinedHooks } = require('./src/core/transform-hooks');
 const DelimiterCache = require('./src/core/delimiter-cache');
 const FastPathEngine = require('./src/engines/fast-path-engine');
+const { stripBomFromString, normalizeCsvInput } = require('./src/utils/bom-utils');
 
 // Глобальный экземпляр кэша для авто-детектирования разделителя
 const globalDelimiterCache = new DelimiterCache(100);
@@ -232,7 +233,9 @@ function csvToJson(csv, options = {}) {
       cache: customCache,
       useFastPath = true,
       fastPathMode = 'objects',
-      hooks = {}
+      hooks = {},
+      stripBom = true,  // New option: strip BOM by default
+      normalizeEncoding = true  // New option: normalize encoding
     } = opts;
 
     if (fastPathMode === 'stream') {
@@ -261,10 +264,19 @@ function csvToJson(csv, options = {}) {
     // Use provided TransformHooks instance if available
     const finalHooks = hooks.transformHooks || transformHooks;
 
+    // Handle BOM and encoding normalization
+    let normalizedCsv = csv;
+    if (stripBom) {
+      normalizedCsv = stripBomFromString(normalizedCsv);
+    }
+    if (normalizeEncoding) {
+      normalizedCsv = normalizeCsvInput(normalizedCsv, { normalizeLineEndings: true });
+    }
+
     // Apply beforeConvert hooks to CSV string
-    const processedCsv = finalHooks.applyBeforeConvert(csv, { 
+    const processedCsv = finalHooks.applyBeforeConvert(normalizedCsv, {
       operation: 'csvToJson',
-      options: opts 
+      options: opts
     });
 
     // Determine delimiter with caching support

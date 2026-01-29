@@ -74,33 +74,50 @@ function validateInput(data, options) {
 
 /**
  * Converts JSON data to CSV format
- * 
+ *
  * @param {Array<Object>} data - Array of objects to convert to CSV
  * @param {Object} [options] - Configuration options
  * @param {string} [options.delimiter=';'] - CSV delimiter character
  * @param {boolean} [options.includeHeaders=true] - Whether to include headers row
  * @param {Object} [options.renameMap={}] - Map for renaming column headers (oldKey: newKey)
-* @param {Object} [options.template={}] - Template object to ensure consistent column order
+ * @param {Object} [options.template={}] - Template object to ensure consistent column order
  * @param {number} [options.maxRecords] - Maximum number of records to process (optional, no limit by default)
  * @param {boolean} [options.preventCsvInjection=true] - Prevent CSV injection attacks by escaping formulas
  * @param {boolean} [options.rfc4180Compliant=true] - Ensure RFC 4180 compliance (proper quoting, line endings)
  * @param {Object} [options.schema] - JSON schema for data validation and formatting
+ * @param {boolean} [options.flatten=false] - Whether to flatten nested objects into dot notation keys
+ * @param {string} [options.flattenSeparator='.'] - Separator for flattened keys (e.g., 'user.name' with '.')
+ * @param {number} [options.flattenMaxDepth=3] - Maximum depth for flattening nested objects
+ * @param {string} [options.arrayHandling='stringify'] - How to handle arrays ('stringify', 'join', 'expand')
  * @returns {string} CSV formatted string
- * 
+ *
  * @example
  * const jsonToCsv = require('./json-to-csv');
- * 
+ *
  * const data = [
  *   { id: 1, name: 'John', email: 'john@example.com' },
  *   { id: 2, name: 'Jane', email: 'jane@example.com' }
  * ];
- * 
+ *
  * const csv = jsonToCsv(data, {
  *   delimiter: ',',
  *   renameMap: { id: 'ID', name: 'Full Name' },
  *   preventCsvInjection: true,
  *   rfc4180Compliant: true
  * });
+ *
+ * @example
+ * // With nested object flattening
+ * const nestedData = [
+ *   { id: 1, user: { name: 'John', profile: { age: 30 } } }
+ * ];
+ * const csv = jsonToCsv(nestedData, {
+ *   flatten: true,
+ *   flattenSeparator: '_',
+ *   flattenMaxDepth: 4
+ * });
+ * // Result: id,user_name,user_profile_age
+ * //         1,John,30
  */
 function jsonToCsv(data, options = {}) {
   return safeExecute(() => {
@@ -117,7 +134,11 @@ function jsonToCsv(data, options = {}) {
       maxRecords,
       preventCsvInjection = true,
       rfc4180Compliant = true,
-      schema = null
+      schema = null,
+      flatten = false,
+      flattenSeparator = '.',
+      flattenMaxDepth = 3,
+      _arrayHandling = 'stringify'
     } = opts;
 
     // Initialize schema validators if schema is provided
@@ -150,11 +171,19 @@ function jsonToCsv(data, options = {}) {
       );
     }
 
+    // Preprocess data with flattening options if needed
+    const processedData = preprocessData(data, {
+      flatten,
+      flattenSeparator,
+      flattenMaxDepth,
+      arrayHandling: _arrayHandling
+    });
+
     // Get all unique keys from all objects with minimal allocations.
     const allKeys = new Set();
     const originalKeys = [];
-    for (let i = 0; i < data.length; i++) {
-      const item = data[i];
+    for (let i = 0; i < processedData.length; i++) {
+      const item = processedData[i];
       if (!item || typeof item !== 'object') {
         continue;
       }
@@ -273,8 +302,8 @@ function jsonToCsv(data, options = {}) {
 
     // Add data rows.
     const rowValues = new Array(columnCount);
-    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
-      const item = data[rowIndex];
+    for (let rowIndex = 0; rowIndex < processedData.length; rowIndex++) {
+      const item = processedData[rowIndex];
       if (!item || typeof item !== 'object') {
         continue;
       }
@@ -318,14 +347,95 @@ function jsonToCsv(data, options = {}) {
 }
 
 /**
+ * Flattens nested objects into single-level objects with dot notation keys
+ *
+ * @private
+ * @param {Object} obj - Object to flatten
+ * @param {string} prefix - Current key prefix
+ * @param {string} separator - Separator for nested keys (default: '.')
+ * @param {number} maxDepth - Maximum flattening depth
+ * @param {number} currentDepth - Current recursion depth
+ * @returns {Object} Flattened object
+ *
+ * @example
+ * flattenObject({ a: 1, b: { c: 2, d: { e: 3 } } });
+ * // Returns { 'a': 1, 'b.c': 2, 'b.d.e': 3 }
+ */
+function flattenObject(obj, prefix = '', separator = '.', maxDepth = 3, currentDepth = 0) {
+  // Handle null/undefined
+  if (obj === null || obj === undefined) {
+    return { [prefix || 'value']: '' };
+  }
+  
+  // Handle primitive values
+  if (typeof obj !== 'object') {
+    return { [prefix || 'value']: obj };
+  }
+  
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) {
+      return { [prefix || 'value']: '' };
+    }
+    
+    // For simple arrays, join with comma
+    if (obj.every(item => typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean')) {
+      return { [prefix || 'value']: obj.join(', ') };
+    }
+    
+    // For complex arrays, stringify
+    try {
+      return { [prefix || 'value']: JSON.stringify(obj) };
+    } catch {
+      return { [prefix || 'value']: '[Complex Array]' };
+    }
+  }
+  
+  // Check depth limit
+  if (currentDepth >= maxDepth) {
+    try {
+      return { [prefix || 'value']: JSON.stringify(obj) };
+    } catch {
+      return { [prefix || 'value']: '[Too Deep]' };
+    }
+  }
+  
+  const result = {};
+  
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+      const newKey = prefix ? `${prefix}${separator}${key}` : key;
+      
+      if (value && typeof value === 'object') {
+        // Recursively flatten nested objects
+        const flattened = flattenObject(
+          value,
+          newKey,
+          separator,
+          maxDepth,
+          currentDepth + 1
+        );
+        Object.assign(result, flattened);
+      } else {
+        // Primitive values
+        result[newKey] = value === null || value === undefined ? '' : value;
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
  * Deeply unwraps nested objects and arrays to extract primitive values
- * 
+ *
  * @param {*} value - Value to unwrap
  * @param {number} [depth=0] - Current recursion depth
  * @param {number} [maxDepth=5] - Maximum recursion depth
  * @param {Set} [visited=new Set()] - Set of visited objects to detect circular references
  * @returns {string} Unwrapped string value
- * 
+ *
  * @private
  */
 function deepUnwrap(value, depth = 0, maxDepth = 5, visited = new Set()) {
@@ -386,15 +496,33 @@ function deepUnwrap(value, depth = 0, maxDepth = 5, visited = new Set()) {
 
 /**
  * Preprocesses JSON data by deeply unwrapping nested structures
- * 
+ *
  * @param {Array<Object>} data - Array of objects to preprocess
+ * @param {Object} [options] - Preprocessing options
+ * @param {boolean} [options.flatten=false] - Whether to flatten nested objects
+ * @param {string} [options.flattenSeparator='.'] - Separator for flattened keys
+ * @param {number} [options.flattenMaxDepth=3] - Maximum flattening depth
+ * @param {string} [options.arrayHandling='stringify'] - How to handle arrays ('stringify', 'join', 'expand')
  * @returns {Array<Object>} Preprocessed data with unwrapped values
- * 
+ *
  * @example
+ * // Standard preprocessing
  * const processed = preprocessData(complexJsonData);
  * const csv = jsonToCsv(processed);
+ *
+ * @example
+ * // With flattening
+ * const flattened = preprocessData(complexJsonData, { flatten: true });
+ * const csv = jsonToCsv(flattened);
  */
-function preprocessData(data) {
+function preprocessData(data, options = {}) {
+  const {
+    flatten = false,
+    flattenSeparator = '.',
+    flattenMaxDepth = 3,
+    _arrayHandling = 'stringify'
+  } = options;
+  
   if (!Array.isArray(data)) {
     return [];
   }
@@ -404,6 +532,11 @@ function preprocessData(data) {
       return {};
     }
     
+    if (flatten) {
+      return flattenObject(item, '', flattenSeparator, flattenMaxDepth);
+    }
+    
+    // Standard processing (backward compatibility)
     const processed = {};
     
     for (const key in item) {

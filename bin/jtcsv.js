@@ -148,6 +148,10 @@ ${color("CONVERSION OPTIONS:", "bright")}
   ${color("--transform=", "cyan")}JS       Custom transform function (JavaScript file)
   ${color("PREPROCESS OPTIONS:", "bright")}
   ${color("--max-depth=", "cyan")}N        Maximum recursion depth (default: 5)
+  ${color("--flatten", "cyan")}            Flatten nested objects into dot notation
+  ${color("--flatten-separator=", "cyan")}CHAR  Separator for flattened keys (default: .)
+  ${color("--flatten-max-depth=", "cyan")}N     Maximum flattening depth (default: 3)
+  ${color("--array-handling=", "cyan")}MODE     Array handling: stringify|join|expand (default: stringify)
   ${color("--unwrap-arrays", "cyan")}      Unwrap arrays to strings
   ${color("--stringify-objects", "cyan")}  Stringify complex objects
   ${color("STREAMING OPTIONS:", "bright")}
@@ -256,6 +260,10 @@ async function convertJsonToCsv(inputFile, outputFile, options) {
       preventCsvInjection: options.preventCsvInjection,
       rfc4180Compliant: options.rfc4180Compliant,
       schema: options.schema, // Add schema option
+      flatten: options.flatten,
+      flattenSeparator: options.flattenSeparator,
+      flattenMaxDepth: options.flattenMaxDepth,
+      arrayHandling: options.arrayHandling,
     };
 
     // Apply transform function if provided
@@ -1840,6 +1848,10 @@ function parseOptions(args) {
     schema: undefined,
     transform: undefined,
     flattenPrefix: "_",
+    flatten: false,
+    flattenSeparator: ".",
+    flattenMaxDepth: 3,
+    arrayHandling: "stringify",
   };
 
   const files = [];
@@ -1928,6 +1940,21 @@ function parseOptions(args) {
           break;
         case "pretty":
           options.pretty = true;
+          break;
+        case "flatten":
+          options.flatten = true;
+          break;
+        case "flatten-separator":
+          options.flattenSeparator = value || ".";
+          break;
+        case "flatten-max-depth":
+          options.flattenMaxDepth = parseInt(value, 10) || 3;
+          break;
+        case "array-handling":
+          options.arrayHandling = value || "stringify";
+          if (!["stringify", "join", "expand"].includes(options.arrayHandling)) {
+            throw new Error("Invalid --array-handling value (stringify|join|expand)");
+          }
           break;
         case "silent":
           options.silent = true;

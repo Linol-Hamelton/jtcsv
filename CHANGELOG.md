@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.9] - 2026-01-29
+
+### Fixed
+- **CSS compatibility**: Added standard `background-clip: text` and `color: transparent` for cross‑browser gradient text in `web-worker-usage.html`
+- **Web Worker error handling**: Fixed `Cannot read properties of undefined` in `handleWorkerResult` when worker returns array directly
+- **Linting errors**:
+  - Renamed unused variable `arrayHandling` to `_arrayHandling` in `json-to-csv.js`
+  - Removed unreachable code and fixed undefined `csvParser` variable in `stream-csv-to-json.js`
+- **Duplicate function**: Renamed duplicate `createErrorMessage` to `createDetailedErrorMessage` in `errors.js`
+
+### Added
+- **Server availability check**: Added HEAD request to `csv-parser.worker.js` in `web-worker-usage.html` with UI feedback
+- **Inline Web Worker fallback**: If external worker fails to load, creates inline worker via Blob URL
+- **Strategy coverage report**: Created `jtcsv-strategy-coverage-report.md` documenting implementation of all recommendations
+
+### Changed
+- **Merged HTML files**: Combined `web-worker-usage.html` and `web-worker-usage-fixed.html` into a single improved example
+- **Dependency audit**: Removed unused devDependencies (`@babel/preset-env`, `@size-limit/preset-small-lib`, `blessed`, `blessed-contrib`, `jest-environment-jsdom`)
+
 ## [2.2.8] - 2026-01-27
 
 ### Fixed

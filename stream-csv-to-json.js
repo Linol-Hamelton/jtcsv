@@ -22,6 +22,7 @@ const { pipeline } = require('stream/promises');
 
 // Import schema validator from utils
 const { createSchemaValidators } = require('./src/utils/schema-validator');
+const { createBomStripStream } = require('./src/utils/bom-utils');
 
 /**
  * Creates a transform stream that converts CSV chunks to JSON objects
@@ -65,7 +66,8 @@ function createCsvToJsonStream(options = {}) {
       parseBooleans = false,
       maxRows = Infinity,
       transform = null,
-      schema = null
+      schema = null,
+      stripBom = true  // New option: strip BOM by default
     } = opts;
 
     // Validate options
@@ -340,7 +342,7 @@ function createCsvToJsonStream(options = {}) {
       }
     };
 
-    return new Transform({
+    const csvParser = new Transform({
       objectMode: true,
       writableObjectMode: false,
       readableObjectMode: true,
@@ -408,6 +410,39 @@ function createCsvToJsonStream(options = {}) {
         }
       }
     });
+
+    // If stripBom is enabled, wrap the parser with BOM strip stream
+    if (stripBom) {
+      const bomStripStream = createBomStripStream();
+      
+      // Create a composite stream that first strips BOM, then parses CSV
+      const { Transform } = require('stream');
+      const compositeStream = new Transform({
+        writableObjectMode: false,
+        readableObjectMode: true,
+        transform(chunk, encoding, callback) {
+          bomStripStream.write(chunk, encoding, callback);
+        },
+        flush(callback) {
+          bomStripStream.end(callback);
+        }
+      });
+      
+      // Pipe BOM strip -> CSV parser
+      bomStripStream.pipe(csvParser);
+      
+      // Forward events from CSV parser
+      csvParser.on('data', (data) => compositeStream.push(data));
+      csvParser.on('end', () => compositeStream.push(null));
+      csvParser.on('error', (error) => compositeStream.emit('error', error));
+      csvParser.on('limitReached', (...args) => compositeStream.emit('limitReached', ...args));
+      csvParser.on('validationError', (...args) => compositeStream.emit('validationError', ...args));
+      csvParser.on('transformError', (...args) => compositeStream.emit('transformError', ...args));
+      
+      return compositeStream;
+    }
+    
+    return csvParser;
   }, 'STREAM_CREATION_ERROR', { function: 'createCsvToJsonStream' });
 }
 

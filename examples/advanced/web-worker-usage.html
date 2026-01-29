@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jtcsv Web Worker Example</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2 i {
+            font-size: 1.2rem;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .file-input {
+            padding: 12px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            text-align: center;
+        }
+        
+        .file-input:hover {
+            border-color: #667eea;
+        }
+        
+        .file-input input {
+            display: none;
+        }
+        
+        .file-label {
+            display: block;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .file-info {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        button {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #718096;
+        }
+        
+        .results {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            background: white;
+        }
+        
+        .result-item {
+            padding: 10px;
+            border-bottom: 1px solid #edf2f7;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .comparison {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .comparison-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .comparison-item.winner {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .comparison-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+        
+        .comparison-time {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .comparison-diff {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .comparison-diff.positive {
+            color: #48bb78;
+        }
+        
+        .comparison-diff.negative {
+            color: #f56565;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        .code-keyword {
+            color: #63b3ed;
+        }
+        
+        .code-string {
+            color: #68d391;
+        }
+        
+        .code-comment {
+            color: #a0aec0;
+        }
+        
+        .code-function {
+            color: #fbb6ce;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .status.info {
+            background: #bee3f8;
+            color: #2a4365;
+            border: 1px solid #90cdf4;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>jtcsv Web Worker Demo</h1>
+        <p class="subtitle">Process large CSV files without blocking the main thread</p>
+        
+        <div class="grid">
+            <div class="card">
+                <h2><i>📁</i> Upload CSV File</h2>
+                <div class="controls">
+                    <div class="file-input" id="fileDropArea">
+                        <input type="file" id="csvFile" accept=".csv,.txt">
+                        <label for="csvFile" class="file-label">
+                            <div>📂 Click to select or drag & drop</div>
+                            <div class="file-info">Supports CSV files up to 100MB</div>
+                        </label>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-label">Selected File</div>
+                            <div class="stat-value" id="fileName">None</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">File Size</div>
+                            <div class="stat-value" id="fileSize">0 KB</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container" id="progressContainer" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>Processing...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                    </div>
+                    
+                    <button id="processBtn" disabled>
+                        <span>Process with Web Worker</span>
+                    </button>
+                    
+                    <button id="processMainBtn" disabled style="background: linear-gradient(90deg, #ed8936, #dd6b20);">
+                        <span>Process in Main Thread (Blocking)</span>
+                    </button>
+                </div>
+                
+                <div id="status" class="status hidden"></div>
+            </div>
+            
+            <div class="card">
+                <h2><i>📊</i> Performance Comparison</h2>
+                <div class="comparison-grid" id="comparisonResults">
+                    <div class="comparison-item">
+                        <div class="comparison-title">Web Worker</div>
+                        <div class="comparison-time" id="workerTime">-- ms</div>
+                        <div class="comparison-diff" id="workerDiff">--</div>
+                    </div>
+                    <div class="comparison-item">
+                        <div class="comparison-title">Main Thread</div>
+                        <div class="comparison-time" id="mainTime">-- ms</div>
+                        <div class="comparison-diff" id="mainDiff">--</div>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-label">UI Responsiveness</div>
+                        <div class="stat-value" id="uiResponsiveness">Good</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Memory Usage</div>
+                        <div class="stat-value" id="memoryUsage">-- MB</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Rows Processed</div>
+                        <div class="stat-value" id="rowsProcessed">0</div>
+                    </div>
+                </div>
+                
+                <div class="results" id="resultsPreview">
+                    <div class="result-item">Results will appear here...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2><i>💻</i> Code Example</h2>
+            <div class="code-block">
+                <pre><code><span class="code-comment">// Using jtcsv with Web Workers</span>
+<span class="code-keyword">import</span> { createWorkerPool } <span class="code-keyword">from</span> <span class="code-string">'jtcsv/browser/workers'</span>;
+
+<span class="code-comment">// Create a pool of 4 workers</span>
+<span class="code-keyword">const</span> workerPool = <span class="code-function">createWorkerPool</span>(<span class="code-string">'./csv-parser.worker.js'</span>, {
+  maxWorkers: <span class="code-string">4</span>,
+  idleTimeout: <span class="code-string">30000</span>
+});
+
+<span class="code-comment">// Process CSV in background</span>
+<span class="code-keyword">async</span> <span class="code-keyword">function</span> <span class="code-function">processLargeCsv</span>(csvData) {
+  <span class="code-keyword">const</span> startTime = <span class="code-function">performance</span>.<span class="code-function">now</span>();
+  
+  <span class="code-comment">// Submit task to worker pool</span>
+  <span class="code-keyword">const</span> result = <span class="code-keyword">await</span> workerPool.<span class="code-function">execute</span>({
+    type: <span class="code-string">'parseCsv'</span>,
+    csv: csvData,
+    options: {
+      hasHeaders: <span class="code-keyword">true</span>,
+      parseNumbers: <span class="code-keyword">true</span>,
+      parseBooleans: <span class="code-keyword">true</span>
+    }
+  });
+  
+  <span class="code-keyword">const</span> endTime = <span class="code-function">performance</span>.<span class="code-function">now</span>();
+  <span class="code-function">console</span>.<span class="code-function">log</span>(<span class="code-string">`Processed </span>${result.data.length}<span class="code-string"> rows in </span>${endTime - startTime}<span class="code-string">ms`</span>);
+  
+  <span class="code-keyword">return</span> result.data;
+}
+
+<span class="code-comment">// Clean up when done</span>
+workerPool.<span class="code-function">terminate</span>();</code></pre>
+            </div>
+        </div>
+        
+        <div class="comparison">
+            <h2><i>⚡</i> Benefits of Web Workers</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item winner">
+                    <div class="comparison-title">With Web Workers</div>
+                    <ul style="padding-left: 20px; margin-top: 10px; color: #4a5568;">
+                        <li>UI remains responsive</li>
+                        <li>Parallel processing</li>
+                        <li>Better memory management</li>
+                        <li>No main thread blocking</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-title">Without Web Workers</div>
+                    <ul style="padding-left: 20px; margin-top: 10px; color: #4a5568;">
+                        <li>UI freezes during processing</li>
+                        <li>Single-threaded</li>
+                        <li>Memory pressure on main thread</li>
+                        <li>Poor user experience</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load jtcsv from CDN (in real scenario, you would bundle it)
+        const jtcsvScript = document.createElement('script');
+        jtcsvScript.src = 'https://unpkg.com/jtcsv@latest/dist/jtcsv.umd.js';
+        document.head.appendChild(jtcsvScript);
+        
+        jtcsvScript.onload = () => {
+            console.log('jtcsv loaded successfully');
+        };
+        
+        jtcsvScript.onerror = () => {
+            console.error('Failed to load jtcsv from CDN');
+            showStatus('Failed to load jtcsv library. Please check your internet connection.', 'error');
+            // Disable processing buttons
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('processMainBtn').disabled = true;
+        };
+        
+        // DOM elements
+        const fileInput = document.getElementById('csvFile');
+        const fileDropArea = document.getElementById('fileDropArea');
+        const processBtn = document.getElementById('processBtn');
+        const processMainBtn = document.getElementById('processMainBtn');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const status = document.getElementById('status');
+        const resultsPreview = document.getElementById('resultsPreview');
+        const workerTime = document.getElementById('workerTime');
+        const mainTime = document.getElementById('mainTime');
+        const workerDiff = document.getElementById('workerDiff');
+        const mainDiff = document.getElementById('mainDiff');
+        const uiResponsiveness = document.getElementById('uiResponsiveness');
+        const memoryUsage = document.getElementById('memoryUsage');
+        const rowsProcessed = document.getElementById('rowsProcessed');
+        
+        // Server availability
+        let serverAvailable = false;
+        
+        // Check if server is running (worker file accessible)
+        function checkServerAvailability() {
+            fetch('./csv-parser.worker.js', { method: 'HEAD', cache: 'no-cache' })
+                .then(response => {
+                    serverAvailable = response.ok;
+                    updateServerStatus();
+                })
+                .catch(() => {
+                    serverAvailable = false;
+                    updateServerStatus();
+                });
+        }
+        
+        function updateServerStatus() {
+            const btn = document.getElementById('processBtn');
+            if (!serverAvailable) {
+                btn.disabled = true;
+                btn.innerHTML = '<span>Start server to enable Web Worker</span>';
+                btn.title = 'The demo server is not running. To start it, run: node examples/advanced/run-demo-server.js';
+                // Add tooltip styling
+                btn.style.position = 'relative';
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Process with Web Worker</span>';
+                btn.title = '';
+                btn.style.position = '';
+                btn.style.cursor = '';
+            }
+        }
+        
+        // State
+        let selectedFile = null;
+        let csvContent = '';
+        let worker = null;
+        let isProcessing = false;
+        
+        // File handling
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.style.borderColor = '#667eea';
+            fileDropArea.style.backgroundColor = '#f7fafc';
+        });
+        
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.style.borderColor = '#cbd5e0';
+            fileDropArea.style.backgroundColor = 'white';
+        });
+        
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.style.borderColor = '#cbd5e0';
+            fileDropArea.style.backgroundColor = 'white';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        
+        function handleFileSelect() {
+            if (!fileInput.files.length) return;
+            
+            selectedFile = fileInput.files[0];
+            fileName.textContent = selectedFile.name;
+            fileSize.textContent = formatFileSize(selectedFile.size);
+            
+            // Read file content
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                csvContent = e.target.result;
+                processBtn.disabled = false;
+                processMainBtn.disabled = false;
+                showStatus('File loaded successfully!', 'success');
+            };
+            reader.onerror = () => {
+                showStatus('Error reading file', 'error');
+            };
+            reader.readAsText(selectedFile);
+        }
+        
+        // Process with Web Worker
+        processBtn.addEventListener('click', async () => {
+            if (!csvContent || isProcessing) return;
+            
+            isProcessing = true;
+            updateButtons();
+            showProgress(true);
+            showStatus('Processing with Web Worker...', 'info');
+            
+            // Create worker if not exists
+            if (!worker) {
+                if (!serverAvailable) {
+                    showStatus('Web Worker requires the demo server to be running. Please start the server.', 'error');
+                    resetProcessing();
+                    return;
+                }
+                worker = new Worker('./csv-parser.worker.js');
+                
+                worker.onmessage = (e) => {
+                    const { type, data, progress, error } = e.data;
+                    
+                    if (type === 'progress') {
+                        updateProgress(progress);
+                    } else if (type === 'result') {
+                        handleWorkerResult(data);
+                    } else if (type === 'error') {
+                        clearInterval(uiTestInterval);
+                        document.title = 'jtcsv Web Worker Demo';
+                        showStatus(`Worker error: ${error}`, 'error');
+                        resetProcessing();
+                    }
+                };
+                
+                worker.onerror = (error) => {
+                    clearInterval(uiTestInterval);
+                    document.title = 'jtcsv Web Worker Demo';
+                    showStatus(`Worker error: ${error.message}`, 'error');
+                    resetProcessing();
+                };
+            }
+            
+            // Start processing
+            const startTime = performance.now();
+            uiResponsiveness.textContent = 'Responsive';
+            
+            // Simulate UI responsiveness test
+            let uiUpdates = 0;
+            const uiTestInterval = setInterval(() => {
+                uiUpdates++;
+                document.title = `Processing... ${uiUpdates}`;
+            }, 100);
+            
+            worker.postMessage({
+                type: 'parseCsv',
+                csv: csvContent,
+                options: {
+                    hasHeaders: true,
+                    parseNumbers: true,
+                    parseBooleans: true
+                }
+            });
+            
+            // Handle completion
+            function handleWorkerResult(data) {
+                clearInterval(uiTestInterval);
+                document.title = 'jtcsv Web Worker Demo';
+                
+                const endTime = performance.now();
+                const processingTime = endTime - startTime;
+                
+                workerTime.textContent = `${processingTime.toFixed(0)} ms`;
+                rowsProcessed.textContent = data.length;
+                
+                // Update results preview
+                updateResultsPreview(data);
+                
+                // Compare with main thread (if available)
+                if (window.mainThreadResult) {
+                    const diff = processingTime - window.mainThreadResult.time;
+                    const percentDiff = (diff / window.mainThreadResult.time * 100).toFixed(1);
+                    
+                    if (diff > 0) {
+                        workerDiff.textContent = `${percentDiff}% slower`;
+                        workerDiff.className = 'comparison-diff negative';
+                    } else {
+                        workerDiff.textContent = `${Math.abs(percentDiff)}% faster`;
+                        workerDiff.className = 'comparison-diff positive';
+                    }
+                }
+                
+                showStatus(`Processed ${data.length} rows in ${processingTime.toFixed(0)}ms`, 'success');
+                resetProcessing();
+                
+                // Update memory usage (simulated)
+                memoryUsage.textContent = `${Math.round((data.length * 0.1) / 1024 * 100) / 100} MB`;
+            }
+        });
+        
+        // Process in main thread (blocking)
+        processMainBtn.addEventListener('click', async () => {
+            if (!csvContent || isProcessing) return;
+            
+            isProcessing = true;
+            updateButtons();
+            showProgress(true);
+            showStatus('Processing in main thread (may freeze UI)...', 'info');
+            
+            const startTime = performance.now();
+            uiResponsiveness.textContent = 'May freeze';
+            
+            // Simulate UI freeze test
+            let uiUpdates = 0;
+            const uiTestInterval = setInterval(() => {
+                uiUpdates++;
+                document.title = `Processing... ${uiUpdates}`;
+            }, 100);
+            
+            try {
+                // Use jtcsv directly in main thread
+                const result = jtcsv.csvToJson(csvContent, {
+                    hasHeaders: true,
+                    parseNumbers: true,
+                    parseBooleans: true
+                });
+                
+                clearInterval(uiTestInterval);
+                document.title = 'jtcsv Web Worker Demo';
+                
+                const endTime = performance.now();
+                const processingTime = endTime - startTime;
+                
+                mainTime.textContent = `${processingTime.toFixed(0)} ms`;
+                rowsProcessed.textContent = result.length;
+                
+                // Update results preview
+                updateResultsPreview(result);
+                
+                // Store for comparison
+                window.mainThreadResult = {
+                    time: processingTime,
+                    data: result
+                };
+                
+                showStatus(`Processed ${result.length} rows in ${processingTime.toFixed(0)}ms`, 'success');
+                resetProcessing();
+                
+                // Update memory usage (simulated)
+                memoryUsage.textContent = `${Math.round((result.length * 0.1) / 1024 * 100) / 100} MB`;
+                
+            } catch (error) {
+                clearInterval(uiTestInterval);
+                document.title = 'jtcsv Web Worker Demo';
+                showStatus(`Error: ${error.message}`, 'error');
+                resetProcessing();
+            }
+        });
+        
+        // Helper functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.classList.remove('hidden');
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.classList.add('hidden');
+                }, 3000);
+            }
+        }
+        
+        function showProgress(show) {
+            if (show) {
+                progressContainer.style.display = 'block';
+                progressFill.style.width = '0%';
+                progressPercent.textContent = '0%';
+            } else {
+                progressContainer.style.display = 'none';
+            }
+        }
+        
+        function updateProgress(percent) {
+            progressFill.style.width = `${percent}%`;
+            progressPercent.textContent = `${percent}%`;
+        }
+        
+        function updateButtons() {
+            processBtn.disabled = isProcessing;
+            processMainBtn.disabled = isProcessing;
+            
+            if (isProcessing) {
+                processBtn.innerHTML = '<div class="spinner"></div><span>Processing...</span>';
+                processMainBtn.innerHTML = '<div class="spinner"></div><span>Processing...</span>';
+            } else {
+                processBtn.innerHTML = '<span>Process with Web Worker</span>';
+                processMainBtn.innerHTML = '<span>Process in Main Thread (Blocking)</span>';
+            }
+        }
+        
+        function resetProcessing() {
+            isProcessing = false;
+            updateButtons();
+            showProgress(false);
+            uiResponsiveness.textContent = 'Good';
+        }
+        
+        function updateResultsPreview(data) {
+            resultsPreview.innerHTML = '';
+            
+            // Show first 10 rows
+            const previewRows = data.slice(0, 10);
+            
+            previewRows.forEach((row, index) => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                
+                // Format row as string
+                const rowStr = JSON.stringify(row, null, 2)
+                    .replace(/\n/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .substring(0, 100);
+                
+                item.textContent = `${index + 1}. ${rowStr}${rowStr.length === 100 ? '...' : ''}`;
+                resultsPreview.appendChild(item);
+            });
+            
+            if (data.length > 10) {
+                const moreItem = document.createElement('div');
+                moreItem.className = 'result-item';
+                moreItem.textContent = `... and ${data.length - 10} more rows`;
+                moreItem.style.fontStyle = 'italic';
+                moreItem.style.color = '#718096';
+                resultsPreview.appendChild(moreItem);
+            }
+        }
+        
+        // Initialize
+        updateButtons();
+        checkServerAvailability();
+        
+        // Clean up worker on page unload
+        window.addEventListener('beforeunload', () => {
+            if (worker) {
+                worker.terminate();
+            }
+        });
+    </script>
+</body>
+</html>
