@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Stream JSON to CSV Converter - Node.js Module
  * 

@@ -13,6 +13,7 @@ Fast JSON <-> CSV conversion with streaming helpers, NDJSON/TSV support, and opt
 - Browser bundle with Web Worker helpers
 - Optional plugin system and framework adapters
 - CLI and optional TUI
+- **Performance‑optimized** – fast number parsing, single‑pass BOM stripping, efficient delimiter detection
 
 ## Installation
 ```bash
@@ -47,6 +48,26 @@ console.log(json);
 const { csvToJsonIterator } = require('jtcsv');
 
 const csv = 'id,name\n1,Jane\n2,John';
+
+### Command Line Interface
+
+JTCSV includes a powerful CLI for batch conversion, file processing, and data transformation.
+
+```bash
+# Convert CSV file to JSON
+npx jtcsv csv-to-json data.csv --output data.json
+
+# Convert JSON to CSV with custom delimiter
+npx jtcsv json-to-csv data.json --delimiter ";" --output out.csv
+
+# Stream processing with NDJSON
+npx jtcsv csv-to-ndjson large.csv --stream > output.ndjson
+
+# See all options
+npx jtcsv --help
+```
+
+Full documentation: [CLI.md](CLI.md)
 for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
   console.log(row);
 }

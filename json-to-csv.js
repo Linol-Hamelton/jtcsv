@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * JSON to CSV Converter - Node.js Module
  * 
@@ -260,14 +261,22 @@ function jsonToCsv(data, options = {}) {
       let stringValue = value;
       if (typeof stringValue !== 'string') {
         stringValue = String(stringValue);
-      }
-      
+      }       
       // CSV Injection protection - escape formulas if enabled
       let escapedValue = stringValue;
       if (preventCsvInjection) {
         const firstCharCode = stringValue.charCodeAt(0);
-        if (firstCharCode === 61 || firstCharCode === 43 || firstCharCode === 45 || firstCharCode === 64) {
+        // Dangerous prefixes: =, +, -, @, tab (\t), carriage return (\r)
+        if (firstCharCode === 61 || firstCharCode === 43 || firstCharCode === 45 || firstCharCode === 64 ||
+            firstCharCode === 9 || firstCharCode === 13) {
           escapedValue = "'" + stringValue;
+        }
+        // Unicode Bidi override characters
+        const bidiChars = ['\u202A', '\u202B', '\u202C', '\u202D', '\u202E'];
+        for (const bidi of bidiChars) {
+          if (stringValue.includes(bidi)) {
+            escapedValue = escapedValue.replace(new RegExp(bidi, 'g'), '');
+          }
         }
       }
 

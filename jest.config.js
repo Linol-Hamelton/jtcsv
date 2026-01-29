@@ -34,7 +34,14 @@ module.exports = {
       lines: 80,
       statements: 80
     }
-  }
+  },
+  // Performance optimizations for CI/Linux
+  maxWorkers: process.env.CI === 'true' ? '50%' : '75%',
+  workerIdleMemoryLimit: '512MB',
+  cache: true,
+  // cacheDirectory: process.env.CI === 'true' ? '/tmp/jest-cache' : undefined, // Removed due to Windows path issues
+  // Detect open handles (can be slow, disable in CI)
+  detectOpenHandles: process.env.CI !== 'true'
 };
 
 

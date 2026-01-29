@@ -32,6 +32,11 @@ app.use(middleware({
   enableFastPath: true,
   preventCsvInjection: true,
   rfc4180Compliant: true,
+  // Security & DoS protection
+  maxFileSize: '500MB',          // Maximum allowed file size (default: 500MB)
+  maxFieldSize: 1024 * 1024,     // Maximum field size in bytes (default: 1MB)
+  timeout: 300000,               // Processing timeout in milliseconds (default: 5 minutes)
+  // Conversion options
   conversionOptions: {
     parseNumbers: true,
     parseBooleans: true
@@ -39,7 +44,21 @@ app.use(middleware({
 }));
 ```
 
-Note: body size limits are controlled by your body parser (for example `express.json({ limit: '10mb' })`).
+**Security notes**:
+- `maxFileSize` rejects requests with `Content-Length` exceeding the limit (HTTP 413).
+- `maxFieldSize` limits individual field size during parsing (helps prevent memory exhaustion).
+- `timeout` cancels long-running conversions and returns HTTP 503.
+- For additional protection, combine with `express-rate-limit` and body parser limits.
+
+**Example with rate limiting**:
+```javascript
+const rateLimit = require('express-rate-limit');
+const importLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10 // limit each IP to 10 requests per window
+});
+app.post('/api/import', importLimiter, middleware());
+```
 
 ## Helpers
 ```javascript

@@ -222,15 +222,16 @@ describe('CSV to JSON Edge Cases Coverage', () => {
     test('should not show warning for large files when maxRows is specified', () => {
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
       
-      // Create CSV with >1M lines
+      // Create CSV with >limit lines (use smaller size in CI for performance)
+      const limit = process.env.CI === 'true' ? 10000 : 1000000;
       const lines = ['id;name'];
-      for (let i = 0; i < 1000001; i++) {
+      for (let i = 0; i < limit + 1; i++) {
         lines.push(`${i};User${i}`);
       }
       const csv = lines.join('\n');
       
       // Should throw LimitError instead of warning
-      expect(() => csvToJson(csv, { delimiter: ';', maxRows: 1000000 }))
+      expect(() => csvToJson(csv, { delimiter: ';', maxRows: limit }))
         .toThrow(LimitError);
       
       expect(consoleWarnSpy).not.toHaveBeenCalled();

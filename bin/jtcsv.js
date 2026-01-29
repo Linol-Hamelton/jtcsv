@@ -1233,10 +1233,17 @@ async function streamCsvToJson(inputFile, outputFile, options) {
           let value = fields[j];
 
           // Parse numbers if enabled
-          if (options.parseNumbers && /^-?\d+(\.\d+)?$/.test(value)) {
-            const num = parseFloat(value);
-            if (!isNaN(num)) {
-              value = num;
+          if (options.parseNumbers) {
+            // Fast numeric detection
+            const trimmed = value.trim();
+            const firstChar = trimmed.charAt(0);
+            if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '.') {
+              const num = parseFloat(trimmed);
+              if (!isNaN(num) && isFinite(num)) {
+                if (String(num) === trimmed || (trimmed.includes('.') && !isNaN(Number(trimmed)))) {
+                  value = num;
+                }
+              }
             }
           }
 

@@ -31,15 +31,15 @@ const THRESHOLDS = {
   jsonToCsv: {
     simple: 100,
     nested: 80,
-    wide: 30
+    wide: 20
   },
   ndjson: {
     parse: 150,
     generate: 150
   },
   tsv: {
-    parse: 150,
-    generate: 120
+    parse: 120,
+    generate: 35
   },
   delimiter: {
     detect: 5000

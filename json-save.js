@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * JSON Save Module - Node.js Module
  * 

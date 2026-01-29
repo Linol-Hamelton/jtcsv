@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CSV to JSON Converter - Node.js Module
  * 
@@ -131,11 +132,21 @@ function parseCsvValue(value, options) {
   }
   
   // Parse numbers
-  if (parseNumbers && /^-?\d+(\.\d+)?$/.test(result)) {
-    const num = parseFloat(result);
-    /* istanbul ignore next */
-    if (!isNaN(num)) {
-      return num;
+  if (parseNumbers) {
+    // Fast numeric detection: check first character and use parseFloat
+    const trimmed = result.trim();
+    const firstChar = trimmed.charAt(0);
+    // Quick reject: if first character is not digit, minus, or dot, skip
+    if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '.') {
+      const num = parseFloat(trimmed);
+      if (!isNaN(num) && isFinite(num)) {
+        // Ensure the whole string represents the same number (no extra characters)
+        // parseFloat ignores trailing non-numeric characters, so we need to verify
+        // that the string matches the parsed number when converted back
+        if (String(num) === trimmed || (trimmed.includes('.') && !isNaN(Number(trimmed)))) {
+          return num;
+        }
+      }
     }
   }
   

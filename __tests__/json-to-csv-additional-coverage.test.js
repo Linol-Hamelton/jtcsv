@@ -19,12 +19,27 @@ describe('jsonToCsv additional coverage', () => {
 
     try {
       process.env.NODE_ENV = 'development';
+      // Create array that appears to have >1M elements but doesn't actually allocate them
+      // This tests the warning logic without performance impact
       const data = new Array(1000001);
       data[0] = { id: 1 };
-      data.forEach = (cb) => cb(data[0], 0, data);
+      // Mock array methods to avoid actual iteration
+      data.forEach = (cb) => {
+        cb(data[0], 0, data);
+        // Simulate large array by calling callback multiple times
+        for (let i = 1; i < 10; i++) {
+          cb(data[0], i, data);
+        }
+      };
       data[Symbol.iterator] = function* () {
         yield data[0];
+        // Yield a few more to simulate large array
+        for (let i = 1; i < 10; i++) {
+          yield data[0];
+        }
       };
+      // Mock length property
+      Object.defineProperty(data, 'length', { value: 1000001 });
 
       jsonToCsv(data);
       expect(warnSpy).toHaveBeenCalled();

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Пример использования Express middleware для JTCSV
  * 

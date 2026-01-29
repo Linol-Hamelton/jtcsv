@@ -1,6 +1,6 @@
 // @ts-nocheck
-// Main entry point for the jtcsv module
-// Exports both JSON→CSV and CSV→JSON functions
+// Core entry point for the jtcsv module (lightweight version)
+// Exports only JSON↔CSV core functions without NDJSON, TSV, or plugins
 
 const jsonToCsvModule = require('./json-to-csv');
 const csvToJsonModule = require('./csv-to-json');
@@ -8,12 +8,8 @@ const errorsModule = require('./errors');
 const jsonSaveModule = require('./json-save');
 const streamJsonToCsvModule = require('./stream-json-to-csv');
 const streamCsvToJsonModule = require('./stream-csv-to-json');
-const ndjsonParser = require('./src/formats/ndjson-parser');
-const tsvParser = require('./src/formats/tsv-parser');
-const zodAdapter = require('./src/utils/zod-adapter');
-const encodingSupport = require('./src/utils/encoding-support');
 
-// Combine all exports
+// Combine core exports
 module.exports = {
   // JSON to CSV functions
   jsonToCsv: jsonToCsvModule.jsonToCsv,
@@ -46,37 +42,6 @@ module.exports = {
   createCsvFileToJsonStream: streamCsvToJsonModule.createCsvFileToJsonStream,
   createJsonCollectorStream: streamCsvToJsonModule.createJsonCollectorStream,
 
-  // NDJSON format support
-  jsonToNdjson: ndjsonParser.toNdjson,
-  ndjsonToJson: ndjsonParser.fromNdjson,
-  parseNdjsonStream: ndjsonParser.parseStream,
-  createNdjsonToCsvStream: ndjsonParser.createNdjsonToCsvStream,
-  createCsvToNdjsonStream: ndjsonParser.createCsvToNdjsonStream,
-  getNdjsonStats: ndjsonParser.getStats,
-
-  // TSV format support
-  jsonToTsv: tsvParser.jsonToTsv,
-  tsvToJson: tsvParser.tsvToJson,
-  isTsv: tsvParser.isTsv,
-  validateTsv: tsvParser.validateTsv,
-  readTsvAsJson: tsvParser.readTsvAsJson,
-  readTsvAsJsonSync: tsvParser.readTsvAsJsonSync,
-  saveAsTsv: tsvParser.saveAsTsv,
-  saveAsTsvSync: tsvParser.saveAsTsvSync,
-  createJsonToTsvStream: tsvParser.createJsonToTsvStream,
-  createTsvToJsonStream: tsvParser.createTsvToJsonStream,
-
   // Error classes
-  ...errorsModule,
-
-  // Schema validation adapters (optional dependencies)
-  createZodValidationHook: zodAdapter.createZodValidationHook,
-  createYupValidationHook: zodAdapter.createYupValidationHook,
-  createValidatedParser: zodAdapter.createValidatedParser,
-
-  // Encoding detection and conversion
-  detectEncoding: encodingSupport.detectEncoding,
-  convertToUtf8: encodingSupport.convertToUtf8,
-  autoDetectAndConvert: encodingSupport.autoDetectAndConvert,
-  csvToJsonWithEncoding: encodingSupport.csvToJsonWithEncoding
+  ...errorsModule
 };

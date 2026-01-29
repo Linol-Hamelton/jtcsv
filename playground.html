@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JTCSV Playground</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        h1 i {
+            font-size: 2.5rem;
+        }
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        .panel {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 30px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .panel:hover {
+            border-color: #c7d2fe;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+        }
+        .panel h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel h2 i {
+            font-size: 1.5rem;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            resize: vertical;
+            background: white;
+            transition: border 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 25px 0;
+            align-items: center;
+        }
+        select, button {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        select {
+            background: white;
+            border: 2px solid #cbd5e1;
+            color: #334155;
+            flex-grow: 1;
+        }
+        button {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 180px;
+            justify-content: center;
+        }
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.secondary {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+        button.danger {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+        .output-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #dbeafe;
+            border-radius: 10px;
+            color: #1e40af;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .output-info i {
+            font-size: 1.2rem;
+        }
+        footer {
+            text-align: center;
+            padding: 30px;
+            background: #f1f5f9;
+            color: #64748b;
+            border-top: 2px solid #e2e8f0;
+        }
+        footer a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-exchange-alt"></i> JTCSV Playground</h1>
+            <p class="subtitle">
+                Convert between CSV and JSON in real‑time using the JTCSV library. 
+                Paste your data, adjust options, and see instant results. No server required – everything runs in your browser.
+            </p>
+        </header>
+        <div class="main-content">
+            <div class="panel">
+                <h2><i class="fas fa-file-csv"></i> CSV Input</h2>
+                <textarea id="csvInput" placeholder="Paste your CSV here... Example:
+id,name,age,email
+1,John Doe,30,john@example.com
+2,Jane Smith,25,jane@example.com">id,name,age,email
+1,John Doe,30,john@example.com
+2,Jane Smith,25,jane@example.com</textarea>
+                <div class="controls">
+                    <select id="delimiter">
+                        <option value="," selected>Comma ( , )</option>
+                        <option value=";">Semicolon ( ; )</option>
+                        <option value="\t">Tab ( \t )</option>
+                        <option value="|">Pipe ( | )</option>
+                    </select>
+                    <button id="csvToJsonBtn"><i class="fas fa-arrow-right"></i> Convert to JSON</button>
+                    <button class="secondary" id="clearCsvBtn"><i class="fas fa-trash"></i> Clear</button>
+                </div>
+                <div class="output-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>CSV parsing supports quoted fields, multiline values, and automatic type detection.</span>
+                </div>
+                <div id="csvError" class="error"></div>
+            </div>
+            <div class="panel">
+                <h2><i class="fas fa-file-code"></i> JSON Output</h2>
+                <textarea id="jsonOutput" placeholder="JSON will appear here..." readonly></textarea>
+                <div class="controls">
+                    <button id="jsonToCsvBtn"><i class="fas fa-arrow-left"></i> Convert to CSV</button>
+                    <button class="secondary" id="copyJsonBtn"><i class="fas fa-copy"></i> Copy JSON</button>
+                    <button class="danger" id="clearJsonBtn"><i class="fas fa-trash"></i> Clear</button>
+                </div>
+                <div class="output-info">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>You can edit the JSON above and convert back to CSV. Supports nested objects and arrays.</span>
+                </div>
+                <div id="jsonError" class="error"></div>
+                <div id="successMsg" class="success"></div>
+            </div>
+        </div>
+        <footer>
+            <p>
+                <strong>JTCSV v<span id="version">2.3.0</span></strong> – 
+                <a href="https://github.com/your-org/jtcsv" target="_blank">GitHub</a> • 
+                <a href="https://www.npmjs.com/package/jtcsv" target="_blank">npm</a> • 
+                <a href="https://jtcsv.dev/docs" target="_blank">Documentation</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                This playground uses the browser build of JTCSV. All processing happens locally – no data is sent to any server.
+            </p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jtcsv@latest/dist/jtcsv.min.js"></script>
+    <script>
+        // Get UI elements
+        const csvInput = document.getElementById('csvInput');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const delimiterSelect = document.getElementById('delimiter');
+        const csvToJsonBtn = document.getElementById('csvToJsonBtn');
+        const jsonToCsvBtn = document.getElementById('jsonToCsvBtn');
+        const clearCsvBtn = document.getElementById('clearCsvBtn');
+        const clearJsonBtn = document.getElementById('clearJsonBtn');
+        const copyJsonBtn = document.getElementById('copyJsonBtn');
+        const csvError = document.getElementById('csvError');
+        const jsonError = document.getElementById('jsonError');
+        const successMsg = document.getElementById('successMsg');
+
+        // Show error message
+        function showError(element, message) {
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => element.style.display = 'none', 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            successMsg.textContent = message;
+            successMsg.style.display = 'block';
+            setTimeout(() => successMsg.style.display = 'none', 3000);
+        }
+
+        // Convert CSV to JSON
+        csvToJsonBtn.addEventListener('click', async () => {
+            const csv = csvInput.value.trim();
+            if (!csv) {
+                showError(csvError, 'Please enter some CSV data.');
+                return;
+            }
+            const delimiter = delimiterSelect.value;
+            try {
+                const result = jtcsv.csvToJson(csv, { delimiter });
+                jsonOutput.value = JSON.stringify(result, null, 2);
+                jsonError.style.display = 'none';
+                showSuccess('CSV converted to JSON successfully!');
+            } catch (err) {
+                showError(csvError, 'Error parsing CSV: ' + err.message);
+            }
+        });
+
+        // Convert JSON to CSV
+        jsonToCsvBtn.addEventListener('click', async () => {
+            const jsonText = jsonOutput.value.trim();
+            if (!jsonText) {
+                showError(jsonError, 'No JSON data to convert.');
+                return;
+            }
+            try {
+                const data = JSON.parse(jsonText);
+                const delimiter = delimiterSelect.value;
+                const csv = jtcsv.jsonToCsv(data, { delimiter });
+                csvInput.value = csv;
+                csvError.style.display = 'none';
+                showSuccess('JSON converted to CSV successfully!');
+            } catch (err) {
+                showError(jsonError, 'Invalid JSON: ' + err.message);
+            }
+        });
+
+        // Clear buttons
+        clearCsvBtn.addEventListener('click', () => {
+            csvInput.value = '';
+            csvError.style.display = 'none';
+        });
+        clearJsonBtn.addEventListener('click', () => {
+            jsonOutput.value = '';
+            jsonError.style.display = 'none';
+            successMsg.style.display = 'none';
+        });
+
+        // Copy JSON to clipboard
+        copyJsonBtn.addEventListener('click', () => {
+            if (!jsonOutput.value.trim()) {
+                showError(jsonError, 'No JSON to copy.');
+                return;
+            }
+            navigator.clipboard.writeText(jsonOutput.value)
+                .then(() => showSuccess('JSON copied to clipboard!'))
+                .catch(err => showError(jsonError, 'Failed to copy: ' + err));
+        });
+
+        // Load version from library if available
+        if (typeof jtcsv !== 'undefined' && jtcsv.VERSION) {
+            document.getElementById('version').textContent = jtcsv.VERSION;
+        }
+    </script>
+</body>
+</html>

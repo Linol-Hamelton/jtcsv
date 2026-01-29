@@ -48,7 +48,9 @@ class JtcsvWithPlugins {
             const structure = this.fastPathEngine.analyzeStructure(sample, context.options);
             
             context.metadata.fastPathStructure = structure;
-            console.log(`🚀 Используется ${structure.recommendedEngine} парсер`);
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🚀 Используется ${structure.recommendedEngine} парсер`);
+            }
           }
           return csv;
         },
@@ -120,19 +122,27 @@ class JtcsvWithPlugins {
       description: 'Логирование операций',
       hooks: {
         'before:csvToJson': (csv, context) => {
-          console.log(`📥 Начало csvToJson, размер: ${csv.length} байт`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`📥 Начало csvToJson, размер: ${csv.length} байт`);
+          }
           return csv;
         },
         'after:csvToJson': (result, context) => {
-          console.log(`📤 Завершение csvToJson, результат: ${result.length} записей`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`📤 Завершение csvToJson, результат: ${result.length} записей`);
+          }
           return result;
         },
         'before:jsonToCsv': (json, context) => {
-          console.log(`📥 Начало jsonToCsv, записей: ${json.length}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`📥 Начало jsonToCsv, записей: ${json.length}`);
+          }
           return json;
         },
         'after:jsonToCsv': (csv, context) => {
-          console.log(`📤 Завершение jsonToCsv, размер: ${csv.length} байт`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`📤 Завершение jsonToCsv, размер: ${csv.length} байт`);
+          }
           return csv;
         }
       }

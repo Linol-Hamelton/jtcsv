@@ -97,7 +97,9 @@ class PluginManager {
     }
 
     this.stats.pluginLoads++;
-    console.log(`✅ Plugin "${name}" зарегистрирован`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ Plugin "${name}" зарегистрирован`);
+    }
     return this;
   }
 
@@ -163,7 +165,9 @@ class PluginManager {
       registeredAt: new Date()
     });
 
-    console.log(`📌 Hook "${hookName}" зарегистрирован${pluginName ? ` для плагина "${pluginName}"` : ''}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📌 Hook "${hookName}" зарегистрирован${pluginName ? ` для плагина "${pluginName}"` : ''}`);
+    }
   }
 
   /**
@@ -178,7 +182,9 @@ class PluginManager {
       registeredAt: new Date()
     });
 
-    console.log(`🔄 Middleware "${name || 'anonymous'}" зарегистрирован`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔄 Middleware "${name || 'anonymous'}" зарегистрирован`);
+    }
   }
 
   /**
@@ -195,7 +201,9 @@ class PluginManager {
       return data;
     }
 
-    console.log(`⚡ Выполнение hook "${hookName}" с ${handlers.length} обработчиками`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`⚡ Выполнение hook "${hookName}" с ${handlers.length} обработчиками`);
+    }
     
     let result = data;
     
@@ -238,7 +246,9 @@ class PluginManager {
       return ctx;
     }
 
-    console.log(`🚀 Запуск middleware pipeline с ${this.middlewares.length} middleware`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🚀 Запуск middleware pipeline с ${this.middlewares.length} middleware`);
+    }
     
     let index = -1;
     const middlewares = this.middlewares.map(m => m.middleware);
@@ -336,8 +346,10 @@ class PluginManager {
       // Записываем время выполнения
       ctx.duration = Date.now() - ctx.startTime;
       
-      // Логируем успешное выполнение
-      console.log(`✅ Операция "${operation}" выполнена за ${ctx.duration}ms`);
+      // Логируем успешное выполнение только в development
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ Операция "${operation}" выполнена за ${ctx.duration}ms`);
+      }
       
       return ctx.result;
     } catch (error) {
@@ -407,7 +419,9 @@ class PluginManager {
     
     plugin.enabled = enabled;
     /* istanbul ignore next */
-    console.log(`🔧 Plugin "${pluginName}" ${enabled ? 'включен' : 'выключен'}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔧 Plugin "${pluginName}" ${enabled ? 'включен' : 'выключен'}`);
+    }
   }
 
   /**
@@ -431,7 +445,9 @@ class PluginManager {
     // Удаляем плагин
     this.plugins.delete(pluginName);
     
-    console.log(`🗑️ Plugin "${pluginName}" удален`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🗑️ Plugin "${pluginName}" удален`);
+    }
   }
 
   /**
@@ -469,7 +485,9 @@ class PluginManager {
     this.resetStats();
     this._registerDefaultHooks();
     
-    console.log('🧹 Все плагины и hooks очищены');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🧹 Все плагины и hooks очищены');
+    }
   }
 }
 

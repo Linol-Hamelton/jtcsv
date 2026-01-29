@@ -211,8 +211,18 @@ function escapeCsvValue(value, options) {
 
   const stringValue = String(value);
   let escapedValue = stringValue;
-  if (preventCsvInjection && /^[=+\-@]/.test(stringValue)) {
-    escapedValue = "'" + stringValue;
+  if (preventCsvInjection) {
+    // Dangerous prefixes: =, +, -, @, tab (\t), carriage return (\r)
+    if (/^[=+\-@\t\r]/.test(stringValue)) {
+      escapedValue = "'" + stringValue;
+    }
+    // Unicode Bidi override characters
+    const bidiChars = ['\u202A', '\u202B', '\u202C', '\u202D', '\u202E'];
+    for (const bidi of bidiChars) {
+      if (stringValue.includes(bidi)) {
+        escapedValue = escapedValue.replace(new RegExp(bidi, 'g'), '');
+      }
+    }
   }
 
   const needsQuoting = rfc4180Compliant

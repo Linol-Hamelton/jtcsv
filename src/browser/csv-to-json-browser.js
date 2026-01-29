@@ -191,10 +191,18 @@ function parseCsvValue(value, options) {
   }
   
   // Парсинг чисел
-  if (parseNumbers && /^-?\d+(\.\d+)?$/.test(result)) {
-    const num = parseFloat(result);
-    if (!isNaN(num)) {
-      return num;
+  if (parseNumbers) {
+    // Быстрая проверка числа: первый символ цифра, минус или точка
+    const trimmed = result.trim();
+    const firstChar = trimmed.charAt(0);
+    if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '.') {
+      const num = parseFloat(trimmed);
+      if (!isNaN(num) && isFinite(num)) {
+        // Убедимся, что строка полностью соответствует числу (без лишних символов)
+        if (String(num) === trimmed || (trimmed.includes('.') && !isNaN(Number(trimmed)))) {
+          return num;
+        }
+      }
     }
   }
   
@@ -327,28 +335,42 @@ export function autoDetectDelimiter(csv, candidates = [';', ',', '\t', '|']) {
   // Использование первой непустой строки для определения
   const firstLine = lines[0];
   
+  // Быстрый подсчёт вхождений кандидатов за один проход
   const counts = {};
-  candidates.forEach(delim => {
-    const escapedDelim = delim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escapedDelim, 'g');
-    const matches = firstLine.match(regex);
-    counts[delim] = matches ? matches.length : 0;
-  });
+  const candidateSet = new Set(candidates);
+  for (let i = 0; i < firstLine.length; i++) {
+    const char = firstLine[i];
+    if (candidateSet.has(char)) {
+      counts[char] = (counts[char] || 0) + 1;
+    }
+  }
+  // Убедимся, что все кандидаты присутствуют в counts (даже с нулём)
+  for (const delim of candidates) {
+    if (!(delim in counts)) {
+      counts[delim] = 0;
+    }
+  }
 
   // Поиск разделителя с максимальным количеством
   let maxCount = -1;
   let detectedDelimiter = ';'; // значение по умолчанию
+  const maxDelimiters = [];
   
   for (const [delim, count] of Object.entries(counts)) {
     if (count > maxCount) {
       maxCount = count;
-      detectedDelimiter = delim;
+      maxDelimiters.length = 0;
+      maxDelimiters.push(delim);
+    } else if (count === maxCount) {
+      maxDelimiters.push(delim);
     }
   }
 
-  // Если разделитель не найден или ничья
-  if (maxCount === 0) {
-    return ';'; // значение по умолчанию
+  // Если разделитель не найден или есть ничья, возвращаем стандартный
+  if (maxCount === 0 || maxDelimiters.length > 1) {
+    detectedDelimiter = ';';
+  } else {
+    detectedDelimiter = maxDelimiters[0];
   }
 
   return detectedDelimiter;

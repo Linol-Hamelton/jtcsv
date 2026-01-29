@@ -150,28 +150,42 @@ class DelimiterCache {
     // Используем первую непустую строку для детектирования
     const firstLine = lines[0];
     
+    // Быстрый подсчёт вхождений кандидатов за один проход
     const counts = {};
-    candidates.forEach(delim => {
-      const escapedDelim = delim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(escapedDelim, 'g');
-      const matches = firstLine.match(regex);
-      counts[delim] = matches ? matches.length : 0;
-    });
+    const candidateSet = new Set(candidates);
+    for (let i = 0; i < firstLine.length; i++) {
+      const char = firstLine[i];
+      if (candidateSet.has(char)) {
+        counts[char] = (counts[char] || 0) + 1;
+      }
+    }
+    // Убедимся, что все кандидаты присутствуют в counts (даже с нулём)
+    for (const delim of candidates) {
+      if (!(delim in counts)) {
+        counts[delim] = 0;
+      }
+    }
 
     // Находим разделитель с максимальным количеством
     let maxCount = -1;
     let detectedDelimiter = ';';
+    const maxDelimiters = [];
     
     for (const [delim, count] of Object.entries(counts)) {
       if (count > maxCount) {
         maxCount = count;
-        detectedDelimiter = delim;
+        maxDelimiters.length = 0;
+        maxDelimiters.push(delim);
+      } else if (count === maxCount) {
+        maxDelimiters.push(delim);
       }
     }
 
     // Если разделитель не найден или есть ничья, возвращаем стандартный
-    if (maxCount === 0) {
+    if (maxCount === 0 || maxDelimiters.length > 1) {
       detectedDelimiter = ';';
+    } else {
+      detectedDelimiter = maxDelimiters[0];
     }
 
     // Сохраняем в кэш если он предоставлен

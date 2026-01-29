@@ -1,4 +1,4 @@
-declare module 'jtcsv' {
+declare module './index.js' {
   import { Readable, Writable, Transform } from 'stream';
 
   // JSON to CSV interfaces
