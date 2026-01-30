@@ -1,0 +1,42 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // Strict режим для тестирования и постепенного исправления
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    
+    // Качество кода
+    "noUnusedLocals": false,           // Временно отключено - много неиспользуемых переменных
+    "noUnusedParameters": false,       // Временно отключено
+    "noImplicitOverride": false,       // Временно отключено
+    "noPropertyAccessFromIndexSignature": false,
+    
+    // Для отладки
+    "diagnostics": true,
+    "extendedDiagnostics": false,
+    "listFiles": false,
+    "listEmittedFiles": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "json-to-csv.ts",
+    "csv-to-json.ts",
+    "errors.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "__tests__/**"
+  ]
+}

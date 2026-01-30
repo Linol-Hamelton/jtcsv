@@ -21,7 +21,7 @@ async function parseCsv(request, options = {}) {
     const value = formData.get(fieldName) ?? formData.values().next().value;
     if (value && typeof value.text === 'function') {
       csvText = await value.text();
-    } else if (value != null) {
+    } else if (value !== null) {
       csvText = String(value);
     }
   } else {

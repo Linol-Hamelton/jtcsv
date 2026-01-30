@@ -16,22 +16,28 @@ const { csvToJson, jsonToCsv } = require('../../index.js');
  * @returns {number} Размер в байтах
  */
 function parseSizeToBytes(sizeStr) {
-  if (typeof sizeStr === 'number') return sizeStr;
-  if (typeof sizeStr !== 'string') return 10 * 1024 * 1024; // default 10MB
+  if (typeof sizeStr === 'number') {
+    return sizeStr;
+  }
+  if (typeof sizeStr !== 'string') {
+    return 10 * 1024 * 1024;
+  } // default 10MB
   
   const match = sizeStr.match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB|TB)$/i);
-  if (!match) return 10 * 1024 * 1024;
+  if (!match) {
+    return 10 * 1024 * 1024;
+  }
   
   const value = parseFloat(match[1]);
   const unit = match[2].toUpperCase();
   
   switch (unit) {
-    case 'B': return value;
-    case 'KB': return value * 1024;
-    case 'MB': return value * 1024 * 1024;
-    case 'GB': return value * 1024 * 1024 * 1024;
-    case 'TB': return value * 1024 * 1024 * 1024 * 1024;
-    default: return value * 1024 * 1024;
+  case 'B': return value;
+  case 'KB': return value * 1024;
+  case 'MB': return value * 1024 * 1024;
+  case 'GB': return value * 1024 * 1024 * 1024;
+  case 'TB': return value * 1024 * 1024 * 1024 * 1024;
+  default: return value * 1024 * 1024;
   }
 }
 
@@ -162,7 +168,7 @@ function jtcsvExpressMiddleware(options = {}) {
     
     // Определяем формат входных данных заранее
     let inputFormat = 'unknown';
-    let inputData = req.body;
+    const inputData = req.body;
   
     if (autoDetect) {
       if (contentType.includes('application/json') ||
@@ -235,7 +241,7 @@ function jtcsvExpressMiddleware(options = {}) {
         delete conversionOptions.enableFastPath;
 
         let result;
-        let stats = {
+        const stats = {
           inputSize: 0,
           outputSize: 0,
           processingTime: 0,
@@ -290,11 +296,11 @@ function jtcsvExpressMiddleware(options = {}) {
 
       // Ждем либо обработку, либо таймаут
       await Promise.race([processingPromise, timeoutPromise]);
-     } catch (error) {
+    } catch (error) {
       // Обработка ошибок конвертации
       const err = /** @type {Error & { code?: string }} */ (error);
       if (process.env.NODE_ENV !== 'test') {
-        console.log(`[jtcsv-middleware] Conversion error:`, err.message, err.stack?.split('\n')[0]);
+        console.log('[jtcsv-middleware] Conversion error:', err.message, err.stack?.split('\n')[0]);
       }
       
       // Определяем статус код на основе типа ошибки
@@ -504,5 +510,3 @@ module.exports = {
   jtcsvMiddleware: jtcsvExpressMiddleware,
   createMiddleware: jtcsvExpressMiddleware
 };
-
-

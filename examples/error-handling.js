@@ -94,13 +94,27 @@ async function comprehensiveErrorHandling() {
 }
 
 function getErrorTypeName(error) {
-  if (error instanceof ValidationError) return 'ValidationError';
-  if (error instanceof SecurityError) return 'SecurityError';
-  if (error instanceof ParsingError) return 'ParsingError';
-  if (error instanceof FileSystemError) return 'FileSystemError';
-  if (error instanceof LimitError) return 'LimitError';
-  if (error instanceof ConfigurationError) return 'ConfigurationError';
-  if (error instanceof JtcsvError) return 'JtcsvError';
+  if (error instanceof ValidationError) {
+    return 'ValidationError';
+  }
+  if (error instanceof SecurityError) {
+    return 'SecurityError';
+  }
+  if (error instanceof ParsingError) {
+    return 'ParsingError';
+  }
+  if (error instanceof FileSystemError) {
+    return 'FileSystemError';
+  }
+  if (error instanceof LimitError) {
+    return 'LimitError';
+  }
+  if (error instanceof ConfigurationError) {
+    return 'ConfigurationError';
+  }
+  if (error instanceof JtcsvError) {
+    return 'JtcsvError';
+  }
   return 'UnknownError';
 }
 

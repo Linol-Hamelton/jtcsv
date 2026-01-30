@@ -60,6 +60,3 @@ runDemo().catch(error => {
   console.error(`\n❌ Failed to run demo: ${error.message}`);
   process.exit(1);
 });
-
-
-

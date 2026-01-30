@@ -1,35 +1,48 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020"],
-    "allowJs": true,
-    "checkJs": false,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist-types",
-    "strict": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true,
+    // Поэтапное включение strict режима
+    // Этап 1: Базовые проверки (текущий этап - исправление основных ошибок)
+    "noImplicitAny": false,           // Будет включено после исправления 1000+ ошибок
+    "strictNullChecks": false,        // Будет включено после исправления implicit any
+    
+    // Этап 2: Дополнительные проверки (будут включены позже)
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "alwaysStrict": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    
+    // Этап 3: Качество кода (будут включены в последнюю очередь)
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "isolatedModules": true,
+    
+    // Временные настройки для миграции
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "skipDefaultLibCheck": true
   },
   "include": [
-    "index.d.ts",
-    "*.js"
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js"  // Включаем JS файлы для постепенной миграции
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "__tests__",
-    "**/*.test.js",
-    "**/*.spec.js"
+    "coverage",
+    "docs",
+    "demo",
+    "examples",
+    "packages",
+    "plugins",
+    "scripts",
+    "run-demo.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }

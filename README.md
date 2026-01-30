@@ -130,7 +130,16 @@ Run from the repo root:
 ```bash
 npm test
 npm run test:coverage
+npm run test:coverage:entry
+npm run test:coverage:ts
+npm run test:types
+npm run tsc:types
 npm run build
+```
+
+Linux validation (Docker):
+```bash
+docker run --rm -v /path/to/jtcsv:/work -w /work node:20 bash -lc "npm ci && npm test"
 ```
 
 ## License

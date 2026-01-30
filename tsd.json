@@ -1,0 +1,19 @@
+﻿{
+  "entryPoints": [
+    "./index.d.ts"
+  ],
+  "compilerOptions": {
+    "lib": ["es2020"],
+    "module": "node16",
+    "target": "es2020",
+    "strict": true,
+    "moduleResolution": "node16",
+    "baseUrl": ".",
+    "paths": {
+      "jtcsv-types": ["./index.d.ts"]
+    }
+  },
+  "testFiles": [
+    "./test-d/**/*.test-d.ts"
+  ]
+}

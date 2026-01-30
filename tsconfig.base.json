@@ -1,0 +1,104 @@
+{
+  "compilerOptions": {
+    // Целевая версия ECMAScript
+    "target": "ES2020",
+    
+    // Система модулей
+    "module": "commonjs",
+    "moduleResolution": "node",
+    
+    // Библиотеки
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": ["jest", "node"],
+    
+    // Поддержка JavaScript файлов (для инкрементальной миграции)
+    "allowJs": true,
+    "checkJs": true,
+    
+    // Генерация деклараций типов
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "./dist-types",
+    
+    // Source maps для отладки
+    "sourceMap": true,
+    "inlineSources": true,
+    
+    // Директории вывода
+    "outDir": "./dist",
+    "rootDir": "./",
+    
+    // Базовые проверки типов (не strict)
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "alwaysStrict": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    
+    // Дополнительные проверки (отключены для начала)
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+    
+    // Совместимость модулей
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    // Экспериментальные возможности
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    
+    // Производительность
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    
+    // Поддержка JSON
+    "resolveJsonModule": true,
+    
+    // Изоляция модулей (для сборки)
+    "isolatedModules": true,
+    
+    // Карты путей (опционально)
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@browser/*": ["src/browser/*"],
+      "@core/*": ["src/core/*"],
+      "@engines/*": ["src/engines/*"],
+      "@formats/*": ["src/formats/*"],
+      "@utils/*": ["src/utils/*"]
+    }
+  },
+  
+  // Включаемые файлы
+  "include": [
+    "**/*.ts",
+    "**/*.js",
+    "**/*.d.ts"
+  ],
+  
+  // Исключаемые файлы
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-types",
+    "**/__mocks__/**",
+    "**/*.benchmark.ts",
+    "**/*.benchmark.js"
+  ],
+  
+  // Настройки для сборки
+  "ts-node": {
+    "transpileOnly": true,
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
+}

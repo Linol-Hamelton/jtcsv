@@ -96,6 +96,26 @@ module.exports = [
       'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }]
     }
   },
+  // ES Module files (.mjs and demo/plugins files)
+  {
+    files: ['**/*.mjs', 'demo/**/*.js', 'plugins/**/*.js', 'rollup.config.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      ecmaVersion: 'latest',
+      globals: {
+        ...globals.node,
+        ...globals.browser
+      }
+    },
+    rules: {
+      'no-console': 'off',
+      'no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }]
+    }
+  },
   // Ignore patterns
   {
     ignores: [
@@ -104,7 +124,8 @@ module.exports = [
       'dist/**',
       'demo/node_modules/**',
       'plugins/**/node_modules/**',
-      'packages/**/node_modules/**'
+      'packages/**/node_modules/**',
+      'docs/api/**'  // Generated documentation files
     ]
   }
 ];

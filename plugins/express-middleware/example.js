@@ -120,7 +120,7 @@ app.use((req, res) => {
 // Запуск сервера
 app.listen(PORT, () => {
   console.log(`🚀 JTCSV Express server запущен на порту ${PORT}`);
-  console.log(`📚 Примеры запросов:`);
+  console.log('📚 Примеры запросов:');
   console.log(`  curl -X POST http://localhost:${PORT}/api/convert \
     -H "Content-Type: application/json" \
     -d '[{"name":"John","age":30},{"name":"Jane","age":25}]'`);
@@ -133,5 +133,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-
-

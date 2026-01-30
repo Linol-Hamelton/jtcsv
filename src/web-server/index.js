@@ -126,7 +126,7 @@ async function handleValidate(req, res) {
     const { data, format } = body;
 
     let isValid = false;
-    let errors = [];
+    const errors = [];
 
     if (format === 'json') {
       if (Array.isArray(data)) {
@@ -651,21 +651,21 @@ function startServer(options = {}) {
   const server = http.createServer(handleRequest);
   
   server.listen(port, host, () => {
-    console.log(`\n🌐 JTCSV Web Server started!`);
+    console.log('\n🌐 JTCSV Web Server started!');
     console.log(`\n📍 URL: http://${host}:${port}`);
-    console.log(`\n📡 API Endpoints:`);
-    console.log(`   POST /api/json-to-csv`);
-    console.log(`   POST /api/csv-to-json`);
-    console.log(`   POST /api/ndjson-to-csv`);
-    console.log(`   POST /api/csv-to-ndjson`);
-    console.log(`   POST /api/validate`);
-    console.log(`\n✨ Press Ctrl+C to stop\n`);
+    console.log('\n📡 API Endpoints:');
+    console.log('   POST /api/json-to-csv');
+    console.log('   POST /api/csv-to-json');
+    console.log('   POST /api/ndjson-to-csv');
+    console.log('   POST /api/csv-to-ndjson');
+    console.log('   POST /api/validate');
+    console.log('\n✨ Press Ctrl+C to stop\n');
   });
   
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
       console.error(`\n❌ Error: Port ${port} is already in use`);
-      console.error(`   Try a different port: jtcsv web --port=3001\n`);
+      console.error('   Try a different port: jtcsv web --port=3001\n');
     } else {
       console.error(`\n❌ Server error: ${error.message}\n`);
     }

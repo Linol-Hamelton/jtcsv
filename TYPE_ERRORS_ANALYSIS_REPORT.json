@@ -1,0 +1,182 @@
+{
+  "timestamp": "2026-01-30T12:33:45.033Z",
+  "totalErrors": 3567,
+  "errorTypeStats": {
+    "implicit-any": 839,
+    "property-not-exist": 1021,
+    "type-mismatch": 105,
+    "module-not-found": 25,
+    "other": 1334
+  },
+  "topErrorCodes": [
+    {
+      "code": "TS2339",
+      "count": 1021
+    },
+    {
+      "code": "TS7006",
+      "count": 839
+    },
+    {
+      "code": "TS6133",
+      "count": 319
+    },
+    {
+      "code": "TS7005",
+      "count": 215
+    },
+    {
+      "code": "TS4111",
+      "count": 125
+    },
+    {
+      "code": "TS2345",
+      "count": 105
+    },
+    {
+      "code": "TS2322",
+      "count": 76
+    },
+    {
+      "code": "TS7053",
+      "count": 73
+    },
+    {
+      "code": "TS18048",
+      "count": 63
+    },
+    {
+      "code": "TS7034",
+      "count": 58
+    }
+  ],
+  "topFiles": [
+    {
+      "file": "docs/api/assets/main.ts",
+      "errorCount": 631,
+      "mostCommonError": {
+        "code": "TS2339",
+        "count": 294
+      }
+    },
+    {
+      "file": "packages/jtcsv-tui/src/index.ts",
+      "errorCount": 357,
+      "mostCommonError": {
+        "code": "TS2339",
+        "count": 238
+      }
+    },
+    {
+      "file": "demo/src/utils/jtcsv-integration.ts",
+      "errorCount": 176,
+      "mostCommonError": {
+        "code": "TS2339",
+        "count": 88
+      }
+    },
+    {
+      "file": "bin/jtcsv.ts",
+      "errorCount": 107,
+      "mostCommonError": {
+        "code": "TS7006",
+        "count": 63
+      }
+    },
+    {
+      "file": "src/browser/workers/worker-pool.ts",
+      "errorCount": 104,
+      "mostCommonError": {
+        "code": "TS2339",
+        "count": 72
+      }
+    },
+    {
+      "file": "benchmarks/independent-suite.ts",
+      "errorCount": 95,
+      "mostCommonError": {
+        "code": "TS7006",
+        "count": 37
+      }
+    },
+    {
+      "file": "packages/jtcsv-validator/src/index.ts",
+      "errorCount": 94,
+      "mostCommonError": {
+        "code": "TS7006",
+        "count": 41
+      }
+    },
+    {
+      "file": "__tests__/plugin-system.test.ts",
+      "errorCount": 88,
+      "mostCommonError": {
+        "code": "TS7005",
+        "count": 61
+      }
+    },
+    {
+      "file": "src/engines/fast-path-engine.ts",
+      "errorCount": 78,
+      "mostCommonError": {
+        "code": "TS7006",
+        "count": 48
+      }
+    },
+    {
+      "file": "__tests__/plugins/express-middleware.test.ts",
+      "errorCount": 69,
+      "mostCommonError": {
+        "code": "TS7005",
+        "count": 27
+      }
+    },
+    {
+      "file": "__tests__/coverage-100.test.ts",
+      "errorCount": 57,
+      "mostCommonError": {
+        "code": "TS7006",
+        "count": 27
+      }
+    },
+    {
+      "file": "__tests__/transform-hooks.test.ts",
+      "errorCount": 51,
+      "mostCommonError": {
+        "code": "TS18046",
+        "count": 14
+      }
+    },
+    {
+      "file": "__tests__/fast-path-engine.test.ts",
+      "errorCount": 47,
+      "mostCommonError": {
+        "code": "TS7005",
+        "count": 39
+      }
+    },
+    {
+      "file": "src/formats/ndjson-parser.ts",
+      "errorCount": 47,
+      "mostCommonError": {
+        "code": "TS7006",
+        "count": 22
+      }
+    },
+    {
+      "file": "__tests__/csv-to-json-edge-cases.test.ts",
+      "errorCount": 42,
+      "mostCommonError": {
+        "code": "TS2339",
+        "count": 20
+      }
+    }
+  ],
+  "priorityFiles": [
+    "docs/api/assets/main.ts",
+    "packages/jtcsv-tui/src/index.ts",
+    "demo/src/utils/jtcsv-integration.ts",
+    "bin/jtcsv.ts",
+    "src/browser/workers/worker-pool.ts"
+  ]
+}

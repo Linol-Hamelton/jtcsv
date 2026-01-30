@@ -1,5 +1,4 @@
-declare module './index.js' {
-  import { Readable, Writable, Transform } from 'stream';
+import { Readable, Writable, Transform } from 'stream';
 
   // JSON to CSV interfaces
   export interface JsonToCsvOptions {
@@ -649,4 +648,3 @@ declare module './index.js' {
   export function createTsvToJsonStream(
     options?: TsvOptions
   ): TransformStream;
-}

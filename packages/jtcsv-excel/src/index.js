@@ -300,7 +300,9 @@ class JtcsvExcel {
 
       // Читаем данные
       worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) return; // Пропускаем заголовки
+        if (rowNumber === 1) {
+          return;
+        } // Пропускаем заголовки
         
         const rowData = {};
         let isEmptyRow = true;
@@ -672,5 +674,3 @@ module.exports.jtcsvPlugin = JtcsvExcel.createJtcsvPlugin;
 
 // Экспортируем ExcelJS для расширенного использования
 module.exports.ExcelJS = ExcelJS;
-
-

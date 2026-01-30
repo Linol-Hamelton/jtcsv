@@ -168,7 +168,7 @@ async function ndjsonToCsvConversion() {
   });
 
   // Collect CSV output
-  let csvOutput = '';
+  const csvOutput = '';
   transformStream.writable.getWriter();
 
   // Manual stream processing for demo

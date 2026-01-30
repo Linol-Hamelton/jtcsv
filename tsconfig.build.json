@@ -1,0 +1,37 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Оптимизации для production сборки
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    
+    // Более строгие проверки для production
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    
+    // Отключаем проверку JavaScript файлов
+    "allowJs": false,
+    "checkJs": false,
+    
+    // Оптимизация вывода
+    "removeComments": true,
+    "stripInternal": true,
+    
+    // Для production
+    "incremental": false
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-types",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**",
+    "**/__mocks__/**"
+  ]
+}

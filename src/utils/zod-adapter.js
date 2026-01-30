@@ -51,7 +51,7 @@ function createZodValidationHook(zodSchema, options = {}) {
   }
   
   // Return hook function
-  return function(row, index, context) {
+  return function (row, index, context) {
     try {
       const result = zodSchema.safeParse(row);
       
@@ -113,7 +113,7 @@ function createYupValidationHook(yupSchema, options = {}) {
     throw new ValidationError('Provided schema is not a valid Yup schema');
   }
   
-  return async function(row, index, context) {
+  return async function (row, index, context) {
     try {
       const validated = await yupSchema.validate(row, { abortEarly, stripUnknown });
       return validated;
@@ -146,12 +146,12 @@ function createValidatedParser(schema, adapterOptions = {}) {
     throw new ValidationError(`Unsupported validation library: ${library}`);
   }
   
-  return async function(csv, parseOptions = {}) {
+  return async function (csv, parseOptions = {}) {
     const { csvToJson } = require('../index');
     const hooks = parseOptions.hooks || {};
     // Merge validation hook with existing perRow hook
     const existingPerRow = hooks.perRow;
-    hooks.perRow = function(row, index, context) {
+    hooks.perRow = function (row, index, context) {
       let validated = row;
       if (existingPerRow) {
         validated = existingPerRow(validated, index, context);

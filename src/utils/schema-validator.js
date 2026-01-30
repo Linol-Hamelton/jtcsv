@@ -125,7 +125,7 @@ function createValidationHook(schema) {
   }
   
   // Return a hook function compatible with hooks.perRow
-  return function(row, index, context) {
+  return function (row, index, context) {
     try {
       const result = validator.validate([row], { 
         stopOnFirstError: true,
@@ -323,24 +323,24 @@ function createSimpleValidator(schema) {
  */
 function checkType(value, type) {
   switch (type) {
-    case 'string':
-      return typeof value === 'string';
-    case 'number':
-      return typeof value === 'number' && !isNaN(value);
-    case 'boolean':
-      return typeof value === 'boolean';
-    case 'integer':
-      return Number.isInteger(value);
-    case 'float':
-      return typeof value === 'number' && !Number.isInteger(value);
-    case 'date':
-      return value instanceof Date && !isNaN(value);
-    case 'array':
-      return Array.isArray(value);
-    case 'object':
-      return typeof value === 'object' && value !== null && !Array.isArray(value);
-    default:
-      return false;
+  case 'string':
+    return typeof value === 'string';
+  case 'number':
+    return typeof value === 'number' && !isNaN(value);
+  case 'boolean':
+    return typeof value === 'boolean';
+  case 'integer':
+    return Number.isInteger(value);
+  case 'float':
+    return typeof value === 'number' && !Number.isInteger(value);
+  case 'date':
+    return value instanceof Date && !isNaN(value);
+  case 'array':
+    return Array.isArray(value);
+  case 'object':
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  default:
+    return false;
   }
 }
 

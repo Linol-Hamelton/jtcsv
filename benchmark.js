@@ -8,8 +8,6 @@
  * Run with: node benchmark.js
  */
 
-const fs = require('fs');
-const path = require('path');
 const { performance } = require('perf_hooks');
 
 // Import JTCSV
@@ -19,19 +17,19 @@ const jtcsv = require('./index.js');
 let csvParser, Papa, json2csv;
 try {
   csvParser = require('csv-parser');
-} catch (e) {
+} catch (_e) {
   console.warn('csv-parser not installed, skipping...');
 }
 
 try {
   Papa = require('papaparse');
-} catch (e) {
+} catch (_e) {
   console.warn('papaparse not installed, skipping...');
 }
 
 try {
   json2csv = require('json2csv');
-} catch (e) {
+} catch (_e) {
   console.warn('json2csv not installed, skipping...');
 }
 
@@ -468,6 +466,3 @@ runBenchmarks().catch(error => {
   console.error(color(`\n❌ Failed to run benchmarks: ${error.message}`, 'red'));
   process.exit(1);
 });
-
-
-

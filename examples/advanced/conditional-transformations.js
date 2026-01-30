@@ -179,8 +179,12 @@ async function exampleStreamingValidation() {
         processing_timestamp: new Date().toISOString()
       };
       
-      if (processedRow.is_success) stats.success++;
-      if (processedRow.is_slow) stats.slowRequests++;
+      if (processedRow.is_success) {
+        stats.success++;
+      }
+      if (processedRow.is_slow) {
+        stats.slowRequests++;
+      }
       
       return processedRow;
     }

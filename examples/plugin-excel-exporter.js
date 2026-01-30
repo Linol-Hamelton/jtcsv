@@ -249,7 +249,9 @@ async function importFromExcel(filePath, options = {}) {
   let headers = [];
   
   worksheet.eachRow((row, rowNumber) => {
-    if (rowNumber <= skipRows) return;
+    if (rowNumber <= skipRows) {
+      return;
+    }
     
     if (hasHeaders && rowNumber === skipRows + 1) {
       // Первая строка - заголовки
@@ -402,6 +404,3 @@ module.exports = {
 if (require.main === module) {
   exampleUsage().catch(console.error);
 }
-
-
-

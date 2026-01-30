@@ -376,6 +376,3 @@ module.exports.NdjsonParser = NdjsonParser;
 
 // Экспортируем фабричный метод
 module.exports.create = JtcsvWithPlugins.create;
-
-
-

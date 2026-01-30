@@ -1,0 +1,259 @@
+{
+  "timestamp": "2026-01-30T12:25:14.720Z",
+  "totalErrors": 26,
+  "categories": {
+    "syntax": {
+      "count": 26,
+      "examples": [
+        {
+          "file": "benchmarks/independent-suite.ts",
+          "line": 287,
+          "col": 30,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "bin/jtcsv.ts",
+          "line": 1395,
+          "col": 14,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "bin/jtcsv.ts",
+          "line": 1520,
+          "col": 14,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "bin/jtcsv.ts",
+          "line": 1643,
+          "col": 14,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "examples/advanced/performance-optimization.ts",
+          "line": 239,
+          "col": 19,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "examples/advanced/performance-optimization.ts",
+          "line": 239,
+          "col": 34,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "examples/advanced/performance-optimization.ts",
+          "line": 404,
+          "col": 31,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "examples/advanced/performance-optimization.ts",
+          "line": 404,
+          "col": 46,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "examples/advanced/performance-optimization.ts",
+          "line": 404,
+          "col": 47,
+          "code": "1434",
+          "message": "Unexpected keyword or identifier."
+        },
+        {
+          "file": "examples/advanced/performance-optimization.ts",
+          "line": 404,
+          "col": 55,
+          "code": "1128",
+          "message": "Declaration or statement expected."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 86,
+          "col": 29,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 86,
+          "col": 44,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 86,
+          "col": 45,
+          "code": "1434",
+          "message": "Unexpected keyword or identifier."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 86,
+          "col": 54,
+          "code": "1128",
+          "message": "Declaration or statement expected."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 226,
+          "col": 33,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 226,
+          "col": 48,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 226,
+          "col": 49,
+          "code": "1434",
+          "message": "Unexpected keyword or identifier."
+        },
+        {
+          "file": "examples/streaming-example.ts",
+          "line": 226,
+          "col": 58,
+          "code": "1128",
+          "message": "Declaration or statement expected."
+        },
+        {
+          "file": "packages/jtcsv-tui/src/index.ts",
+          "line": 14,
+          "col": 11,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "packages/jtcsv-tui/src/index.ts",
+          "line": 17,
+          "col": 13,
+          "code": "1109",
+          "message": "Expression expected."
+        },
+        {
+          "file": "packages/jtcsv-validator/src/index.ts",
+          "line": 870,
+          "col": 15,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "packages/jtcsv-validator/src/index.ts",
+          "line": 878,
+          "col": 15,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "packages/jtcsv-validator/src/index.ts",
+          "line": 886,
+          "col": 15,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "packages/jtcsv-validator/src/index.ts",
+          "line": 895,
+          "col": 15,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "packages/jtcsv-validator/src/index.ts",
+          "line": 898,
+          "col": 15,
+          "code": "1005",
+          "message": "';' expected."
+        },
+        {
+          "file": "packages/jtcsv-validator/src/index.ts",
+          "line": 901,
+          "col": 15,
+          "code": "1005",
+          "message": "';' expected."
+        }
+      ],
+      "codes": [
+        "1109",
+        "1005",
+        "1434",
+        "1128"
+      ]
+    },
+    "type": {
+      "count": 0,
+      "examples": [],
+      "codes": []
+    },
+    "import": {
+      "count": 0,
+      "examples": [],
+      "codes": []
+    },
+    "other": {
+      "count": 0,
+      "examples": [],
+      "codes": []
+    }
+  },
+  "topFiles": [
+    {
+      "file": "examples/streaming-example.ts",
+      "errorCount": 8
+    },
+    {
+      "file": "examples/advanced/performance-optimization.ts",
+      "errorCount": 6
+    },
+    {
+      "file": "packages/jtcsv-validator/src/index.ts",
+      "errorCount": 6
+    },
+    {
+      "file": "bin/jtcsv.ts",
+      "errorCount": 3
+    },
+    {
+      "file": "packages/jtcsv-tui/src/index.ts",
+      "errorCount": 2
+    },
+    {
+      "file": "benchmarks/independent-suite.ts",
+      "errorCount": 1
+    }
+  ],
+  "topErrorCodes": [
+    {
+      "code": "TS1005",
+      "count": 10
+    },
+    {
+      "code": "TS1109",
+      "count": 10
+    },
+    {
+      "code": "TS1128",
+      "count": 3
+    },
+    {
+      "code": "TS1434",
+      "count": 3
+    }
+  ],
+  "filesWithErrors": 6
+}

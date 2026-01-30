@@ -147,7 +147,7 @@ function createTransformHook(transform) {
   }
   
   // Return a hook function compatible with hooks.perRow
-  return function(row, index, context) {
+  return function (row, index, context) {
     try {
       return transformFn(row, index);
     } catch (error) {

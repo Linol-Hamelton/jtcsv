@@ -226,7 +226,7 @@ async function exampleParallelProcessing() {
   // CPU-intensive transformation function
   function complexTransformation(row) {
     // Simulate CPU-intensive operations
-    let result = { ...row };
+    const result = { ...row };
     
     // Multiple mathematical operations
     for (let i = 0; i < 100; i++) {
@@ -427,13 +427,15 @@ async function exampleOptimizedFileIO() {
   const chunkSize = 1024 * 1024; // 1MB chunks
   const fd = fs.openSync(testFile, 'r');
   let position = 0;
-  let buffer = Buffer.alloc(chunkSize);
+  const buffer = Buffer.alloc(chunkSize);
   let leftover = '';
   let rowCount3 = 0;
   
   while (true) {
     const bytesRead = fs.readSync(fd, buffer, 0, chunkSize, position);
-    if (bytesRead === 0) break;
+    if (bytesRead === 0) {
+      break;
+    }
     
     const chunk = leftover + buffer.toString('utf8', 0, bytesRead);
     const lines = chunk.split('\n');

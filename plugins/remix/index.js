@@ -13,7 +13,7 @@ async function extractCsvText(formData, fieldName) {
     if (value && typeof value.text === 'function') {
       return await value.text();
     }
-    if (value != null) {
+    if (value !== null) {
       return String(value);
     }
   }

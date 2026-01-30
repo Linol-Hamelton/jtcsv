@@ -180,6 +180,3 @@ module.exports = {
   benchmarkConversion,
   saveCsvInChunks
 };
-
-
-

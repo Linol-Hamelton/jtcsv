@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Более строгие проверки для разработки
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    
+    // Для быстрой компиляции
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.dev.tsbuildinfo",
+    
+    // Для отладки
+    "sourceMap": true,
+    "inlineSources": true,
+    
+    // Разрешаем JavaScript для инкрементальной миграции
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.js",
+    "**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-types"
+  ]
+}

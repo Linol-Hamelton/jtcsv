@@ -161,33 +161,33 @@ class JtcsvTUI {
     // Handle menu selection
     menuBox.on('select', (item, index) => {
       switch (index) {
-        case 0:
-          this.showJsonToCsv();
-          break;
-        case 1:
-          this.showCsvToJson();
-          break;
-        case 2:
-          this.showPreprocess();
-          break;
-        case 3:
-          this.showBatchProcessing();
-          break;
-        case 4:
-          this.showStreamProcessing();
-          break;
-        case 5:
-          this.showSettings();
-          break;
-        case 6:
-          this.showFileBrowser();
-          break;
-        case 7:
-          this.showHelp();
-          break;
-        case 8:
-          process.exit(0);
-          break;
+      case 0:
+        this.showJsonToCsv();
+        break;
+      case 1:
+        this.showCsvToJson();
+        break;
+      case 2:
+        this.showPreprocess();
+        break;
+      case 3:
+        this.showBatchProcessing();
+        break;
+      case 4:
+        this.showStreamProcessing();
+        break;
+      case 5:
+        this.showSettings();
+        break;
+      case 6:
+        this.showFileBrowser();
+        break;
+      case 7:
+        this.showHelp();
+        break;
+      case 8:
+        process.exit(0);
+        break;
       }
     });
 
@@ -446,7 +446,9 @@ class JtcsvTUI {
     });
 
     convertButton.on('press', async () => {
-      if (this.isConverting) return;
+      if (this.isConverting) {
+        return;
+      }
       
       this.isConverting = true;
       convertButton.setContent('{center}Converting...{/center}');
@@ -752,7 +754,9 @@ class JtcsvTUI {
     });
 
     convertButton.on('press', async () => {
-      if (this.isConverting) return;
+      if (this.isConverting) {
+        return;
+      }
       
       this.isConverting = true;
       convertButton.setContent('{center}Converting...{/center}');
@@ -1461,7 +1465,9 @@ class JtcsvTUI {
           buffer = lines.pop() || '';
 
           for (const line of lines) {
-            if (!line.trim()) continue;
+            if (!line.trim()) {
+              continue;
+            }
 
             const fields = this.parseCsvLineSimple(line, this.conversionOptions.delimiter);
 
@@ -1495,8 +1501,12 @@ class JtcsvTUI {
 
               if (this.conversionOptions.parseBooleans) {
                 const lowerValue = value.toLowerCase();
-                if (lowerValue === 'true') value = true;
-                if (lowerValue === 'false') value = false;
+                if (lowerValue === 'true') {
+                  value = true;
+                }
+                if (lowerValue === 'false') {
+                  value = false;
+                }
               }
 
               obj[header] = value;
@@ -2143,70 +2153,70 @@ Press Esc to return to the main menu.
 
     optionsMenu.on('select', (item, index) => {
       switch (index) {
-        case 0:
-          this.promptForCustomDelimiter((delimiter) => {
-            if (delimiter) {
-              this.conversionOptions.delimiter = delimiter;
-              this.showMessage(`Delimiter set to: ${delimiter}`, 'success');
-            }
-            optionsMenu.destroy();
-            this.screen.render();
-          });
-          break;
-        case 1:
-          this.conversionOptions.includeHeaders = !this.conversionOptions.includeHeaders;
-          this.showMessage(`Headers: ${this.conversionOptions.includeHeaders ? 'ON' : 'OFF'}`, 'success');
+      case 0:
+        this.promptForCustomDelimiter((delimiter) => {
+          if (delimiter) {
+            this.conversionOptions.delimiter = delimiter;
+            this.showMessage(`Delimiter set to: ${delimiter}`, 'success');
+          }
           optionsMenu.destroy();
           this.screen.render();
-          break;
-        case 2:
-          this.conversionOptions.parseNumbers = !this.conversionOptions.parseNumbers;
-          this.showMessage(`Parse Numbers: ${this.conversionOptions.parseNumbers ? 'ON' : 'OFF'}`, 'success');
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
-        case 3:
-          this.conversionOptions.parseBooleans = !this.conversionOptions.parseBooleans;
-          this.showMessage(`Parse Booleans: ${this.conversionOptions.parseBooleans ? 'ON' : 'OFF'}`, 'success');
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
-        case 4:
-          this.conversionOptions.preventCsvInjection = !this.conversionOptions.preventCsvInjection;
-          this.showMessage(`CSV Injection Protection: ${this.conversionOptions.preventCsvInjection ? 'ON' : 'OFF'}`, 'success');
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
-        case 5:
-          this.conversionOptions.prettyPrint = !this.conversionOptions.prettyPrint;
-          this.showMessage(`Pretty Print: ${this.conversionOptions.prettyPrint ? 'ON' : 'OFF'}`, 'success');
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
-        case 6:
-          this.conversionOptions.autoDetect = !this.conversionOptions.autoDetect;
-          this.showMessage(`Auto Detect: ${this.conversionOptions.autoDetect ? 'ON' : 'OFF'}`, 'success');
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
-        case 7:
-          this.conversionOptions.useFastPath = !this.conversionOptions.useFastPath;
-          this.showMessage(`Fast Path: ${this.conversionOptions.useFastPath ? 'ON' : 'OFF'}`, 'success');
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
-        case 8: {
-          const nextMode = this.conversionOptions.fastPathMode === 'objects' ? 'compact' : 'objects';
-          this.conversionOptions.fastPathMode = nextMode;
-          this.showMessage(`Fast Path Mode: ${nextMode}`, 'success');
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
-        }
-        case 9:
-          optionsMenu.destroy();
-          this.screen.render();
-          break;
+        });
+        break;
+      case 1:
+        this.conversionOptions.includeHeaders = !this.conversionOptions.includeHeaders;
+        this.showMessage(`Headers: ${this.conversionOptions.includeHeaders ? 'ON' : 'OFF'}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      case 2:
+        this.conversionOptions.parseNumbers = !this.conversionOptions.parseNumbers;
+        this.showMessage(`Parse Numbers: ${this.conversionOptions.parseNumbers ? 'ON' : 'OFF'}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      case 3:
+        this.conversionOptions.parseBooleans = !this.conversionOptions.parseBooleans;
+        this.showMessage(`Parse Booleans: ${this.conversionOptions.parseBooleans ? 'ON' : 'OFF'}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      case 4:
+        this.conversionOptions.preventCsvInjection = !this.conversionOptions.preventCsvInjection;
+        this.showMessage(`CSV Injection Protection: ${this.conversionOptions.preventCsvInjection ? 'ON' : 'OFF'}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      case 5:
+        this.conversionOptions.prettyPrint = !this.conversionOptions.prettyPrint;
+        this.showMessage(`Pretty Print: ${this.conversionOptions.prettyPrint ? 'ON' : 'OFF'}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      case 6:
+        this.conversionOptions.autoDetect = !this.conversionOptions.autoDetect;
+        this.showMessage(`Auto Detect: ${this.conversionOptions.autoDetect ? 'ON' : 'OFF'}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      case 7:
+        this.conversionOptions.useFastPath = !this.conversionOptions.useFastPath;
+        this.showMessage(`Fast Path: ${this.conversionOptions.useFastPath ? 'ON' : 'OFF'}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      case 8: {
+        const nextMode = this.conversionOptions.fastPathMode === 'objects' ? 'compact' : 'objects';
+        this.conversionOptions.fastPathMode = nextMode;
+        this.showMessage(`Fast Path Mode: ${nextMode}`, 'success');
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
+      }
+      case 9:
+        optionsMenu.destroy();
+        this.screen.render();
+        break;
       }
     });
 
@@ -2569,7 +2579,9 @@ Press Esc to return to the main menu.
    * Format bytes to human readable format
    */
   formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) {
+      return '0 Bytes';
+    }
     
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;

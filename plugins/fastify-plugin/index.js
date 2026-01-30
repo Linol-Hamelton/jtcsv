@@ -234,7 +234,7 @@ async function jtcsvFastifyPlugin(fastify, options = {}) {
     
     try {
       let inputFormat = 'unknown';
-      let outputFormat = format || (acceptHeader.includes('text/csv') ? 'csv' : 'json');
+      const outputFormat = format || (acceptHeader.includes('text/csv') ? 'csv' : 'json');
       
       // Определяем формат входных данных
       if (contentType.includes('application/json') || Array.isArray(request.body)) {
@@ -255,7 +255,7 @@ async function jtcsvFastifyPlugin(fastify, options = {}) {
       }
 
       let result;
-      let stats = {
+      const stats = {
         inputSize: 0,
         outputSize: 0,
         processingTime: 0,
@@ -402,5 +402,3 @@ module.exports = fp(jtcsvFastifyPlugin, {
 
 // Экспортируем также как обычную функцию
 module.exports.jtcsvFastifyPlugin = jtcsvFastifyPlugin;
-
-

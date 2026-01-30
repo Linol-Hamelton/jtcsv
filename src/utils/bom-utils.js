@@ -27,7 +27,9 @@ const BOM_SIGNATURES = {
  * @property {number} bomLength - Length of BOM in bytes
  */
 function detectBom(input) {
-  if (!input) return null;
+  if (!input) {
+    return null;
+  }
   
   let buffer;
   if (typeof input === 'string') {
@@ -61,10 +63,14 @@ function detectBom(input) {
  * @returns {Buffer|string} Input without BOM
  */
 function stripBom(input) {
-  if (!input) return input;
+  if (!input) {
+    return input;
+  }
   
   const bomInfo = detectBom(input);
-  if (!bomInfo) return input;
+  if (!bomInfo) {
+    return input;
+  }
   
   if (Buffer.isBuffer(input)) {
     return input.slice(bomInfo.bomLength);
@@ -96,7 +102,9 @@ function stripBom(input) {
  * @returns {string} String without BOM
  */
 function stripBomFromString(str) {
-  if (typeof str !== 'string') return str;
+  if (typeof str !== 'string') {
+    return str;
+  }
   
   // Check for UTF-8 BOM (most common)
   if (str.charCodeAt(0) === 0xFEFF) {
@@ -197,7 +205,9 @@ function fileHasBomSync(filePath) {
   const bytesRead = fs.readSync(fd, buffer, 0, 4, 0);
   fs.closeSync(fd);
   
-  if (bytesRead < 2) return null;
+  if (bytesRead < 2) {
+    return null;
+  }
   
   return detectBom(buffer.slice(0, bytesRead));
 }
@@ -210,7 +220,9 @@ function fileHasBomSync(filePath) {
  * @returns {string} Normalized CSV string
  */
 function normalizeCsvInput(csvInput, options = {}) {
-  if (!csvInput) return '';
+  if (!csvInput) {
+    return '';
+  }
   
   let normalized;
   

@@ -138,6 +138,11 @@ const options = {
 - No external packages are required
 - Reduced attack surface
 
+## Security Audit Notes
+
+- `npm audit` currently reports a **moderate** advisory for `xml2js`, pulled in via `blessed-contrib` → `map-canvas` (dev-only tooling).
+- This does **not** affect runtime dependencies for `jtcsv`, but it remains in the dev dependency tree until upstream updates.
+
 ## Security Updates
 
 Security updates will be released as:
@@ -174,6 +179,5 @@ For security-related issues:
 - **PGP Key**: [Link to PGP key if available]
 
 For non-security issues, use the [GitHub Issues](https://github.com/Linol-Hamelton/jtcsv/issues) page.
-
 
 

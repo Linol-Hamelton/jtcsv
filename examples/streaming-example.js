@@ -364,7 +364,9 @@ async function exampleBidirectionalStreaming() {
     // Cleanup on error
     try {
       await fs.promises.unlink(tempFile);
-    } catch (e) {}
+    } catch (_e) {
+      // Ignore cleanup errors
+    }
   }
 }
 
@@ -414,6 +416,3 @@ module.exports = {
   exampleCsvToJsonStreaming,
   exampleBidirectionalStreaming
 };
-
-
-
