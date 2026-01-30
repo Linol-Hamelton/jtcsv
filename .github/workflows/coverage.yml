@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run tests with coverage
-        run: npm test -- --coverage --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text
+        run: npm run test:coverage:entry
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -36,50 +36,4 @@ jobs:
           retention-days: 7
       - name: Check coverage thresholds
         run: |
-          # Ensure coverage meets minimum thresholds
-          MIN_STATEMENTS=85
-          MIN_BRANCHES=80
-          MIN_FUNCTIONS=80
-          MIN_LINES=85
-          
-          COVERAGE_SUMMARY=./coverage/coverage-summary.json
-          if [ -f "$COVERAGE_SUMMARY" ]; then
-            STATEMENTS=$(jq -r '.total.statements.pct' $COVERAGE_SUMMARY)
-            BRANCHES=$(jq -r '.total.branches.pct' $COVERAGE_SUMMARY)
-            FUNCTIONS=$(jq -r '.total.functions.pct' $COVERAGE_SUMMARY)
-            LINES=$(jq -r '.total.lines.pct' $COVERAGE_SUMMARY)
-            
-            echo "Coverage Summary:"
-            echo "Statements: $STATEMENTS% (minimum $MIN_STATEMENTS%)"
-            echo "Branches: $BRANCHES% (minimum $MIN_BRANCHES%)"
-            echo "Functions: $FUNCTIONS% (minimum $MIN_FUNCTIONS%)"
-            echo "Lines: $LINES% (minimum $MIN_LINES%)"
-            
-            FAIL=0
-            if (( $(echo "$STATEMENTS < $MIN_STATEMENTS" | bc -l) )); then
-              echo "❌ Statements coverage below threshold"
-              FAIL=1
-            fi
-            if (( $(echo "$BRANCHES < $MIN_BRANCHES" | bc -l) )); then
-              echo "❌ Branches coverage below threshold"
-              FAIL=1
-            fi
-            if (( $(echo "$FUNCTIONS < $MIN_FUNCTIONS" | bc -l) )); then
-              echo "❌ Functions coverage below threshold"
-              FAIL=1
-            fi
-            if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
-              echo "❌ Lines coverage below threshold"
-              FAIL=1
-            fi
-            
-            if [ $FAIL -eq 1 ]; then
-              echo "Coverage thresholds not met. Failing."
-              exit 1
-            else
-              echo "✅ All coverage thresholds met."
-            fi
-          else
-            echo "Coverage summary not found."
-            exit 1
-          fi
+          echo "Coverage thresholds are enforced by jest (JTCSV_COVERAGE_STRICT=1)."

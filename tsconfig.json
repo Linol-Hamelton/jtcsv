@@ -42,6 +42,8 @@
     "plugins",
     "scripts",
     "run-demo.ts",
+    "test-d",
+    "**/*.test-d.ts",
     "**/*.test.ts",
     "**/*.spec.ts"
   ]
