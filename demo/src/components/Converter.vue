@@ -1082,7 +1082,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import { jtcsv } from "../utils/jtcsv-integration.js";
+import { jtcsv } from "../utils/jtcsv-integration";
 
 // Tabs configuration
 const tabs = [

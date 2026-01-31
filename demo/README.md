@@ -102,9 +102,9 @@ demo/
 │   │   ├── Header.vue      # Application header
 │   │   └── Converter.vue   # Main converter interface
 │   ├── utils/         # Utility functions
-│   │   └── jtcsv-integration.js  # JTCSV library integration
+│   │   └── jtcsv-integration.ts  # JTCSV library integration
 │   ├── App.vue        # Root component
-│   └── main.js        # Application entry point
+│   └── main.ts        # Application entry point
 ├── public/            # Static assets
 ├── index.html         # HTML template
 ├── vite.config.js     # Build configuration
@@ -117,7 +117,7 @@ The demo integrates with the real JTCSV library through:
 
 ### Direct Import
 ```javascript
-import { jtcsv } from '../utils/jtcsv-integration.js'
+import { jtcsv } from '../utils/jtcsv-integration'
 
 // Convert JSON to CSV
 const csv = await jtcsv.jsonToCsv(data, options)
