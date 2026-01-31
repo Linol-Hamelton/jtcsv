@@ -5,9 +5,6 @@ const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
 
 const files = [
-  'jtcsv.umd.js',
-  'jtcsv.esm.js',
-  'jtcsv.cjs.js',
   'jtcsv-core.umd.js',
   'jtcsv-core.esm.js',
   'jtcsv-core.cjs.js',
