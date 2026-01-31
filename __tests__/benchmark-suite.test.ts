@@ -19,8 +19,10 @@ import {
 } from '../index';
 
 // Skip threshold checks during coverage (instrumentation slows everything down)
-const IS_COVERAGE = process.env.npm_lifecycle_event === 'test:coverage' ||
-                    process.argv.includes('--coverage');
+const IS_COVERAGE = (process.env.npm_lifecycle_event || '').startsWith('test:coverage') ||
+                    process.argv.includes('--coverage') ||
+                    !!process.env.JTCSV_COVERAGE_SCOPE ||
+                    !!process.env.JTCSV_COVERAGE_TARGET;
 
 const STRICT_PERF = process.env.JTCSV_PERF_STRICT === '1';
 
