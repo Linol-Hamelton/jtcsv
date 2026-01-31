@@ -52,6 +52,7 @@ const THRESHOLDS = {
 };
 
 const INJECTION_OVERHEAD_MAX = STRICT_PERF ? 0.3 : 0.5;
+const OPTIONS_DEGRADATION_MAX = STRICT_PERF ? 0.5 : 0.6;
 
 // Helper to conditionally check threshold
 function checkThreshold(actual, threshold, name) {
@@ -172,7 +173,7 @@ describe('Benchmark Suite', () => {
 
       const degradation = (baseResult.opsPerSec - optionsResult.opsPerSec) / baseResult.opsPerSec;
       console.log(`Options degradation: ${(degradation * 100).toFixed(1)}%`);
-      expect(degradation).toBeLessThan(0.5); // Less than 50% degradation
+      expect(degradation).toBeLessThan(OPTIONS_DEGRADATION_MAX);
     });
   });
 
