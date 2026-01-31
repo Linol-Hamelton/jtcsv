@@ -1,4 +1,6 @@
 # @jtcsv/validator
+Current version: 3.1.0
+
 
 Schema-based validation helpers for CSV/JSON data.
 

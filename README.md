@@ -1,4 +1,6 @@
 # jtcsv - JSON <-> CSV toolkit for Node.js and browser
+Current version: 3.1.0
+
 
 [![npm version](https://img.shields.io/npm/v/jtcsv)](https://www.npmjs.com/package/jtcsv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -14,6 +16,25 @@ Fast JSON <-> CSV conversion with streaming helpers, NDJSON/TSV support, and opt
 - Optional plugin system and framework adapters
 - CLI and optional TUI
 - **Performance‑optimized** – fast number parsing, single‑pass BOM stripping, efficient delimiter detection
+
+## Documentation
+- docs/README.md (docs hub)
+- docs/API_DECISION_TREE.md (pick the right API)
+- docs/ERRORS.md (error reference)
+- docs/SCHEMA_VALIDATOR.md (schema format)
+- docs/BROWSER.md (browser API)
+- docs/CLI.md (CLI usage)
+- docs/PLUGINS.md (plugin system)
+- docs/PLUGIN_AUTHORING.md (plugin authoring guide)
+- docs/BENCHMARKS.md (public benchmarks)
+- docs/PLUGIN_REGISTRY.md (community plugins)
+
+## Entry points
+- `jtcsv` (main)
+- `jtcsv/browser` (browser build)
+- `jtcsv/plugins` (plugin manager)
+- `jtcsv/cli` (CLI runner)
+- `jtcsv/schema` (schema validator helpers)
 
 ## Installation
 ```bash
@@ -43,6 +64,10 @@ console.log(csv);
 console.log(json);
 ```
 
+### Naming aliases (CSV -> JSON)
+- `csvToJsonFile` / `csvToJsonFileSync` -> aliases of `readCsvAsJson` / `readCsvAsJsonSync`
+- `csvToJsonStream` / `csvFileToJsonStream` -> aliases of `createCsvToJsonStream` / `createCsvFileToJsonStream`
+
 ### Async iterator
 ```javascript
 const { csvToJsonIterator } = require('jtcsv');
@@ -67,7 +92,7 @@ npx jtcsv csv-to-ndjson large.csv --stream > output.ndjson
 npx jtcsv --help
 ```
 
-Full documentation: [CLI.md](CLI.md)
+Full documentation: `docs/CLI.md`
 for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
   console.log(row);
 }
@@ -78,7 +103,7 @@ for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
 - CDN UMD: `https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.umd.js`
 - CDN ESM: `https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.esm.js`
 
-See `README-browser.md` for full browser API and worker helpers.
+See `docs/BROWSER.md` for full browser API and worker helpers.
 
 ## CLI
 ```bash
@@ -91,7 +116,7 @@ npx jtcsv batch json-to-csv "data/*.json" output/
 npx jtcsv tui
 ```
 
-See `CLI.md` for full command list and options.
+See `docs/CLI.md` for full command list and options.
 
 ## Demos
 Run these from the repo root:
@@ -123,7 +148,7 @@ const jtcsv = create();
 jtcsv.use('my-plugin', { name: 'My Plugin', version: '1.0.0' });
 ```
 
-See `README-PLUGINS.md` and `plugins/README.md` for integrations.
+See `docs/PLUGINS.md` and `plugins/README.md` for integrations.
 
 ## Development
 Run from the repo root:

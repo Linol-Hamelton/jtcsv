@@ -295,7 +295,7 @@ class BenchmarkRunner {
   loadLibraries(): void {
     // Load jtcsv
     try {
-      this.libraries['jtcsv'] = require('../index.js');
+      this.libraries['jtcsv'] = require('../index');
     } catch (error: any) {
       console.error('Failed to load jtcsv:', error.message);
     }

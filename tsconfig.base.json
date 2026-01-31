@@ -12,8 +12,8 @@
     "types": ["jest", "node"],
     
     // Поддержка JavaScript файлов (для инкрементальной миграции)
-    "allowJs": true,
-    "checkJs": true,
+    "allowJs": false,
+    "checkJs": false,
     
     // Генерация деклараций типов
     "declaration": true,
@@ -80,7 +80,6 @@
   // Включаемые файлы
   "include": [
     "**/*.ts",
-    "**/*.js",
     "**/*.d.ts"
   ],
   

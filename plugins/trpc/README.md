@@ -1,4 +1,6 @@
 # @jtcsv/trpc
+Current version: 3.1.0
+
 
 Middleware helper that parses CSV input for tRPC procedures.
 

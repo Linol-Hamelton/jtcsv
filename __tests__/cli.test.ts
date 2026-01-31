@@ -16,7 +16,7 @@ afterEach(() => {
 
 describe('CLI Interface', () => {
   const testDir = './test-cli-temp';
-  const cliPath = path.join(__dirname, '../bin/jtcsv.js');
+  const cliPath = path.join(__dirname, '../bin/jtcsv.ts');
   
   beforeAll(async () => {
     // Create test directory
@@ -30,7 +30,7 @@ describe('CLI Interface', () => {
   
   function runCli(args) {
     return new Promise((resolve, reject) => {
-      exec(`node ${cliPath} ${args}`, (error, stdout, stderr) => {
+      exec(`node -r ts-node/register ${cliPath} ${args}`, (error, stdout, stderr) => {
         resolve({ error, stdout, stderr });
       });
     });
@@ -38,7 +38,7 @@ describe('CLI Interface', () => {
 
   function runCliArgs(args) {
     return new Promise((resolve) => {
-      const child = spawn('node', [cliPath, ...args], {
+      const child = spawn('node', ['-r', 'ts-node/register', cliPath, ...args], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
       let stdout = '';
@@ -59,7 +59,7 @@ describe('CLI Interface', () => {
 
   function runCliWithInput(args, input) {
     return new Promise((resolve) => {
-      const child = spawn('node', [cliPath, ...args], {
+      const child = spawn('node', ['-r', 'ts-node/register', cliPath, ...args], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
       let stdout = '';

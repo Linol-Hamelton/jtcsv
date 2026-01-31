@@ -29,11 +29,12 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "**/*.js"  // Включаем JS файлы для постепенной миграции
+    "**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
+    "dist-types",
     "coverage",
     "docs",
     "demo",
@@ -48,3 +49,4 @@
     "**/*.spec.ts"
   ]
 }
+

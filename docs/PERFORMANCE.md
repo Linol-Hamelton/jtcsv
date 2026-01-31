@@ -1,3 +1,5 @@
+Current version: 3.1.0
+
 ﻿# JTCSV Performance
 
 ## Benchmark Summary (Node.js 22, 10K rows/records)
@@ -51,9 +53,9 @@ JTCSV includes several performance optimizations to ensure maximum speed and min
 ### 5. Object‑Pooling (Planned)
 - Future release will reuse temporary objects to reduce GC pressure in high‑throughput streaming.
 
-### 6. Core/Full Bundle Separation (Planned)
-- Lightweight `jtcsv/core` entry point with only CSV↔JSON conversion.
-- Full bundle includes NDJSON, TSV, and advanced features.
+### 6. Entry Point Simplification
+- Package entry points are limited to 5 stable targets: `/`, `/browser`, `/plugins`, `/cli`, `/schema`.
+- Tree-shaking and selective imports are preferred over extra bundle flavors.
 
 ## Methodology
 

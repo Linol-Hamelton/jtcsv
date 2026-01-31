@@ -10,7 +10,7 @@
 import fs from "fs";
 import path from "path";
 const {  pipeline  } = await import("stream/promises");
-import jtcsv from "../index.js";
+import jtcsv from "jtcsv";
 
 async function generateLargeJsonFile(filePath, recordCount) {
   console.log(`Generating ${recordCount} records...`);

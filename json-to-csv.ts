@@ -9,6 +9,7 @@ import {
   ValidationError,
   SecurityError,
   FileSystemError,
+  JtcsvError,
   LimitError,
   ConfigurationError,
   safeExecuteSync,
@@ -17,13 +18,24 @@ import {
 } from './errors';
 
 import { createSchemaValidators } from './src/utils/schema-validator';
-import { JsonToCsvOptions, AsyncJsonToCsvOptions, AnyObject, AnyArray } from './src/types';
+import type {
+  AsyncJsonToCsvOptions,
+  DeepUnwrapOptions,
+  JsonToCsvOptions,
+  PreprocessOptions,
+  SaveAsCsvOptions
+} from './src/types';
+
+type SchemaValidator = {
+  validate?: (value: any) => boolean;
+  format?: (value: any) => any;
+};
 
 /**
  * Validates input data and options
  * @private
  */
-function validateInput(data: AnyArray, options?: JsonToCsvOptions): boolean {
+function validateInput(data: any[], options?: JsonToCsvOptions) {
   // Validate data
   if (!Array.isArray(data)) {
     throw new ValidationError('Input data must be an array');
@@ -54,6 +66,21 @@ function validateInput(data: AnyArray, options?: JsonToCsvOptions): boolean {
       throw new ConfigurationError('maxRecords must be a positive number');
     }
   }
+
+  if (options?.memoryWarningThreshold !== undefined) {
+    if (typeof options.memoryWarningThreshold !== 'number' || options.memoryWarningThreshold <= 0) {
+      throw new ConfigurationError('memoryWarningThreshold must be a positive number');
+    }
+  }
+
+  if (options?.memoryLimit !== undefined) {
+    if (typeof options.memoryLimit !== 'number') {
+      throw new ConfigurationError('memoryLimit must be a number');
+    }
+    if (options.memoryLimit !== Infinity && options.memoryLimit <= 0) {
+      throw new ConfigurationError('memoryLimit must be a positive number or Infinity');
+    }
+  }
   
   // Validate preventCsvInjection
   if (options?.preventCsvInjection !== undefined && typeof options.preventCsvInjection !== 'boolean') {
@@ -77,43 +104,90 @@ function validateInput(data: AnyArray, options?: JsonToCsvOptions): boolean {
  * Preprocesses data with flattening and array handling options
  */
 export function preprocessData(
-  data: AnyArray,
-  options: {
-    flatten?: boolean;
-    flattenSeparator?: string;
-    flattenMaxDepth?: number;
-    arrayHandling?: 'stringify' | 'join' | 'expand';
-  } = {}
-): AnyArray {
+  data: any[],
+  options: PreprocessOptions = {}
+) {
   const {
     flatten = false,
     flattenSeparator = '.',
     flattenMaxDepth = 3,
-    arrayHandling = 'stringify'
+    arrayHandling = 'join'
   } = options;
   
-  if (!flatten && arrayHandling === 'stringify') {
-    return data;
+  if (!Array.isArray(data)) {
+    return [];
   }
   
-  const processed: AnyArray = [];
+  const processed = [];
+  const fastPath = !flatten && arrayHandling === 'join';
   
   for (const item of data) {
-    if (item && typeof item === 'object') {
-      let processedItem: AnyObject = { ...item };
-      
-      // Handle flattening if enabled
-      if (flatten) {
-        processedItem = flattenObject(item, flattenSeparator, flattenMaxDepth);
-      }
-      
-      // Handle arrays based on arrayHandling option
-      processedItem = processArrays(processedItem, arrayHandling);
-      
-      processed.push(processedItem);
-    } else {
-      processed.push(item);
+    if (!item || typeof item !== 'object') {
+      processed.push({});
+      continue;
     }
+    if (fastPath) {
+      let hasComplex = false;
+      let hasNullish = false;
+      for (const key in item) {
+        if (!Object.prototype.hasOwnProperty.call(item, key)) {
+          continue;
+        }
+        const value = item[key];
+        if (value === null || value === undefined) {
+          hasNullish = true;
+          continue;
+        }
+        if (typeof value === 'object') {
+          hasComplex = true;
+          break;
+        }
+      }
+
+      if (!hasComplex && !hasNullish) {
+        processed.push(item);
+        continue;
+      }
+
+      const processedItem = {};
+      for (const key in item) {
+        if (!Object.prototype.hasOwnProperty.call(item, key)) {
+          continue;
+        }
+        const value = item[key];
+        if (value === null || value === undefined) {
+          processedItem[key] = '';
+        } else if (typeof value === 'object') {
+          processedItem[key] = deepUnwrap(value);
+        } else {
+          processedItem[key] = value;
+        }
+      }
+      processed.push(processedItem);
+      continue;
+    }
+    let processedItem = { ...item };
+      
+    // Handle flattening if enabled
+    if (flatten) {
+      processedItem = flattenObject(item, flattenSeparator, flattenMaxDepth);
+    }
+      
+    // Handle arrays based on arrayHandling option
+    processedItem = processArrays(processedItem, arrayHandling);
+
+    // Unwrap nested objects into strings
+    for (const [key, value] of Object.entries(processedItem)) {
+      if (value && typeof value === 'object') {
+        processedItem[key] = deepUnwrap(value);
+      } else if (value === null || value === undefined) {
+        processedItem[key] = '';
+      } else {
+        processedItem[key] = value;
+      }
+    }
+      
+    processed.push(processedItem);
   }
   
   return processed;
@@ -123,24 +197,24 @@ export function preprocessData(
  * Flattens a nested object into dot notation
  */
 function flattenObject(
-  obj: AnyObject,
-  separator: string = '.',
-  maxDepth: number = 3,
-  currentDepth: number = 0,
-  prefix: string = ''
-): AnyObject {
+  obj,
+  separator = '.',
+  maxDepth = 3,
+  currentDepth = 0,
+  prefix = ''
+) {
   if (currentDepth >= maxDepth) {
     return { [prefix || 'value']: obj };
   }
   
-  const flattened: AnyObject = {};
+  const flattened = {};
   
   for (const [key, value] of Object.entries(obj)) {
     const newKey = prefix ? `${prefix}${separator}${key}` : key;
     
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       const nestedFlattened = flattenObject(
-        value as AnyObject,
+        value,
         separator,
         maxDepth,
         currentDepth + 1,
@@ -158,8 +232,8 @@ function flattenObject(
 /**
  * Processes arrays based on the arrayHandling option
  */
-function processArrays(obj: AnyObject, arrayHandling: 'stringify' | 'join' | 'expand'): AnyObject {
-  const processed: AnyObject = { ...obj };
+function processArrays(obj, arrayHandling) {
+  const processed = { ...obj };
   
   for (const [key, value] of Object.entries(obj)) {
     if (Array.isArray(value)) {
@@ -191,80 +265,140 @@ function processArrays(obj: AnyObject, arrayHandling: 'stringify' | 'join' | 'ex
  * Deeply unwraps nested objects/arrays to primitive values
  */
 export function deepUnwrap(
-  data: any,
-  options: {
-    maxDepth?: number;
-    preserveArrays?: boolean;
-  } = {}
-): any {
-  const { maxDepth = 5, preserveArrays = false } = options;
-  
-  return unwrapRecursive(data, maxDepth, 0, preserveArrays);
+  value: any,
+  depthOrOptions: number | DeepUnwrapOptions = 0,
+  maxDepthParam: number = 10
+) {
+  let currentDepth = 0;
+  let maxDepth = 10;
+  let preserveArrays = false;
+
+  if (depthOrOptions && typeof depthOrOptions === 'object') {
+    maxDepth = typeof depthOrOptions.maxDepth === 'number' ? depthOrOptions.maxDepth : maxDepth;
+    preserveArrays = Boolean(depthOrOptions.preserveArrays);
+  } else {
+    currentDepth = typeof depthOrOptions === 'number' ? depthOrOptions : 0;
+    maxDepth = typeof maxDepthParam === 'number' ? maxDepthParam : maxDepth;
+  }
+
+  return unwrapRecursive(value, currentDepth, maxDepth, preserveArrays, new WeakSet());
 }
 
 function unwrapRecursive(
-  value: any,
-  maxDepth: number,
-  currentDepth: number,
-  preserveArrays: boolean
-): any {
-  if (currentDepth >= maxDepth) {
-    return value;
-  }
-  
+  value,
+  currentDepth,
+  maxDepth,
+  preserveArrays,
+  seen
+) {
   if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
     return value;
   }
-  
+
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+
   if (Array.isArray(value)) {
+    if (seen.has(value)) {
+      return '[Circular Reference]';
+    }
+    if (currentDepth >= maxDepth) {
+      return '[Too Deep]';
+    }
+    if (value.length === 0) {
+      return '';
+    }
+    seen.add(value);
     if (preserveArrays) {
-      return value.map(item => 
-        unwrapRecursive(item, maxDepth, currentDepth + 1, preserveArrays)
-      );
-    } else {
-      // Flatten arrays
-      const result: any[] = [];
-      for (const item of value) {
-        const unwrapped = unwrapRecursive(item, maxDepth, currentDepth + 1, preserveArrays);
-        if (Array.isArray(unwrapped)) {
-          result.push(...unwrapped);
-        } else {
-          result.push(unwrapped);
-        }
+      try {
+        return value.map(item => unwrapRecursive(item, currentDepth + 1, maxDepth, preserveArrays, seen));
+      } finally {
+        seen.delete(value);
       }
-      return result;
+    }
+    try {
+      const parts = value.map(item => unwrapRecursive(item, currentDepth + 1, maxDepth, preserveArrays, seen));
+      return parts.join(', ');
+    } finally {
+      seen.delete(value);
     }
   }
-  
+
   if (typeof value === 'object') {
-    const unwrapped: AnyObject = {};
-    for (const [key, val] of Object.entries(value)) {
-      unwrapped[key] = unwrapRecursive(val, maxDepth, currentDepth + 1, preserveArrays);
+    if (currentDepth >= maxDepth) {
+      return '[Too Deep]';
     }
-    return unwrapped;
+    if (Object.keys(value).length === 0) {
+      return '';
+    }
+    if (seen.has(value)) {
+      return '[Circular Reference]';
+    }
+    seen.add(value);
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      const message = error?.message ? String(error.message) : '';
+      if (message.toLowerCase().includes('circular')) {
+        return '[Circular Reference]';
+      }
+      return '[Unstringifiable Object]';
+    } finally {
+      seen.delete(value);
+    }
   }
-  
-  return value;
+
+  return String(value);
 }
 
 /**
  * Validates file path for security
  */
-export function validateFilePath(filePath: string, options: { allowRelative?: boolean } = {}): boolean {
-  const { allowRelative = false } = options;
+export function validateFilePath(filePath: string, options: { allowRelative?: boolean } = {}) {
+  const { allowRelative = true } = options;
   
-  if (typeof filePath !== 'string') {
-    throw new ValidationError('File path must be a string');
+  if (typeof filePath !== 'string' || filePath.trim().length === 0) {
+    throw new ValidationError('File path must be a non-empty string');
   }
   
+  const normalized = filePath.trim();
+
   // Check for null bytes
-  if (filePath.includes('\0')) {
+  if (normalized.includes('\0')) {
     throw new SecurityError('File path contains null byte');
   }
   
   // Check for directory traversal
-  if (!allowRelative && (filePath.includes('..') || filePath.startsWith('./'))) {
+  const traversalPattern = /(^|[\\/])\.\.([\\/]|$)/;
+  const pathsToCheck = [normalized];
+  try {
+    const decodedOnce = decodeURIComponent(normalized);
+    pathsToCheck.push(decodedOnce);
+    try {
+      pathsToCheck.push(decodeURIComponent(decodedOnce));
+    } catch {
+      // ignore double decode failures
+    }
+  } catch {
+    // ignore decode failures
+  }
+  for (const candidate of pathsToCheck) {
+    if (candidate.includes('..') || traversalPattern.test(candidate)) {
+      throw new SecurityError('Directory traversal detected in file path');
+    }
+  }
+  if (!allowRelative && (normalized.startsWith('./') || normalized.startsWith('.\\'))) {
     throw new SecurityError('Relative file paths are not allowed');
+  }
+
+  const ext = require('path').extname(normalized);
+  if (!ext || ext.toLowerCase() !== '.csv') {
+    throw new ValidationError('File must have .csv extension');
   }
   
   // Check for dangerous patterns (simplified)
@@ -291,14 +425,14 @@ export function validateFilePath(filePath: string, options: { allowRelative?: bo
  * Converts JSON data to CSV format
  */
 export function jsonToCsv(
-  data: AnyArray,
+  data: any[],
   options: JsonToCsvOptions = {}
-): string {
+) {
   return safeExecuteSync(() => {
     // Validate input
     validateInput(data, options);
     
-    const opts = options && typeof options === 'object' ? options : {};
+    const opts: JsonToCsvOptions = options && typeof options === 'object' ? options : {};
     
     const {
       delimiter = ';',
@@ -312,13 +446,15 @@ export function jsonToCsv(
       flatten = false,
       flattenSeparator = '.',
       flattenMaxDepth = 3,
-      arrayHandling = 'stringify'
+      arrayHandling = 'stringify',
+      memoryWarningThreshold = 1000000,
+      memoryLimit = 5000000
     } = opts;
     
     // Initialize schema validators if schema is provided
-    let schemaValidators = null;
+    let schemaValidators: Record<string, SchemaValidator> | null = null;
     if (schema) {
-      schemaValidators = createSchemaValidators(schema);
+      schemaValidators = createSchemaValidators(schema) as Record<string, SchemaValidator>;
     }
     
     // Handle empty data
@@ -326,13 +462,23 @@ export function jsonToCsv(
       return '';
     }
     
-    // Show warning for large datasets (optional limit)
-    if (data.length > 1000000 && !maxRecords && process.env['NODE_ENV'] !== 'test') {
+    if (Number.isFinite(memoryLimit) && data.length > memoryLimit) {
+      throw new LimitError(
+        `Data size exceeds memory safety limit of ${memoryLimit} records`,
+        memoryLimit,
+        data.length
+      );
+    }
+
+    // Show warning for large datasets
+    if (memoryWarningThreshold
+      && data.length > memoryWarningThreshold
+      && process.env['NODE_ENV'] !== 'test') {
       console.warn(
-        '⚠️ Warning: Processing >1M records in memory may be slow.\n' +
-        '💡 Consider processing data in batches or using streaming for large files.\n' +
-        '📊 Current size: ' + data.length.toLocaleString() + ' records\n' +
-        '🔧 Tip: Use { maxRecords: N } option to set a custom limit if needed.'
+        'Warning: Large in-memory conversion detected.\n' +
+        'Consider using streaming or batching for big datasets.\n' +
+        'Current size: ' + data.length.toLocaleString() + ' records\n' +
+        'Tip: Increase memoryLimit or set memoryLimit: Infinity to override.'
       );
     }
     
@@ -352,10 +498,29 @@ export function jsonToCsv(
       flattenMaxDepth,
       arrayHandling
     });
+
+    if (schemaValidators && Object.keys(schemaValidators).length > 0) {
+      for (let i = 0; i < processedData.length; i++) {
+        const row = processedData[i];
+        if (!row || typeof row !== 'object') {
+          continue;
+        }
+        for (const [field, validator] of Object.entries(schemaValidators)) {
+          const typedValidator = validator as SchemaValidator;
+          const value = row[field];
+          if (typeof typedValidator.validate === 'function' && !typedValidator.validate(value)) {
+            throw new ValidationError(`Invalid value for field "${field}"`);
+          }
+          if (typeof typedValidator.format === 'function') {
+            row[field] = typedValidator.format(value);
+          }
+        }
+      }
+    }
     
     // Get all unique keys from all objects with minimal allocations.
-    const allKeys = new Set<string>();
-    const originalKeys: string[] = [];
+    const allKeys = new Set();
+    const originalKeys = [];
     for (let i = 0; i < processedData.length; i++) {
       const item = processedData[i];
       if (!item || typeof item !== 'object') {
@@ -374,7 +539,7 @@ export function jsonToCsv(
     
     // Apply rename map to create header names.
     let headers = originalKeys;
-    let reverseRenameMap: Record<string, string> | null = null;
+    let reverseRenameMap = null;
     if (hasRenameMap) {
       headers = new Array(originalKeys.length);
       reverseRenameMap = {};
@@ -394,7 +559,7 @@ export function jsonToCsv(
         ? templateKeys.map(key => renameMap[key] || key)
         : templateKeys;
       const templateHeaderSet = new Set(templateHeaders);
-      const extraHeaders: string[] = [];
+      const extraHeaders = [];
       for (let i = 0; i < headers.length; i++) {
         const header = headers[i];
         if (!templateHeaderSet.has(header)) {
@@ -421,8 +586,35 @@ export function jsonToCsv(
      */
     const quoteRegex = /"/g;
     const delimiterCode = delimiter.charCodeAt(0);
+    const isPotentialFormula = (value) => {
+      let idx = 0;
+      while (idx < value.length) {
+        const code = value.charCodeAt(idx);
+        if (code === 32 || code === 9 || code === 10 || code === 13 || code === 0xfeff) {
+          idx++;
+          continue;
+        }
+        break;
+      }
+      if (idx < value.length && (value[idx] === '"' || value[idx] === "'")) {
+        idx++;
+        while (idx < value.length) {
+          const code = value.charCodeAt(idx);
+          if (code === 32 || code === 9) {
+            idx++;
+            continue;
+          }
+          break;
+        }
+      }
+      if (idx >= value.length) {
+        return false;
+      }
+      const char = value[idx];
+      return char === '=' || char === '+' || char === '-' || char === '@';
+    };
     
-    const escapeValue = (value: any): string => {
+    const escapeValue = (value) => {
       if (value === null || value === undefined || value === '') {
         return '';
       }
@@ -435,10 +627,7 @@ export function jsonToCsv(
       // CSV Injection protection - escape formulas if enabled
       let escapedValue = stringValue;
       if (preventCsvInjection) {
-        const firstCharCode = stringValue.charCodeAt(0);
-        // Dangerous prefixes: =, +, -, @, tab (\t), carriage return (\r)
-        if (firstCharCode === 61 || firstCharCode === 43 || firstCharCode === 45 || firstCharCode === 64 ||
-            firstCharCode === 9 || firstCharCode === 13) {
+        if (isPotentialFormula(stringValue)) {
           escapedValue = "'" + stringValue;
         }
         // Unicode Bidi override characters
@@ -471,7 +660,7 @@ export function jsonToCsv(
     };
     
     // Build CSV rows
-    const rows: string[] = [];
+    const rows = [];
     
     // Add headers row if requested
     if (includeHeaders) {
@@ -482,11 +671,11 @@ export function jsonToCsv(
     // Process each data row
     for (let i = 0; i < processedData.length; i++) {
       const item = processedData[i];
-      const rowValues: string[] = [];
+      const rowValues = [];
       
       for (let j = 0; j < finalKeys.length; j++) {
         const key = finalKeys[j];
-        const value = item && typeof item === 'object' ? (item as AnyObject)[key] : undefined;
+        const value = item && typeof item === 'object' ? item[key] : undefined;
         rowValues.push(escapeValue(value));
       }
       
@@ -496,13 +685,6 @@ export function jsonToCsv(
     // Apply RFC 4180 compliance if requested
     let csv = rows.join(rfc4180Compliant ? '\r\n' : '\n');
     
-    if (rfc4180Compliant && rows.length > 0) {
-      // Ensure proper line ending
-      if (!csv.endsWith('\r\n')) {
-        csv += '\r\n';
-      }
-    }
-    
     return csv;
   }, 'PARSING_ERROR', { function: 'jsonToCsv' });
 }
@@ -511,9 +693,9 @@ export function jsonToCsv(
  * Asynchronous version of jsonToCsv with support for worker threads
  */
 export async function jsonToCsvAsync(
-  data: AnyArray,
+  data: any[],
   options: AsyncJsonToCsvOptions = {}
-): Promise<string> {
+) {
   return safeExecuteAsync(async () => {
     // For now, use the synchronous version
     // In the future, this will use worker threads for large datasets
@@ -528,25 +710,33 @@ export async function jsonToCsvAsync(
 /**
  * Saves JSON data as CSV file
  */
-export function saveAsCsv(
-  data: AnyArray,
+export async function saveAsCsv(
+  data: any[],
   filePath: string,
-  options: JsonToCsvOptions & { validatePath?: boolean } = {}
-): void {
-  return safeExecuteSync(() => {
+  options: SaveAsCsvOptions = {}
+) {
+  return safeExecuteAsync(async () => {
     const { validatePath = true, ...csvOptions } = options;
     
-    // Validate file path if requested
     if (validatePath) {
       validateFilePath(filePath);
     }
+
+    const path = require('path');
+    const fs = require('fs');
+    const resolvedPath = path.resolve(filePath);
+    const dir = path.dirname(resolvedPath);
     
-    // Convert data to CSV
-    const csv = jsonToCsv(data, csvOptions);
-    
-    // Write to file (simplified - in real implementation would use fs module)
-    // This is a placeholder for the actual file writing logic
-    throw new Error('File system operations not implemented in this version');
+    try {
+      await fs.promises.mkdir(dir, { recursive: true });
+      const csv = jsonToCsv(data, csvOptions);
+      await fs.promises.writeFile(resolvedPath, csv, 'utf8');
+    } catch (error) {
+      if (error instanceof JtcsvError) {
+        throw error;
+      }
+      throw new FileSystemError(error.message || 'File system error', error);
+    }
   }, 'FILE_SYSTEM_ERROR', { function: 'saveAsCsv' });
 }
 
@@ -554,33 +744,12 @@ export function saveAsCsv(
  * Asynchronous version of saveAsCsv
  */
 export async function saveAsCsvAsync(
-  data: AnyArray,
+  data: any[],
   filePath: string,
-  options: JsonToCsvOptions & { validatePath?: boolean } = {}
-): Promise<void> {
-  return safeExecuteAsync(async () => {
-    const { validatePath = true, ...csvOptions } = options;
-    
-    // Validate file path if requested
-    if (validatePath) {
-      validateFilePath(filePath);
-    }
-    
-    // Convert data to CSV asynchronously
-    const csv = await jsonToCsvAsync(data, csvOptions);
-    
-    // Write to file asynchronously (simplified - in real implementation would use fs module)
-    // This is a placeholder for the actual file writing logic
-    throw new Error('File system operations not implemented in this version');
-  }, 'FILE_SYSTEM_ERROR', { function: 'saveAsCsvAsync' });
+  options: SaveAsCsvOptions = {}
+) {
+  return saveAsCsv(data, filePath, options);
 }
-
-// Export types
-export type {
-  JsonToCsvOptions,
-  AsyncJsonToCsvOptions,
-  SaveAsCsvOptions
-} from './src/types';
 
 // Default export
 export default {

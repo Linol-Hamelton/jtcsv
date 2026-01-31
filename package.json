@@ -1,112 +1,51 @@
 {
   "name": "jtcsv",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Complete JSON<->CSV and CSV<->JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and optional ecosystem (zero-deps core)",
-  "main": "index.js",
+  "main": "dist/index.js",
   "browser": "dist/jtcsv.umd.js",
   "module": "dist/jtcsv.esm.js",
   "types": "index.d.ts",
   "bin": {
-    "jtcsv": "bin/jtcsv.js"
+    "jtcsv": "dist/bin/jtcsv.js"
   },
   "exports": {
     ".": {
-      "require": "./index.js",
+      "require": "./dist/index.js",
       "import": "./dist/jtcsv.esm.js",
       "browser": "./dist/jtcsv.umd.js",
-      "default": "./index.js"
+      "default": "./dist/index.js"
     },
     "./browser": {
+      "types": "./browser.d.ts",
       "require": "./dist/jtcsv.cjs.js",
       "import": "./dist/jtcsv.esm.js",
       "browser": "./dist/jtcsv.umd.js",
       "default": "./dist/jtcsv.esm.js"
     },
     "./plugins": {
-      "require": "./src/index-with-plugins.js",
-      "import": "./src/index-with-plugins.js",
-      "default": "./src/index-with-plugins.js"
+      "types": "./plugins.d.ts",
+      "require": "./dist/src/index-with-plugins.js",
+      "import": "./dist/src/index-with-plugins.js",
+      "default": "./dist/src/index-with-plugins.js"
     },
-    "./express": {
-      "require": "./plugins/express-middleware/index.js",
-      "import": "./plugins/express-middleware/index.js",
-      "default": "./plugins/express-middleware/index.js"
+    "./cli": {
+      "require": "./dist/bin/jtcsv.js",
+      "import": "./dist/bin/jtcsv.js",
+      "default": "./dist/bin/jtcsv.js"
     },
-    "./fastify": {
-      "require": "./plugins/fastify-plugin/index.js",
-      "import": "./plugins/fastify-plugin/index.js",
-      "default": "./plugins/fastify-plugin/index.js"
-    },
-    "./nextjs": {
-      "require": "./plugins/nextjs-api/index.js",
-      "import": "./plugins/nextjs-api/index.js",
-      "default": "./plugins/nextjs-api/index.js"
-    },
-    "./nextjs/route": {
-      "require": "./plugins/nextjs-api/route.js",
-      "import": "./plugins/nextjs-api/route.js",
-      "default": "./plugins/nextjs-api/route.js"
-    },
-    "./nestjs": {
-      "require": "./plugins/nestjs/index.js",
-      "import": "./plugins/nestjs/index.js",
-      "default": "./plugins/nestjs/index.js"
-    },
-    "./remix": {
-      "require": "./plugins/remix/index.js",
-      "import": "./plugins/remix/index.js",
-      "default": "./plugins/remix/index.js"
-    },
-    "./nuxt": {
-      "require": "./plugins/nuxt/index.js",
-      "import": "./plugins/nuxt/index.js",
-      "default": "./plugins/nuxt/index.js"
-    },
-    "./sveltekit": {
-      "require": "./plugins/sveltekit/index.js",
-      "import": "./plugins/sveltekit/index.js",
-      "default": "./plugins/sveltekit/index.js"
-    },
-    "./hono": {
-      "require": "./plugins/hono/index.js",
-      "import": "./plugins/hono/index.js",
-      "default": "./plugins/hono/index.js"
-    },
-    "./trpc": {
-      "require": "./plugins/trpc/index.js",
-      "import": "./plugins/trpc/index.js",
-      "default": "./plugins/trpc/index.js"
-    },
-    "./core": {
-      "require": "./dist/jtcsv-core.cjs.js",
-      "import": "./dist/jtcsv-core.esm.js",
-      "browser": "./dist/jtcsv-core.umd.js",
-      "default": "./dist/jtcsv-core.cjs.js"
-    },
-    "./full": {
-      "require": "./dist/jtcsv-full.cjs.js",
-      "import": "./dist/jtcsv-full.esm.js",
-      "browser": "./dist/jtcsv-full.umd.js",
-      "default": "./dist/jtcsv-full.cjs.js"
-    },
-    "./workers": {
-      "require": "./dist/jtcsv-workers.cjs.js",
-      "import": "./dist/jtcsv-workers.esm.js",
-      "browser": "./dist/jtcsv-workers.umd.js",
-      "default": "./dist/jtcsv-workers.esm.js"
-    },
-    "./optimized": {
-      "require": "./dist/jtcsv-core.cjs.js",
-      "import": "./dist/jtcsv-core.esm.js",
-      "browser": "./dist/jtcsv-core.umd.js",
-      "default": "./dist/jtcsv-core.cjs.js"
+    "./schema": {
+      "types": "./schema.d.ts",
+      "require": "./dist/src/utils/schema-validator.js",
+      "import": "./dist/src/utils/schema-validator.js",
+      "default": "./dist/src/utils/schema-validator.js"
     }
   },
   "scripts": {
     "test": "jest",
     "test:unit": "jest --testPathIgnorePatterns=\"(__tests__/benchmark-suite.test.js|__tests__/load-tests.test.js|__tests__/soak-memory.test.js|__tests__/security-fuzzing.test.js|__tests__/memory-profiling.test.js)\"",
-    "test:coverage": "node scripts/run-coverage.js --target=js --scope=full --strict=0",
-    "test:coverage:entry": "node scripts/run-coverage.js --target=js --scope=entry --strict=1",
+    "test:coverage": "node scripts/run-coverage.js --target=ts --scope=full --strict=0",
+    "test:coverage:entry": "node scripts/run-coverage.js --target=ts --scope=entry --strict=1",
     "test:coverage:ts": "node scripts/run-coverage.js --target=ts --scope=full --strict=0",
     "test:watch": "jest --watch",
     "test:browser": "jest --testEnvironment=jsdom",
@@ -122,28 +61,28 @@
     "test:express": "cd plugins/express-middleware && npm test",
     "test:fastify": "cd plugins/fastify-plugin && npm test",
     "test:nextjs": "cd plugins/nextjs-api && npm test",
-    "lint": "eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser src/engines src/formats src/core",
+    "lint": "eslint index.ts json-to-csv.ts csv-to-json.ts errors.ts stream-json-to-csv.ts stream-csv-to-json.ts json-save.ts src/browser src/engines src/formats src/core",
     "lint:all": "eslint .",
     "lint:plugins": "eslint plugins/",
     "security-check": "npm audit",
-    "prepublishOnly": "npm test && npm run build && eslint index.js json-to-csv.js csv-to-json.js errors.js stream-json-to-csv.js stream-csv-to-json.js json-save.js src/browser src/engines src/formats src/core",
+    "prepublishOnly": "npm test && npm run build && eslint index.ts json-to-csv.ts csv-to-json.ts errors.ts stream-json-to-csv.ts stream-csv-to-json.ts json-save.ts src/browser src/engines src/formats src/core",
     "tui": "node packages/jtcsv-tui/bin/jtcsv-tui.js",
-    "cli": "node bin/jtcsv.js",
-    "build": "rollup -c rollup.config.mjs",
+    "cli": "node dist/bin/jtcsv.js",
+    "build": "npm run tsc:build && rollup -c rollup.config.mjs",
     "build:watch": "rollup -c rollup.config.mjs -w",
-    "build:prod": "NODE_ENV=production rollup -c rollup.config.mjs",
+    "build:prod": "npm run tsc:build && NODE_ENV=production rollup -c rollup.config.mjs",
     "dev": "NODE_ENV=development rollup -c rollup.config.mjs -w",
     "verify:browser": "node scripts/verify-browser-build.js",
-    "demo": "node run-demo.js",
+    "demo": "npm run build && node dist/run-demo.js",
     "demo:web": "cd demo && npm run dev",
     "demo:serve": "cd demo && npm run serve",
     "demo:plugins": "node examples/plugin-excel-exporter.js",
     "demo:express": "cd plugins/express-middleware && node example.js",
     "size": "size-limit",
     "size:why": "size-limit --why",
-    "benchmark": "node benchmark.js",
-    "benchmark:fastpath": "node benchmark.js --fastpath",
-    "profile:perf": "node scripts/profile-performance.js",
+    "benchmark": "npm run build && node dist/benchmark.js",
+    "benchmark:fastpath": "npm run build && node dist/benchmark.js --fastpath",
+    "profile:perf": "npm run build && node dist/scripts/profile-performance.js",
     "example:plugins": "node examples/plugin-excel-exporter.js",
     "example:express": "cd plugins/express-middleware && node example.js",
     "plugins:build": "npm run build && cd plugins/express-middleware && npm run build && cd ../fastify-plugin && npm run build && cd ../nextjs-api && npm run build",
@@ -160,8 +99,8 @@
     "test:ts": "jest --config jest.config.ts.js",
     "test:ts:coverage": "jest --config jest.config.ts.js --coverage",
     "test:ts:watch": "jest --config jest.config.ts.js --watch",
-    "test:types": "node scripts/run-type-tests.js",
-    "build:ts": "npm run tsc:build && npm run build",
+    "test:types": "npm run tsc:build && node scripts/run-type-tests.js",
+    "build:ts": "npm run build",
     "build:ts:watch": "npm run tsc:watch & npm run build:watch",
     "lint:ts": "eslint --ext .ts,.tsx .",
     "lint:ts:fix": "eslint --ext .ts,.tsx --fix ."
@@ -229,19 +168,14 @@
     "node": ">=12.0.0"
   },
   "files": [
-    "index.js",
-    "json-to-csv.js",
-    "csv-to-json.js",
-    "errors.js",
-    "stream-json-to-csv.js",
-    "stream-csv-to-json.js",
-    "json-save.js",
     "index.d.ts",
+    "browser.d.ts",
+    "plugins.d.ts",
+    "schema.d.ts",
     "bin/",
     "dist/",
     "src/",
-    "examples/",
-    "plugins/"
+    "examples/"
   ],
   "optionalDependencies": {
     "glob": "^11.0.0"

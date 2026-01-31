@@ -1,3 +1,5 @@
+Current version: 3.1.0
+
 ---
 name: Feature Request
 about: Suggest a new feature or improvement for JTCSV

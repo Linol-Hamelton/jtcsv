@@ -11,7 +11,7 @@
 import { performance } from "perf_hooks";
 
 // Import JTCSV
-import jtcsv from "./index.js";
+import jtcsv from "./index";
 
 // Try to import competitors
 let csvParser, Papa, json2csv;

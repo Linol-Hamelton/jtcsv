@@ -5,7 +5,7 @@
  * including caching, streaming, batch processing, and memory management.
  */
 
-const {  csvToJson, jsonToCsv, createCsvToJsonStream, createJsonToCsvStream  } = await import("../../index.js");
+const { csvToJson, jsonToCsv, createCsvToJsonStream, createJsonToCsvStream } = await import('jtcsv');
 import fs from "fs";
 const {  pipeline  } = await import("stream/promises");
 const {  performance, PerformanceObserver  } = await import("perf_hooks");

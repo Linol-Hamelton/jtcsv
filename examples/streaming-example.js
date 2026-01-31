@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { pipeline } = require('stream/promises');
-const jtcsv = require('../index.js');
+const jtcsv = require('jtcsv');
 
 async function generateLargeJsonFile(filePath, recordCount) {
   console.log(`Generating ${recordCount} records...`);

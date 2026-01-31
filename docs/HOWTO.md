@@ -1,4 +1,6 @@
 # How-to Guides for jtcsv
+Current version: 3.1.0
+
 
 ## Export Database to CSV in 5 Lines
 

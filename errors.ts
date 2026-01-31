@@ -2,16 +2,33 @@
  * Custom error classes for jtcsv
  */
 
+export type ErrorContextValue = Record<string, any> | string | null;
+
+export interface ErrorMeta {
+  hint?: string;
+  docs?: string;
+  context?: ErrorContextValue;
+  originalError?: Error;
+}
+
 /**
  * Base error class for jtcsv
  */
 export class JtcsvError extends Error {
   code: string;
+  hint?: string;
+  docs?: string;
+  context?: ErrorContextValue;
+  originalError?: Error;
   
-  constructor(message: string, code: string = 'JTCSV_ERROR') {
+  constructor(message: string, code: string = 'JTCSV_ERROR', meta: ErrorMeta = {}) {
     super(message);
     this.name = 'JtcsvError';
     this.code = code;
+    this.hint = meta.hint;
+    this.docs = meta.docs;
+    this.context = meta.context;
+    this.originalError = meta.originalError;
     
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {
@@ -24,8 +41,8 @@ export class JtcsvError extends Error {
  * Error for invalid input data
  */
 export class ValidationError extends JtcsvError {
-  constructor(message: string) {
-    super(message, 'VALIDATION_ERROR');
+  constructor(message: string, meta: ErrorMeta = {}) {
+    super(message, 'VALIDATION_ERROR', meta);
     this.name = 'ValidationError';
   }
 }
@@ -34,8 +51,8 @@ export class ValidationError extends JtcsvError {
  * Error for security violations
  */
 export class SecurityError extends JtcsvError {
-  constructor(message: string) {
-    super(message, 'SECURITY_ERROR');
+  constructor(message: string, meta: ErrorMeta = {}) {
+    super(message, 'SECURITY_ERROR', meta);
     this.name = 'SecurityError';
   }
 }
@@ -46,10 +63,10 @@ export class SecurityError extends JtcsvError {
 export class FileSystemError extends JtcsvError {
   originalError: Error | null;
   
-  constructor(message: string, originalError: Error | null = null) {
-    super(message, 'FILE_SYSTEM_ERROR');
+  constructor(message: string, originalError: Error | null = null, meta: ErrorMeta = {}) {
+    super(message, 'FILE_SYSTEM_ERROR', { ...meta, originalError });
     this.name = 'FileSystemError';
-    this.originalError = originalError;
+    this.originalError = originalError ?? meta.originalError ?? null;
   }
 }
 
@@ -59,7 +76,7 @@ export class FileSystemError extends JtcsvError {
 export class ParsingError extends JtcsvError {
   lineNumber: number | null;
   column: number | null;
-  context: string | null;
+  context: ErrorContextValue;
   expected: string | null;
   actual: string | null;
   originalMessage: string;
@@ -70,8 +87,10 @@ export class ParsingError extends JtcsvError {
     column: number | null = null,
     context: string | null = null,
     expected: string | null = null,
-    actual: string | null = null
+    actual: string | null = null,
+    meta: ErrorMeta = {}
   ) {
+    const resolvedContext = context ?? (typeof meta.context === 'string' ? meta.context : null);
     // Build detailed message
     let detailedMessage = message;
     
@@ -82,8 +101,8 @@ export class ParsingError extends JtcsvError {
       }
     }
     
-    if (context !== null) {
-      detailedMessage += `\nContext: ${context}`;
+    if (resolvedContext !== null) {
+      detailedMessage += `\nContext: ${resolvedContext}`;
     }
     
     if (expected !== null && actual !== null) {
@@ -95,11 +114,11 @@ export class ParsingError extends JtcsvError {
       detailedMessage += `\nActual: ${actual}`;
     }
     
-    super(detailedMessage, 'PARSING_ERROR');
+    super(detailedMessage, 'PARSING_ERROR', { ...meta, context: resolvedContext ?? meta.context ?? null });
     this.name = 'ParsingError';
     this.lineNumber = lineNumber;
     this.column = column;
-    this.context = context;
+    this.context = resolvedContext ?? meta.context ?? null;
     this.expected = expected;
     this.actual = actual;
     this.originalMessage = message;
@@ -186,8 +205,8 @@ export class LimitError extends JtcsvError {
   limit: any;
   actual: any;
   
-  constructor(message: string, limit: any, actual: any) {
-    super(message, 'LIMIT_ERROR');
+  constructor(message: string, limit: any, actual: any, meta: ErrorMeta = {}) {
+    super(message, 'LIMIT_ERROR', meta);
     this.name = 'LimitError';
     this.limit = limit;
     this.actual = actual;
@@ -198,8 +217,8 @@ export class LimitError extends JtcsvError {
  * Error for configuration issues
  */
 export class ConfigurationError extends JtcsvError {
-  constructor(message: string) {
-    super(message, 'CONFIGURATION_ERROR');
+  constructor(message: string, meta: ErrorMeta = {}) {
+    super(message, 'CONFIGURATION_ERROR', meta);
     this.name = 'ConfigurationError';
   }
 }
@@ -217,6 +236,8 @@ export function createDetailedErrorMessage(
     actual?: string;
     suggestion?: string;
     codeSnippet?: string;
+    hint?: string;
+    docs?: string;
   } = {}
 ): string {
   let message = baseMessage;
@@ -248,6 +269,14 @@ export function createDetailedErrorMessage(
   if (details.codeSnippet !== undefined) {
     message += `\nCode snippet: ${details.codeSnippet}`;
   }
+
+  if (details.hint !== undefined) {
+    message += `\nHint: ${details.hint}`;
+  }
+
+  if (details.docs !== undefined) {
+    message += `\nDocs: ${details.docs}`;
+  }
   
   return message;
 }
@@ -264,6 +293,8 @@ export class ErrorContext {
     actual?: string;
     suggestion?: string;
     codeSnippet?: string;
+    hint?: string;
+    docs?: string;
   } = {};
   
   lineNumber(line: number): this {
@@ -300,6 +331,16 @@ export class ErrorContext {
     this.details.codeSnippet = snippet;
     return this;
   }
+
+  hint(text: string): this {
+    this.details.hint = text;
+    return this;
+  }
+
+  docs(link: string): this {
+    this.details.docs = link;
+    return this;
+  }
   
   buildMessage(baseMessage: string): string {
     return createDetailedErrorMessage(baseMessage, this.details);
@@ -307,19 +348,29 @@ export class ErrorContext {
   
   throwParsingError(baseMessage: string): never {
     const message = this.buildMessage(baseMessage);
+    const meta: ErrorMeta = {
+      hint: this.details.hint ?? this.details.suggestion,
+      docs: this.details.docs,
+      context: this.details.context
+    };
     throw new ParsingError(
       message,
       this.details.lineNumber,
       this.details.column,
       this.details.context,
       this.details.expected,
-      this.details.actual
+      this.details.actual,
+      meta
     );
   }
   
   throwValidationError(baseMessage: string): never {
     const message = this.buildMessage(baseMessage);
-    throw new ValidationError(message);
+    throw new ValidationError(message, {
+      hint: this.details.hint ?? this.details.suggestion,
+      docs: this.details.docs,
+      context: this.details.context
+    });
   }
 }
 

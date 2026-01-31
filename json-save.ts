@@ -23,7 +23,7 @@ import * as path from 'path';
  * Validates file path for JSON saving
  * @private
  */
-function validateJsonFilePath(filePath: string): string {
+export function validateJsonFilePath(filePath: string): string {
   // Basic validation
   if (typeof filePath !== 'string' || filePath.trim() === '') {
     throw new ValidationError('File path must be a non-empty string');
@@ -100,27 +100,37 @@ export async function saveAsJson(
   data: any,
   filePath: string,
   options: SaveAsJsonOptions = {}
-): Promise<void> {
+): Promise<string> {
   return safeExecuteAsync(async () => {
     // Validate inputs
-    validateJsonData(data, options);
+    const safeOptions = options === null ? {} : options;
+    validateJsonData(data, safeOptions);
     const absolutePath = validateJsonFilePath(filePath);
     
     const {
       prettyPrint = false,
       maxSize = 10485760 // 10MB default
-    } = options;
+    } = safeOptions;
     
     // Convert data to JSON string
-    const jsonString = prettyPrint 
-      ? JSON.stringify(data, null, 2)
-      : JSON.stringify(data);
+    let jsonString: string;
+    try {
+      jsonString = prettyPrint
+        ? JSON.stringify(data, null, 2)
+        : JSON.stringify(data);
+    } catch (error: any) {
+      const message = error?.message ? String(error.message) : 'Unknown error';
+      if (message.toLowerCase().includes('circular')) {
+        throw new ValidationError('JSON contains circular references');
+      }
+      throw new ValidationError(`Failed to stringify JSON: ${message}`);
+    }
     
     // Check size limit
     const byteLength = Buffer.byteLength(jsonString, 'utf8');
     if (byteLength > maxSize) {
       throw new LimitError(
-        `JSON size (${byteLength} bytes) exceeds maximum allowed size (${maxSize} bytes)`,
+        `JSON size exceeds maximum limit of ${maxSize} bytes`,
         maxSize,
         byteLength
       );
@@ -132,10 +142,22 @@ export async function saveAsJson(
       fs.mkdirSync(dir, { recursive: true });
     }
     
-    // Write file asynchronously
-    await fs.promises.writeFile(absolutePath, jsonString, 'utf8');
-    
-    return;
+    try {
+      await fs.promises.writeFile(absolutePath, jsonString, 'utf8');
+    } catch (error: any) {
+      if (error?.code === 'EACCES') {
+        throw new FileSystemError('Permission denied', error);
+      }
+      if (error?.code === 'ENOENT') {
+        throw new FileSystemError('Directory does not exist', error);
+      }
+      if (error?.code === 'ENOSPC') {
+        throw new FileSystemError('No space left on device', error);
+      }
+      throw new FileSystemError(`Failed to write JSON file: ${error?.message || 'unknown error'}`, error);
+    }
+
+    return absolutePath;
   }, 'FILE_SYSTEM_ERROR', { function: 'saveAsJson' });
 }
 
@@ -157,27 +179,37 @@ export function saveAsJsonSync(
   data: any,
   filePath: string,
   options: SaveAsJsonOptions = {}
-): void {
+): string {
   return safeExecuteSync(() => {
     // Validate inputs
-    validateJsonData(data, options);
+    const safeOptions = options === null ? {} : options;
+    validateJsonData(data, safeOptions);
     const absolutePath = validateJsonFilePath(filePath);
     
     const {
       prettyPrint = false,
       maxSize = 10485760 // 10MB default
-    } = options;
+    } = safeOptions;
     
     // Convert data to JSON string
-    const jsonString = prettyPrint 
-      ? JSON.stringify(data, null, 2)
-      : JSON.stringify(data);
+    let jsonString: string;
+    try {
+      jsonString = prettyPrint
+        ? JSON.stringify(data, null, 2)
+        : JSON.stringify(data);
+    } catch (error: any) {
+      const message = error?.message ? String(error.message) : 'Unknown error';
+      if (message.toLowerCase().includes('circular')) {
+        throw new ValidationError('JSON contains circular references');
+      }
+      throw new ValidationError(`Failed to stringify JSON: ${message}`);
+    }
     
     // Check size limit
     const byteLength = Buffer.byteLength(jsonString, 'utf8');
     if (byteLength > maxSize) {
       throw new LimitError(
-        `JSON size (${byteLength} bytes) exceeds maximum allowed size (${maxSize} bytes)`,
+        `JSON size exceeds maximum limit of ${maxSize} bytes`,
         maxSize,
         byteLength
       );
@@ -189,10 +221,22 @@ export function saveAsJsonSync(
       fs.mkdirSync(dir, { recursive: true });
     }
     
-    // Write file synchronously
-    fs.writeFileSync(absolutePath, jsonString, 'utf8');
-    
-    return;
+    try {
+      fs.writeFileSync(absolutePath, jsonString, 'utf8');
+    } catch (error: any) {
+      if (error?.code === 'EACCES') {
+        throw new FileSystemError('Permission denied', error);
+      }
+      if (error?.code === 'ENOENT') {
+        throw new FileSystemError('Directory does not exist', error);
+      }
+      if (error?.code === 'ENOSPC') {
+        throw new FileSystemError('No space left on device', error);
+      }
+      throw new FileSystemError(`Failed to write JSON file: ${error?.message || 'unknown error'}`, error);
+    }
+
+    return absolutePath;
   }, 'FILE_SYSTEM_ERROR', { function: 'saveAsJsonSync' });
 }
 
@@ -219,7 +263,7 @@ export async function saveAsJsonAsync(
     
     // For now, use the standard async version
     // TODO: Implement worker thread support for large datasets
-    return saveAsJson(data, filePath, saveOptions);
+    await saveAsJson(data, filePath, saveOptions);
   }, 'FILE_SYSTEM_ERROR', { function: 'saveAsJsonAsync' });
 }
 

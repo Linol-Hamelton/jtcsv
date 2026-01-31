@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { jsonToCsv, saveAsCsv } = require('../index.js');
+const { jsonToCsv, saveAsCsv } = require('jtcsv');
 
 // Parse command line arguments
 function parseArgs() {
@@ -181,3 +181,4 @@ if (require.main === module) {
 }
 
 module.exports = { parseArgs, readJsonFile, showHelp, showVersion };
+

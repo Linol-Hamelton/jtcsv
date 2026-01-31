@@ -1,4 +1,6 @@
 # ФИНАЛЬНЫЙ ОТЧЕТ: ИНКРЕМЕНТАЛЬНОЕ ИСПРАВЛЕНИЕ ОШИБОК TYPESCRIPT
+Current version: 3.1.0
+
 
 ## 📊 ОБЩАЯ СТАТИСТИКА
 

@@ -1,4 +1,6 @@
 # JTCSV TUI
+Current version: 3.1.0
+
 
 Terminal UI for JSON <-> CSV conversion.
 

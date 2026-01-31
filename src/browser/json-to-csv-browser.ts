@@ -69,9 +69,36 @@ function escapeCsvValue(value: string, preventInjection: boolean = true): string
   }
   
   const str = String(value);
+  const isPotentialFormula = (input: string): boolean => {
+    let idx = 0;
+    while (idx < input.length) {
+      const code = input.charCodeAt(idx);
+      if (code === 32 || code === 9 || code === 10 || code === 13 || code === 0xfeff) {
+        idx++;
+        continue;
+      }
+      break;
+    }
+    if (idx < input.length && (input[idx] === '"' || input[idx] === "'")) {
+      idx++;
+      while (idx < input.length) {
+        const code = input.charCodeAt(idx);
+        if (code === 32 || code === 9) {
+          idx++;
+          continue;
+        }
+        break;
+      }
+    }
+    if (idx >= input.length) {
+      return false;
+    }
+    const char = input[idx];
+    return char === '=' || char === '+' || char === '-' || char === '@';
+  };
   
   // Экранирование формул для предотвращения CSV инъекций
-  if (preventInjection && /^[=+\-@]/.test(str)) {
+  if (preventInjection && isPotentialFormula(str)) {
     return "'" + str;
   }
   

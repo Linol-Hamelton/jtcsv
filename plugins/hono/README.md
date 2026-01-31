@@ -1,4 +1,6 @@
 # @jtcsv/hono
+Current version: 3.1.0
+
 
 Minimal helpers for Hono routes.
 

@@ -55,12 +55,18 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
       transform: customTransform,
       schema,
       useFastPath = true,
-      fastPathMode = 'objects'
+      fastPathMode = 'objects',
+      onError = 'throw',
+      errorHandler
     } = options;
     
     // Validate options
-    if (delimiter && (typeof delimiter !== 'string' || delimiter.length !== 1)) {
-      throw new ConfigurationError('Delimiter must be a single character string');
+    if (delimiter !== undefined && typeof delimiter !== 'string') {
+      throw new ConfigurationError('Delimiter must be a string');
+    }
+
+    if (delimiter && delimiter.length !== 1) {
+      throw new ConfigurationError('Delimiter must be a single character');
     }
     
     if (typeof hasHeaders !== 'boolean') {
@@ -74,16 +80,82 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
     if (maxRows !== Infinity && (typeof maxRows !== 'number' || maxRows <= 0)) {
       throw new ConfigurationError('maxRows must be a positive number or Infinity');
     }
+
+    if (customTransform !== undefined && typeof customTransform !== 'function') {
+      throw new ConfigurationError('transform must be a function');
+    }
+
+    if (schema && typeof schema !== 'object') {
+      throw new ConfigurationError('schema must be an object');
+    }
+
+    if (onError !== undefined && !['skip', 'warn', 'throw'].includes(onError)) {
+      throw new ConfigurationError('onError must be "skip", "warn", or "throw"');
+    }
+
+    if (errorHandler !== undefined && typeof errorHandler !== 'function') {
+      throw new ConfigurationError('errorHandler must be a function');
+    }
     
     // Create schema validator if schema is provided
     // TODO: Fix schema validator types
-    const schemaValidator = schema ? (createSchemaValidators as any)(schema) : null;
+    const schemaValidators = schema ? createSchemaValidators(schema) : null;
     
     let buffer = '';
     let headers: string[] = [];
     let headersProcessed = false;
     let rowCount = 0;
+    let inputLineNumber = 0;
     let finalDelimiter = delimiter;
+
+    const normalizeValue = (value: any): any => {
+      let normalized = value;
+      if (trim && typeof normalized === 'string') {
+        normalized = normalized.trim();
+      }
+      if (typeof normalized === 'string') {
+        if (normalized === '') {
+          return null;
+        }
+        if (normalized[0] === "'" && normalized.length > 1) {
+          const candidate = normalized.slice(1);
+          const leading = trim ? candidate.trimStart() : candidate;
+          const firstChar = leading[0];
+          if (firstChar === '=' || firstChar === '+' || firstChar === '-' || firstChar === '@') {
+            normalized = candidate;
+          }
+        }
+      }
+      if (parseNumbers && typeof normalized === 'string' && normalized.trim() !== '' && !isNaN(Number(normalized))) {
+        normalized = Number(normalized);
+      }
+      if (parseBooleans && normalized !== null && normalized !== undefined) {
+        const lowerValue = String(normalized).toLowerCase();
+        if (lowerValue === 'true' || lowerValue === 'false') {
+          normalized = lowerValue === 'true';
+        }
+      }
+      return normalized;
+    };
+
+    const handleRowError = (error: Error, line: string, lineNumber: number): boolean => {
+      if (error instanceof LimitError) {
+        throw error;
+      }
+      if (errorHandler) {
+        errorHandler(error, line, lineNumber);
+      }
+      if (onError === 'warn') {
+        if (process.env['NODE_ENV'] !== 'test') {
+          console.warn(`[jtcsv] Line ${lineNumber}: ${error.message}`);
+        }
+        return true;
+      }
+      if (onError === 'skip') {
+        return true;
+      }
+      throw error;
+    };
     
     // Create transform stream
     const transformStream = new Transform({
@@ -107,90 +179,101 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
             if (line.trim() === '') {
               continue; // Skip empty lines
             }
+            inputLineNumber += 1;
             
             // Check max rows limit
             if (rowCount >= maxRows) {
-              break;
-            }
-            
-            // Auto-detect delimiter on first line if needed
-            if (!finalDelimiter && autoDetect && !headersProcessed) {
-              finalDelimiter = autoDetectDelimiterFromLine(line, candidates);
-            }
-            
-            if (!finalDelimiter) {
-              finalDelimiter = ';'; // Default fallback
-            }
-            
-            // Parse CSV line
-            const values = parseCsvLine(line, finalDelimiter, trim);
-            
-            // Process headers
-            if (!headersProcessed) {
-              if (hasHeaders) {
-                headers = values;
-                headersProcessed = true;
-                continue;
-              } else {
-                // Generate default headers
-                headers = values.map((_, index) => `col${index}`);
-                headersProcessed = true;
-              }
-            }
-            
-            // Apply rename map to headers
-            const finalHeaders = headers.map(header => renameMap[header] || header);
-            
-            // Handle field count mismatch
-            if (values.length !== finalHeaders.length) {
-              throw ParsingError.fieldCountMismatch(
-                finalHeaders.length,
-                values.length,
-                rowCount + (hasHeaders ? 2 : 1),
-                line
+              throw new LimitError(
+                `CSV size exceeds maximum limit of ${maxRows} rows`,
+                maxRows,
+                rowCount + 1
               );
             }
             
-            // Create JSON object
-            const row: AnyObject = {};
-            for (let j = 0; j < finalHeaders.length; j++) {
-              let value: any = values[j];
-              
-              // Parse numbers if enabled
-              if (parseNumbers && !isNaN(Number(value)) && value.trim() !== '') {
-                value = Number(value);
+            try {
+              // Auto-detect delimiter on first line if needed
+              if (!finalDelimiter && autoDetect && !headersProcessed) {
+                finalDelimiter = autoDetectDelimiterFromLine(line, candidates);
               }
               
-              // Parse booleans if enabled
-              if (parseBooleans) {
-                const lowerValue = String(value).toLowerCase();
-                if (lowerValue === 'true' || lowerValue === 'false') {
-                  value = lowerValue === 'true';
+              if (!finalDelimiter) {
+                finalDelimiter = ';'; // Default fallback
+              }
+              
+              // Parse CSV line
+              const values = parseCsvLine(line, finalDelimiter, trim, inputLineNumber);
+              
+              // Process headers
+              if (!headersProcessed) {
+                if (hasHeaders) {
+                  headers = values;
+                  headersProcessed = true;
+                  continue;
+                } else {
+                  // Generate default headers
+                  headers = values.map((_, index) => `column${index + 1}`);
+                  headersProcessed = true;
                 }
               }
               
-              row[finalHeaders[j]] = value;
-            }
-            
-            // Apply schema validation if provided
-            if (schemaValidator) {
-              const validationResult = schemaValidator.validate(row);
-              if (!validationResult.valid) {
-                throw new ValidationError(`Schema validation failed: ${validationResult.errors?.join(', ')}`);
-              }
-              // Apply schema transformations if any
-              const transformedRow = schemaValidator.transform(row) || row;
+              // Apply rename map to headers
+              const finalHeaders = headers.map(header => renameMap[header] || header);
               
-              // Apply custom transform if provided
-              const finalRow = customTransform ? customTransform(transformedRow) : transformedRow;
-              this.push(finalRow);
-            } else {
-              // Apply custom transform if provided
-              const finalRow = customTransform ? customTransform(row) : row;
-              this.push(finalRow);
+              // Handle field count mismatch
+              if (values.length !== finalHeaders.length) {
+                throw ParsingError.fieldCountMismatch(
+                  finalHeaders.length,
+                  values.length,
+                  inputLineNumber,
+                  line
+                );
+              }
+              
+              // Create JSON object
+              const row: AnyObject = {};
+              for (let j = 0; j < finalHeaders.length; j++) {
+                const value = normalizeValue(values[j]);
+                row[finalHeaders[j]] = value;
+              }
+              
+              // Apply schema validation if provided
+              if (schemaValidators && Object.keys(schemaValidators).length > 0) {
+                for (const [field, validator] of Object.entries(schemaValidators)) {
+                  const typedValidator = validator as any;
+                  const value = row[field];
+                  if (typeof typedValidator.validate === 'function' && !typedValidator.validate(value)) {
+                    throw new ValidationError(`Invalid value for field "${field}"`);
+                  }
+                  if (typeof typedValidator.format === 'function') {
+                    row[field] = typedValidator.format(value);
+                  }
+                }
+              }
+
+              if (customTransform) {
+                let transformed: AnyObject;
+                try {
+                  transformed = customTransform(row);
+                } catch (error: any) {
+                  throw new ValidationError(`Transform function error: ${error.message}`);
+                }
+                if (!transformed || typeof transformed !== 'object') {
+                  throw new ValidationError('Transform function must return an object');
+                }
+                this.push(transformed);
+              } else {
+                this.push(row);
+              }
+              
+              rowCount++;
+            } catch (error: any) {
+              if (!headersProcessed && hasHeaders) {
+                throw error;
+              }
+              if (handleRowError(error as Error, line, inputLineNumber)) {
+                continue;
+              }
             }
-            
-            rowCount++;
           }
           
           callback();
@@ -204,7 +287,15 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
         if (buffer.trim() !== '') {
           try {
             // Check max rows limit
+            if (rowCount >= maxRows) {
+              throw new LimitError(
+                `CSV size exceeds maximum limit of ${maxRows} rows`,
+                maxRows,
+                rowCount + 1
+              );
+            }
             if (rowCount < maxRows) {
+              inputLineNumber += 1;
               // Auto-detect delimiter if needed
               if (!finalDelimiter && autoDetect && !headersProcessed) {
                 finalDelimiter = autoDetectDelimiterFromLine(buffer, candidates);
@@ -214,14 +305,14 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
                 finalDelimiter = ';';
               }
               
-              const values = parseCsvLine(buffer, finalDelimiter, trim);
+              const values = parseCsvLine(buffer, finalDelimiter, trim, inputLineNumber);
               
               if (!headersProcessed) {
                 if (hasHeaders) {
                   headers = values;
                   headersProcessed = true;
                 } else {
-                  headers = values.map((_, index) => `col${index}`);
+                  headers = values.map((_, index) => `column${index + 1}`);
                   headersProcessed = true;
                 }
               } else {
@@ -231,46 +322,60 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
                   throw ParsingError.fieldCountMismatch(
                     finalHeaders.length,
                     values.length,
-                    rowCount + (hasHeaders ? 2 : 1),
+                    inputLineNumber,
                     buffer
                   );
                 }
                 
                 const row: AnyObject = {};
                 for (let j = 0; j < finalHeaders.length; j++) {
-                  let value: any = values[j];
-                  
-                  if (parseNumbers && !isNaN(Number(value)) && value.trim() !== '') {
-                    value = Number(value);
-                  }
-                  
-                  if (parseBooleans) {
-                    const lowerValue = String(value).toLowerCase();
-                    if (lowerValue === 'true' || lowerValue === 'false') {
-                      value = lowerValue === 'true';
-                    }
-                  }
-                  
+                  const value = normalizeValue(values[j]);
                   row[finalHeaders[j]] = value;
                 }
-                
-                if (schemaValidator) {
-                  const validationResult = schemaValidator.validate(row);
-                  if (!validationResult.valid) {
-                    throw new ValidationError(`Schema validation failed: ${validationResult.errors?.join(', ')}`);
+
+                if (schemaValidators && Object.keys(schemaValidators).length > 0) {
+                  for (const [field, validator] of Object.entries(schemaValidators)) {
+                    const typedValidator = validator as any;
+                    const value = row[field];
+                    if (typeof typedValidator.validate === 'function' && !typedValidator.validate(value)) {
+                      throw new ValidationError(`Invalid value for field "${field}"`);
+                    }
+                    if (typeof typedValidator.format === 'function') {
+                      row[field] = typedValidator.format(value);
+                    }
                   }
-                  const transformedRow = schemaValidator.transform(row) || row;
-                  const finalRow = customTransform ? customTransform(transformedRow) : transformedRow;
-                  this.push(finalRow);
+                }
+
+                if (customTransform) {
+                  let transformed: AnyObject;
+                  try {
+                    transformed = customTransform(row);
+                  } catch (error: any) {
+                    throw new ValidationError(`Transform function error: ${error.message}`);
+                  }
+                  if (!transformed || typeof transformed !== 'object') {
+                    throw new ValidationError('Transform function must return an object');
+                  }
+                  this.push(transformed);
                 } else {
-                  const finalRow = customTransform ? customTransform(row) : row;
-                  this.push(finalRow);
+                  this.push(row);
                 }
               }
             }
           } catch (error: any) {
-            callback(error);
-            return;
+            if (!headersProcessed && hasHeaders) {
+              callback(error);
+              return;
+            }
+            try {
+              if (handleRowError(error as Error, buffer, inputLineNumber)) {
+                callback();
+                return;
+              }
+            } catch (handledError: any) {
+              callback(handledError);
+              return;
+            }
           }
         }
         
@@ -300,14 +405,18 @@ export function createJsonCollectorStream(
       
       transform(chunk: AnyObject, encoding: BufferEncoding, callback: TransformCallback) {
         collectedData.push(chunk);
+        (transformStream as any)._collectedData = collectedData;
         callback();
       },
       
       flush(callback: TransformCallback) {
         this.push(JSON.stringify(collectedData, null, 2));
+        (transformStream as any)._collectedData = collectedData;
         callback();
       }
     });
+
+    (transformStream as any)._collectedData = collectedData;
     
     // Pipe through CSV to JSON converter if options provided
     if (Object.keys(options).length > 0) {
@@ -329,18 +438,44 @@ export function createJsonCollectorStream(
  */
 export async function streamCsvToJson(
   csv: string,
+  options?: CsvToJsonStreamOptions
+): Promise<AnyArray>;
+export async function streamCsvToJson(
+  readableStream: Readable,
+  writableStream: Writable,
+  options?: CsvToJsonStreamOptions
+): Promise<void>;
+export async function streamCsvToJson(
+  csvOrStream: string | Readable,
+  outputOrOptions: Writable | CsvToJsonStreamOptions = {},
   options: CsvToJsonStreamOptions = {}
-): Promise<AnyArray> {
+): Promise<AnyArray | void> {
   return safeExecuteAsync(async () => {
+    const isReadableStream = (value: any): value is Readable =>
+      value instanceof Readable || (value && typeof value.pipe === 'function');
+    const isWritableStream = (value: any): value is Writable =>
+      value instanceof Writable || (value && typeof value.write === 'function');
+
+    if (isReadableStream(csvOrStream) && isWritableStream(outputOrOptions)) {
+      const csvToJsonStream = createCsvToJsonStream(options);
+      await pipeline(
+        csvOrStream,
+        csvToJsonStream,
+        outputOrOptions
+      );
+      return;
+    }
+
+    const streamOptions = (outputOrOptions as CsvToJsonStreamOptions) || {};
     // Create readable stream from CSV string
     const readableStream = new Readable({
       read() {
-        this.push(csv);
+        this.push(csvOrStream as string);
         this.push(null);
       }
     });
     
-    const csvToJsonStream = createCsvToJsonStream(options);
+    const csvToJsonStream = createCsvToJsonStream(streamOptions);
     const collectorStream = createJsonCollectorStream();
     
     await pipeline(
@@ -349,25 +484,7 @@ export async function streamCsvToJson(
       collectorStream
     );
     
-    // Get collected data from collector stream
-    return new Promise((resolve, reject) => {
-      let result = '';
-      
-      collectorStream.on('data', (chunk: Buffer | string) => {
-        result += chunk.toString();
-      });
-      
-      collectorStream.on('end', () => {
-        try {
-          const parsed = JSON.parse(result);
-          resolve(parsed);
-        } catch (error: any) {
-          reject(new ParsingError(`Failed to parse JSON result: ${error.message}`));
-        }
-      });
-      
-      collectorStream.on('error', reject);
-    });
+    return ((collectorStream as any)._collectedData as AnyArray) || [];
   }, 'STREAM_PROCESSING_ERROR', { function: 'streamCsvToJson' });
 }
 
@@ -399,20 +516,43 @@ export async function streamCsvToJsonAsync(
  * @param options - Conversion options
  * @returns Readable stream of JSON objects
  */
-export function createCsvFileToJsonStream(
+export async function createCsvFileToJsonStream(
   filePath: string,
   options: CsvToJsonStreamOptions & { validatePath?: boolean } = {}
-): Readable {
-  return safeExecuteSync(() => {
+): Promise<Readable> {
+  return safeExecuteAsync(async () => {
     const { validatePath = true, ...streamOptions } = options;
-    
+
+    const fs = require('fs');
+    const path = require('path');
+    let safePath = filePath;
+
     // Validate file path if requested
     if (validatePath) {
-      // TODO: Implement file path validation
+      if (typeof filePath !== 'string' || filePath.trim().length === 0) {
+        throw new ValidationError('File path must be a non-empty string');
+      }
+      const normalized = path.normalize(filePath.trim());
+      const traversalPattern = /(^|[\\/])\.\.([\\/]|$)/;
+      if (traversalPattern.test(normalized)) {
+        throw new SecurityError('Directory traversal detected in file path');
+      }
+      if (path.extname(normalized).toLowerCase() !== '.csv') {
+        throw new ValidationError('File must have .csv extension');
+      }
+      safePath = normalized;
     }
-    
-    const fs = require('fs');
-    const fileStream = fs.createReadStream(filePath, 'utf8');
+
+    try {
+      await fs.promises.access(safePath);
+    } catch (error: any) {
+      if (error?.code === 'ENOENT') {
+        throw new FileSystemError(`File not found: ${safePath}`, error);
+      }
+      throw error;
+    }
+
+    const fileStream = fs.createReadStream(safePath, 'utf8');
     const csvToJsonStream = createCsvToJsonStream(streamOptions);
     
     // Handle BOM stripping
@@ -494,46 +634,59 @@ function autoDetectDelimiterFromLine(
 function parseCsvLine(
   line: string,
   delimiter: string,
-  trim: boolean
+  trim: boolean,
+  lineNumber?: number
 ): string[] {
   const result: string[] = [];
   let currentField = '';
   let inQuotes = false;
   let quoteChar = '"';
+  let escapeNext = false;
   
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     const nextChar = i < line.length - 1 ? line[i + 1] : '';
+
+    if (escapeNext) {
+      currentField += char;
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
     
     if (!inQuotes && char === delimiter) {
-      // End of field
       result.push(trim ? currentField.trim() : currentField);
       currentField = '';
     } else if (!inQuotes && (char === '"' || char === "'")) {
-      // Start of quoted field
       inQuotes = true;
       quoteChar = char;
     } else if (inQuotes && char === quoteChar && nextChar === quoteChar) {
-      // Escaped quote
       currentField += char;
-      i++; // Skip next character
+      if (i + 2 === line.length) {
+        inQuotes = false;
+      }
+      i++;
     } else if (inQuotes && char === quoteChar) {
-      // End of quoted field
       inQuotes = false;
     } else {
-      // Regular character
       currentField += char;
     }
   }
+
+  if (escapeNext) {
+    currentField += '\\';
+  }
   
-  // Add last field
   result.push(trim ? currentField.trim() : currentField);
   
-  // Check for unclosed quotes
   if (inQuotes) {
     throw ParsingError.unclosedQuotes(
-      undefined,
-      undefined,
+      lineNumber ?? null,
+      null,
       line.substring(0, 100)
     );
   }

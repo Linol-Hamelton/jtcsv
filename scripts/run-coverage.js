@@ -6,7 +6,7 @@ function readArg(name, fallback) {
   return arg ? arg.slice(prefix.length) : fallback;
 }
 
-const target = readArg('target', 'js');
+const target = readArg('target', 'ts');
 const scope = readArg('scope', 'full');
 const strict = readArg('strict', '0');
 

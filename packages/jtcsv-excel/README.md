@@ -1,4 +1,6 @@
 # @jtcsv/excel
+Current version: 3.1.0
+
 
 Excel integration for JTCSV using `exceljs`.
 

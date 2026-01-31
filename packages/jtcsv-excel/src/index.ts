@@ -9,6 +9,28 @@
 // Используем require для совместимости с существующим кодом
 const ExcelJS = require('exceljs');
 
+const loadJtcsv = () => {
+  try {
+    return require('jtcsv');
+  } catch (error: any) {
+    const message = String(error?.message || '');
+    if (error?.code !== 'MODULE_NOT_FOUND' || !message.includes("'jtcsv'")) {
+      throw error;
+    }
+
+    try {
+      return require('../../../dist/index.js');
+    } catch (localError) {
+      try {
+        require('ts-node/register');
+        return require('../../../index.ts');
+      } catch (tsError) {
+        throw localError;
+      }
+    }
+  }
+};
+
 export interface ExcelToJsonOptions {
   sheetNumber?: number;
   sheetName?: string | null;
@@ -302,7 +324,7 @@ export class JtcsvExcel {
    */
   static async excelToCsv(input: string | Buffer, options: ExcelToJsonOptions = {}): Promise<string> {
     const json = await this.fromExcel(input, options);
-    const { jsonToCsv } = require('../../../index.js');
+    const { jsonToCsv } = loadJtcsv();
     return jsonToCsv(json, options.csvOptions || {});
   }
 
@@ -319,7 +341,7 @@ export class JtcsvExcel {
     output: string | null = 'output.xlsx', 
     options: { csvOptions?: any; excelOptions?: JsonToExcelOptions } = {}
   ): Promise<string | Buffer> {
-    const { csvToJson } = require('../../../index.js');
+    const { csvToJson } = loadJtcsv();
     const json = await csvToJson(csv, options.csvOptions || {});
     return this.toExcel(json, output, options.excelOptions || {});
   }

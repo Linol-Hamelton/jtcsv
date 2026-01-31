@@ -1,4 +1,6 @@
 # Migration Guide: PapaParse to jtcsv
+Current version: 3.1.0
+
 
 This guide helps you migrate from [PapaParse](https://www.papaparse.com/) to jtcsv. Both libraries handle CSV parsing and generation, but jtcsv offers additional security features, streaming support, and TypeScript-first design.
 

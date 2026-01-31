@@ -6,7 +6,7 @@
 
 import fs from "fs";
 import path from "path";
-const {  jsonToCsv, saveAsCsv  } = await import("../index.js");
+const { jsonToCsv, saveAsCsv } = await import('jtcsv');
 
 // Parse command line arguments
 function parseArgs() {

@@ -1,4 +1,6 @@
 # @jtcsv/express-middleware
+Current version: 3.1.0
+
 
 Express middleware that converts CSV/JSON payloads and exposes the converted data on `req.converted`.
 

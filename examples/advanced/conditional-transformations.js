@@ -5,7 +5,7 @@
  * with conditional logic, field validation, and custom formatting.
  */
 
-const { csvToJson, jsonToCsv, createCsvToJsonStream } = require('../../index.js');
+const { csvToJson, jsonToCsv, createCsvToJsonStream } = require('jtcsv');
 const fs = require('fs');
 const { pipeline } = require('stream/promises');
 

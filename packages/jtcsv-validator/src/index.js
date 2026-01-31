@@ -6,6 +6,28 @@
  * @date 2026-01-23
  */
 
+const loadJtcsv = () => {
+  try {
+    return require('jtcsv');
+  } catch (error) {
+    const message = String(error && error.message ? error.message : '');
+    if (error && error.code !== 'MODULE_NOT_FOUND' || !message.includes("'jtcsv'")) {
+      throw error;
+    }
+
+    try {
+      return require('../../../dist/index.js');
+    } catch (localError) {
+      try {
+        require('ts-node/register');
+        return require('../../../index.ts');
+      } catch (tsError) {
+        throw localError;
+      }
+    }
+  }
+};
+
 class JtcsvValidator {
   constructor() {
     this.schema = {};
@@ -663,7 +685,7 @@ class JtcsvValidator {
    * @returns {Object} Результат валидации
    */
   async validateCsv(csv, options = {}) {
-    const { csvToJson } = require('../../../index.js');
+    const { csvToJson } = loadJtcsv();
     
     try {
       const json = await csvToJson(csv, options.csvOptions || {});

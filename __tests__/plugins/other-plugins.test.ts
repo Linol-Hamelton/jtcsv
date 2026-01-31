@@ -1,6 +1,6 @@
 ﻿import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 
-const mockJtcsv = () => require('../../index.js');
+const mockJtcsv = () => jest.requireActual('../../index');
 
 function setupCommonMocks() {
   jest.doMock('jtcsv', () => mockJtcsv(), { virtual: true });

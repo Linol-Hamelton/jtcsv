@@ -3,7 +3,7 @@
 // Then visit: http://localhost:3000/export/users
 
 const express = require('express');
-const { jsonToCsv } = require('../index.js');
+const { jsonToCsv } = require('jtcsv');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -162,3 +162,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+

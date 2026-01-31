@@ -467,3 +467,9 @@ class NdjsonParser {
 }
 
 export default NdjsonParser;
+
+// CommonJS compatibility
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NdjsonParser;
+  module.exports.default = NdjsonParser;
+}

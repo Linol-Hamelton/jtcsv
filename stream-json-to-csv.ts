@@ -49,7 +49,7 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
       maxRecords = Infinity,
       transform: customTransform,
       schema,
-      addBOM = true,
+      addBOM = false,
       preventCsvInjection = true,
       rfc4180Compliant = true,
       flatten = false,
@@ -59,8 +59,12 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
     } = options;
     
     // Validate options
-    if (typeof delimiter !== 'string' || delimiter.length !== 1) {
-      throw new ConfigurationError('Delimiter must be a single character string');
+    if (typeof delimiter !== 'string') {
+      throw new ConfigurationError('Delimiter must be a string');
+    }
+    
+    if (delimiter.length !== 1) {
+      throw new ConfigurationError('Delimiter must be a single character');
     }
     
     if (typeof includeHeaders !== 'boolean') {
@@ -70,16 +74,29 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
     if (renameMap && typeof renameMap !== 'object') {
       throw new ConfigurationError('renameMap must be an object');
     }
+
+    if (template && typeof template !== 'object') {
+      throw new ConfigurationError('template must be an object');
+    }
     
     if (maxRecords !== Infinity && (typeof maxRecords !== 'number' || maxRecords <= 0)) {
       throw new ConfigurationError('maxRecords must be a positive number or Infinity');
     }
+
+    if (customTransform !== undefined && typeof customTransform !== 'function') {
+      throw new ConfigurationError('transform must be a function');
+    }
+
+    if (schema && typeof schema !== 'object') {
+      throw new ConfigurationError('schema must be an object');
+    }
     
     // Create schema validator if schema is provided
     // TODO: Fix schema validator types
-    const schemaValidator = schema ? (createSchemaValidators as any)(schema) : null;
+    const schemaValidators = schema ? createSchemaValidators(schema) : null;
     
     let headers: string[] = [];
+    let outputHeaders: string[] = [];
     let headersWritten = false;
     let recordCount = 0;
     
@@ -91,30 +108,46 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
         try {
           // Check max records limit
           if (recordCount >= maxRecords) {
-            // Skip remaining records
-            return callback();
+            throw new LimitError(
+              `Data size exceeds maximum limit of ${maxRecords} records`,
+              maxRecords,
+              recordCount + 1
+            );
           }
           
           // Validate chunk is an object
           if (typeof chunk !== 'object' || chunk === null) {
-            throw new ValidationError(`Expected object but got ${typeof chunk}`);
+            throw new ValidationError('Input data must be objects');
           }
           
           let row: AnyObject = chunk;
           
           // Apply schema validation if provided
-          if (schemaValidator) {
-            const validationResult = schemaValidator.validate(row);
-            if (!validationResult.valid) {
-              throw new ValidationError(`Schema validation failed: ${validationResult.errors?.join(', ')}`);
+          if (schemaValidators && Object.keys(schemaValidators).length > 0) {
+            for (const [field, validator] of Object.entries(schemaValidators)) {
+              const typedValidator = validator as any;
+              const value = row[field];
+              if (typeof typedValidator.validate === 'function' && !typedValidator.validate(value)) {
+                throw new ValidationError(`Invalid value for field "${field}"`);
+              }
+              if (typeof typedValidator.format === 'function') {
+                row[field] = typedValidator.format(value);
+              }
             }
-            // Apply schema transformations if any
-            row = schemaValidator.transform(row) || row;
           }
           
           // Apply custom transform if provided
           if (customTransform) {
-            row = customTransform(row);
+            let transformed: AnyObject;
+            try {
+              transformed = customTransform(row);
+            } catch (error: any) {
+              throw new ValidationError(`Transform function error: ${error.message}`);
+            }
+            if (!transformed || typeof transformed !== 'object') {
+              throw new ValidationError('Transform function must return an object');
+            }
+            row = transformed;
           }
           
           // Flatten nested objects if enabled
@@ -124,7 +157,9 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
           
           // Determine headers on first row
           if (!headersWritten) {
-            headers = determineHeaders(row, template, renameMap);
+            const resolvedHeaders = determineHeaders(row, template, renameMap);
+            headers = resolvedHeaders.headers;
+            outputHeaders = resolvedHeaders.outputHeaders;
             
             // Write BOM if enabled
             if (addBOM && includeHeaders) {
@@ -133,7 +168,7 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
             
             // Write headers if enabled
             if (includeHeaders) {
-              const headerRow = formatCsvRow(headers, delimiter, rfc4180Compliant);
+              const headerRow = formatCsvRow(outputHeaders, delimiter, rfc4180Compliant);
               this.push(headerRow);
             }
             
@@ -188,8 +223,25 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
       },
       
       flush(callback: TransformCallback) {
-        // Nothing to flush
-        callback();
+        try {
+          if (!headersWritten && includeHeaders) {
+            const templateKeys = Object.keys(template || {});
+            if (templateKeys.length > 0) {
+              headers = templateKeys;
+              outputHeaders = headers.map(header => renameMap[header] || header);
+              
+              if (addBOM) {
+                this.push('\uFEFF');
+              }
+              const headerRow = formatCsvRow(outputHeaders, delimiter, rfc4180Compliant);
+              this.push(headerRow);
+              headersWritten = true;
+            }
+          }
+          callback();
+        } catch (error: any) {
+          callback(error);
+        }
       }
     });
     
@@ -218,18 +270,22 @@ export function createJsonReadableStream(
     const items = Array.isArray(data) ? data : [data];
     let index = 0;
     
-    return new Readable({
+    const readable = new Readable({
       objectMode,
       
       read() {
         if (index < items.length) {
+          (this as any)._index = index + 1;
           this.push(items[index]);
           index++;
         } else {
+          (this as any)._index = index;
           this.push(null);
         }
       }
     });
+    (readable as any)._index = index;
+    return readable;
   }, 'STREAM_CREATION_ERROR', { function: 'createJsonReadableStream' });
 }
 
@@ -251,14 +307,18 @@ export function createCsvCollectorStream(
       
       transform(chunk: Buffer | string, encoding: BufferEncoding, callback: TransformCallback) {
         collectedData += chunk.toString();
+        (transformStream as any)._collectedData = collectedData;
         callback();
       },
       
       flush(callback: TransformCallback) {
         this.push(collectedData);
+        (transformStream as any)._collectedData = collectedData;
         callback();
       }
     });
+
+    (transformStream as any)._collectedData = collectedData;
     
     // Pipe through JSON to CSV converter if options provided
     if (Object.keys(options).length > 0) {
@@ -280,11 +340,37 @@ export function createCsvCollectorStream(
  */
 export async function streamJsonToCsv(
   data: AnyArray | AnyObject,
+  options?: JsonToCsvStreamOptions
+): Promise<string>;
+export async function streamJsonToCsv(
+  readableStream: Readable,
+  writableStream: Writable,
+  options?: JsonToCsvStreamOptions
+): Promise<void>;
+export async function streamJsonToCsv(
+  dataOrStream: AnyArray | AnyObject | Readable,
+  outputOrOptions: Writable | JsonToCsvStreamOptions = {},
   options: JsonToCsvStreamOptions = {}
-): Promise<string> {
+): Promise<string | void> {
   return safeExecuteAsync(async () => {
-    const readableStream = createJsonReadableStream(data);
-    const jsonToCsvStream = createJsonToCsvStream(options);
+    const isReadableStream = dataOrStream instanceof Readable
+      || (dataOrStream && typeof (dataOrStream as Readable).pipe === 'function');
+    const isWritableStream = outputOrOptions instanceof Writable
+      || (outputOrOptions && typeof (outputOrOptions as Writable).write === 'function');
+
+    if (isReadableStream && isWritableStream) {
+      const jsonToCsvStream = createJsonToCsvStream(options);
+      await pipeline(
+        dataOrStream as Readable,
+        jsonToCsvStream,
+        outputOrOptions as Writable
+      );
+      return;
+    }
+
+    const streamOptions = (outputOrOptions as JsonToCsvStreamOptions) || {};
+    const readableStream = createJsonReadableStream(dataOrStream as AnyArray | AnyObject);
+    const jsonToCsvStream = createJsonToCsvStream(streamOptions);
     const collectorStream = createCsvCollectorStream();
     
     await pipeline(
@@ -293,20 +379,7 @@ export async function streamJsonToCsv(
       collectorStream
     );
     
-    // Get collected data from collector stream
-    return new Promise((resolve, reject) => {
-      let result = '';
-      
-      collectorStream.on('data', (chunk: Buffer | string) => {
-        result += chunk.toString();
-      });
-      
-      collectorStream.on('end', () => {
-        resolve(result);
-      });
-      
-      collectorStream.on('error', reject);
-    });
+    return (collectorStream as any)._collectedData || '';
   }, 'STREAM_PROCESSING_ERROR', { function: 'streamJsonToCsv' });
 }
 
@@ -346,15 +419,35 @@ export async function saveJsonStreamAsCsv(
 ): Promise<void> {
   return safeExecuteAsync(async () => {
     const { validatePath = true, ...streamOptions } = options;
+
+    const fs = require('fs');
+    const path = require('path');
+    let safePath = filePath;
     
     // Validate file path if requested
     if (validatePath) {
-      // TODO: Implement file path validation
+      if (typeof filePath !== 'string' || filePath.trim().length === 0) {
+        throw new ValidationError('File path must be a non-empty string');
+      }
+      const normalized = path.normalize(filePath.trim());
+      const traversalPattern = /(^|[\\/])\.\.([\\/]|$)/;
+      if (traversalPattern.test(normalized)) {
+        throw new SecurityError('Directory traversal detected in file path');
+      }
+      if (path.extname(normalized).toLowerCase() !== '.csv') {
+        throw new ValidationError('File must have .csv extension');
+      }
+      safePath = normalized;
     }
-    
-    const jsonToCsvStream = createJsonToCsvStream(streamOptions);
-    const fs = require('fs');
-    const writableStream = fs.createWriteStream(filePath);
+
+    const resolvedOptions = {
+      ...streamOptions,
+      addBOM: streamOptions.addBOM !== undefined ? streamOptions.addBOM : true
+    };
+    const jsonToCsvStream = createJsonToCsvStream(resolvedOptions);
+    const dir = path.dirname(safePath);
+    await fs.promises.mkdir(dir, { recursive: true });
+    const writableStream = fs.createWriteStream(safePath);
     
     await pipeline(
       readableStream,
@@ -377,19 +470,22 @@ function determineHeaders(
   row: AnyObject,
   template: AnyObject,
   renameMap: Record<string, string>
-): string[] {
+): { headers: string[]; outputHeaders: string[] } {
   // Start with template keys if provided
   let headers = Object.keys(template);
   
   // If no template, use row keys
   if (headers.length === 0) {
     headers = Object.keys(row);
+  } else {
+    const extraKeys = Object.keys(row).filter((key) => !headers.includes(key));
+    headers = headers.concat(extraKeys);
   }
   
   // Apply rename map
-  headers = headers.map(header => renameMap[header] || header);
+  const outputHeaders = headers.map(header => renameMap[header] || header);
   
-  return headers;
+  return { headers, outputHeaders };
 }
 
 /**
@@ -423,21 +519,39 @@ function formatCsvRow(
  * Checks if a string is a potential CSV injection
  */
 function isPotentialFormula(value: string): boolean {
-  const formulaPatterns = [
-    /^[=+\-@]/,
-    /^[\t ]*[=+\-@]/,
-    /^[\t ]*["'][=+\-@]/
-  ];
-  
-  return formulaPatterns.some(pattern => pattern.test(value));
+  let idx = 0;
+  while (idx < value.length) {
+    const code = value.charCodeAt(idx);
+    if (code === 32 || code === 9 || code === 10 || code === 13 || code === 0xfeff) {
+      idx++;
+      continue;
+    }
+    break;
+  }
+  if (idx < value.length && (value[idx] === '"' || value[idx] === "'")) {
+    idx++;
+    while (idx < value.length) {
+      const code = value.charCodeAt(idx);
+      if (code === 32 || code === 9) {
+        idx++;
+        continue;
+      }
+      break;
+    }
+  }
+  if (idx >= value.length) {
+    return false;
+  }
+  const char = value[idx];
+  return char === '=' || char === '+' || char === '-' || char === '@';
 }
 
 /**
  * Escapes CSV injection characters
  */
 function escapeCsvInjection(value: string): string {
-  // Prefix with tab character to prevent formula execution in Excel
-  return `\t${value}`;
+  // Prefix with apostrophe to prevent formula execution in Excel
+  return `'${value}`;
 }
 
 /**

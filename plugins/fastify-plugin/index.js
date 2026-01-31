@@ -7,7 +7,30 @@
  */
 
 const fp = require('fastify-plugin');
-const { csvToJson, jsonToCsv } = require('../../index.js');
+
+const loadJtcsv = () => {
+  try {
+    return require('jtcsv');
+  } catch (error) {
+    const message = String(error && error.message ? error.message : '');
+    if (error && error.code !== 'MODULE_NOT_FOUND' || !message.includes("'jtcsv'")) {
+      throw error;
+    }
+
+    try {
+      return require('../../dist/index.js');
+    } catch (localError) {
+      try {
+        require('ts-node/register');
+        return require('../../index.ts');
+      } catch (tsError) {
+        throw localError;
+      }
+    }
+  }
+};
+
+const { csvToJson, jsonToCsv } = loadJtcsv();
 
 /**
  * Fastify plugin для JTCSV

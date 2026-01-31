@@ -1,7 +1,7 @@
 // Large dataset example for jtcsv
 // Demonstrates handling of large datasets and memory efficiency
 
-const { jsonToCsv } = require('../index.js');
+const { jsonToCsv } = require('jtcsv');
 const fs = require('fs');
 const path = require('path');
 

@@ -18,6 +18,10 @@ import { Readable, Writable, Transform } from 'stream';
     rfc4180Compliant?: boolean;
     /** JSON schema for data validation and formatting */
     schema?: Record<string, any>;
+    /** Warn when record count exceeds this threshold (default: 1000000) */
+    memoryWarningThreshold?: number;
+    /** Safety limit for in-memory conversion (default: 5000000). Set to Infinity to disable. */
+    memoryLimit?: number;
   }
 
   export interface SaveAsCsvOptions extends JsonToCsvOptions {
@@ -49,6 +53,14 @@ import { Readable, Writable, Transform } from 'stream';
     useFastPath?: boolean;
     /** Fast-path output mode (default: 'objects') */
     fastPathMode?: 'objects' | 'compact' | 'stream';
+    /** Error recovery strategy for row-level errors (default: 'throw') */
+    onError?: 'skip' | 'warn' | 'throw';
+    /** Custom error handler for row-level errors */
+    errorHandler?: (error: Error, line: string, lineNumber: number) => void;
+    /** Warn when row count exceeds this threshold (default: 1000000) */
+    memoryWarningThreshold?: number;
+    /** Safety limit for in-memory conversion (default: 5000000). Set to Infinity to disable. */
+    memoryLimit?: number;
   }
 
   // JSON save interfaces
@@ -170,41 +182,117 @@ import { Readable, Writable, Transform } from 'stream';
   }
 
   // Error classes
+  export type ErrorContextValue = Record<string, any> | string | null;
+
+  export interface ErrorMeta {
+    hint?: string;
+    docs?: string;
+    context?: ErrorContextValue;
+    originalError?: Error;
+  }
+
   export class JtcsvError extends Error {
     code: string;
-    constructor(message: string, code?: string);
+    hint?: string;
+    docs?: string;
+    context?: ErrorContextValue;
+    originalError?: Error;
+    constructor(message: string, code?: string, meta?: ErrorMeta);
   }
 
   export class ValidationError extends JtcsvError {
-    constructor(message: string);
+    constructor(message: string, meta?: ErrorMeta);
   }
 
   export class SecurityError extends JtcsvError {
-    constructor(message: string);
+    constructor(message: string, meta?: ErrorMeta);
   }
 
   export class FileSystemError extends JtcsvError {
     originalError?: Error;
-    constructor(message: string, originalError?: Error);
+    constructor(message: string, originalError?: Error | null, meta?: ErrorMeta);
   }
 
   export class ParsingError extends JtcsvError {
     lineNumber?: number;
     column?: number;
-    constructor(message: string, lineNumber?: number, column?: number);
+    context?: ErrorContextValue;
+    expected?: string | null;
+    actual?: string | null;
+    originalMessage?: string;
+    constructor(
+      message: string,
+      lineNumber?: number | null,
+      column?: number | null,
+      context?: string | null,
+      expected?: string | null,
+      actual?: string | null,
+      meta?: ErrorMeta
+    );
   }
 
   export class LimitError extends JtcsvError {
-    limit: number;
-    actual: number;
-    constructor(message: string, limit: number, actual: number);
+    limit: any;
+    actual: any;
+    constructor(message: string, limit: any, actual: any, meta?: ErrorMeta);
   }
 
   export class ConfigurationError extends JtcsvError {
-    constructor(message: string);
+    constructor(message: string, meta?: ErrorMeta);
   }
 
+  export const ERROR_CODES: {
+    JTCSV_ERROR: string;
+    VALIDATION_ERROR: string;
+    SECURITY_ERROR: string;
+    FILE_SYSTEM_ERROR: string;
+    PARSING_ERROR: string;
+    LIMIT_ERROR: string;
+    CONFIGURATION_ERROR: string;
+    INVALID_INPUT: string;
+    SECURITY_VIOLATION: string;
+    FILE_NOT_FOUND: string;
+    PARSE_FAILED: string;
+    SIZE_LIMIT: string;
+    INVALID_CONFIG: string;
+    UNKNOWN_ERROR: string;
+    STREAM_CREATION_ERROR: string;
+    STREAM_PROCESSING_ERROR: string;
+  };
+
+  export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+
   // Utility functions
+  export function createDetailedErrorMessage(
+    baseMessage: string,
+    details?: {
+      lineNumber?: number;
+      column?: number;
+      context?: string;
+      expected?: string;
+      actual?: string;
+      suggestion?: string;
+      codeSnippet?: string;
+      hint?: string;
+      docs?: string;
+    }
+  ): string;
+
+  export class ErrorContext {
+    lineNumber(line: number): this;
+    column(col: number): this;
+    context(ctx: string): this;
+    expected(exp: string): this;
+    actual(act: string): this;
+    suggestion(sugg: string): this;
+    codeSnippet(snippet: string): this;
+    hint(text: string): this;
+    docs(link: string): this;
+    buildMessage(baseMessage: string): string;
+    throwParsingError(baseMessage: string): never;
+    throwValidationError(baseMessage: string): never;
+  }
+
   export function createErrorMessage(type: string, details: string): string;
   export function handleError(error: Error, context?: Record<string, any>): void;
   export function safeExecute<T>(
@@ -217,6 +305,16 @@ import { Readable, Writable, Transform } from 'stream';
     errorType: string,
     context?: Record<string, any>
   ): T;
+  export function safeExecuteSync<T>(
+    fn: () => T,
+    errorType: string,
+    context?: Record<string, any>
+  ): T;
+  export function safeExecuteAsync<T>(
+    fn: () => Promise<T>,
+    errorType: string,
+    context?: Record<string, any>
+  ): Promise<T>;
 
   /**
    * Convert JSON array to CSV string
@@ -320,6 +418,17 @@ import { Readable, Writable, Transform } from 'stream';
   ): Promise<Record<string, any>[]>;
 
   /**
+   * Read CSV file and convert it to JSON array (normalized naming alias)
+   * @param filePath Path to CSV file
+   * @param options Conversion options
+   * @returns Promise that resolves to JSON array
+   */
+  export function csvToJsonFile(
+    filePath: string,
+    options?: CsvToJsonOptions
+  ): Promise<Record<string, any>[]>;
+
+  /**
    * Synchronously read CSV file and convert it to JSON array
    * @param filePath Path to CSV file
    * @param options Conversion options
@@ -330,6 +439,17 @@ import { Readable, Writable, Transform } from 'stream';
    */
   export function readCsvAsJsonSync(
     filePath: string, 
+    options?: CsvToJsonOptions
+  ): Record<string, any>[];
+
+  /**
+   * Synchronously read CSV file and convert it to JSON array (normalized naming alias)
+   * @param filePath Path to CSV file
+   * @param options Conversion options
+   * @returns JSON array
+   */
+  export function csvToJsonFileSync(
+    filePath: string,
     options?: CsvToJsonOptions
   ): Record<string, any>[];
 
@@ -451,6 +571,15 @@ import { Readable, Writable, Transform } from 'stream';
   ): Transform;
 
   /**
+   * Creates a transform stream that converts CSV chunks to JSON objects (normalized naming alias)
+   * @param options Configuration options
+   * @returns Transform stream
+   */
+  export function csvToJsonStream(
+    options?: CsvToJsonStreamOptions
+  ): Transform;
+
+  /**
    * Converts a readable stream of CSV text to JSON objects
    * @param inputStream Readable stream of CSV text
    * @param outputStream Writable stream for JSON objects
@@ -470,6 +599,17 @@ import { Readable, Writable, Transform } from 'stream';
    * @returns Readable stream of JSON objects
    */
   export function createCsvFileToJsonStream(
+    filePath: string,
+    options?: CsvToJsonStreamOptions
+  ): Promise<Readable>;
+
+  /**
+   * Reads CSV file and converts it to JSON using streaming (normalized naming alias)
+   * @param filePath Path to CSV file
+   * @param options Configuration options
+   * @returns Readable stream of JSON objects
+   */
+  export function csvFileToJsonStream(
     filePath: string,
     options?: CsvToJsonStreamOptions
   ): Promise<Readable>;
@@ -648,3 +788,28 @@ import { Readable, Writable, Transform } from 'stream';
   export function createTsvToJsonStream(
     options?: TsvOptions
   ): TransformStream;
+
+  // Built-in validators
+  export function isEmail(value: string): boolean;
+  export function isUrl(value: string): boolean;
+  export function isDate(value: string | Date): boolean;
+  export const validators: {
+    isEmail: typeof isEmail;
+    isUrl: typeof isUrl;
+    isDate: typeof isDate;
+  };
+
+  // Batch helpers (Node.js)
+  export function createBatchProcessor<T, R>(
+    processor: (batch: T[]) => Promise<R[]> | R[],
+    options?: { batchSize?: number; parallelism?: number }
+  ): (items: T[]) => AsyncGenerator<R>;
+
+  export const asyncIterUtils: {
+    mapConcurrent<T, R>(
+      iterator: AsyncIterable<T>,
+      mapper: (item: T) => Promise<R> | R,
+      concurrency?: number
+    ): AsyncGenerator<R>;
+    batch<T>(iterator: AsyncIterable<T>, size?: number): AsyncGenerator<T[]>;
+  };

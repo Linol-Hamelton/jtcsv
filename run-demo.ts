@@ -7,7 +7,7 @@
  * Usage: npm run demo
  */
 
-const {  spawn  } = await import("child_process");
+import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 

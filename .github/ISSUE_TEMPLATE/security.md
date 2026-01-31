@@ -1,3 +1,5 @@
+Current version: 3.1.0
+
 ---
 name: Security Report
 about: Report a security vulnerability in JTCSV

@@ -332,3 +332,9 @@ class TsvParser {
 }
 
 export default TsvParser;
+
+// CommonJS compatibility
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = TsvParser;
+  module.exports.default = TsvParser;
+}

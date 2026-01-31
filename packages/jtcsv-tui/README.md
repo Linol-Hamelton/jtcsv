@@ -1,4 +1,6 @@
 # @jtcsv/tui
+Current version: 3.1.0
+
 
 Optional Terminal UI for JTCSV.
 

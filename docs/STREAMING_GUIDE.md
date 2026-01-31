@@ -1,4 +1,6 @@
 # Streaming Guide for jtcsv
+Current version: 3.1.0
+
 
 ## Overview
 
@@ -10,6 +12,14 @@ jtcsv provides powerful streaming capabilities for processing large CSV/JSON fil
 - **Real-time Processing**: Start processing immediately without waiting for entire file
 - **Backpressure Handling**: Control data flow to prevent memory overflow
 - **Error Resilience**: Handle errors per-row without losing entire dataset
+
+## When to Prefer Streaming
+
+If you are parsing large CSV/JSON payloads in memory, prefer streaming APIs:
+- `csvToJson` and `jsonToCsv` load all rows into memory.
+- The library warns when row/record count exceeds `memoryWarningThreshold` (default: 1,000,000).
+- A safety limit (`memoryLimit`, default: 5,000,000) prevents accidental out-of-memory crashes.
+- Override the safety limit with `memoryLimit: Infinity` if you explicitly want full in-memory parsing.
 
 ## Core Streaming APIs
 
@@ -631,3 +641,8 @@ fs.createReadStream('./large.csv')
 - `options.headers`: Column headers array
 - `options.delimiter`: Output delimiter (default: ',')
 - `options.includeHeaders`: Include header row
+
+### Batch helpers (Node.js)
+- `createBatchProcessor(processor, { batchSize, parallelism })`: returns an async generator that processes an array in batches with limited parallelism.
+- `asyncIterUtils.batch(iterator, size)`: group an async iterator into arrays of `size`.
+- `asyncIterUtils.mapConcurrent(iterator, mapper, concurrency)`: map items concurrently from an async iterator.

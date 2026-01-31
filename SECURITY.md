@@ -1,4 +1,6 @@
 # Security Policy
+Current version: 3.1.0
+
 
 ## Supported Versions
 
@@ -35,6 +37,8 @@ jtcsv includes several security features by default:
 
 1. **CSV Injection Protection**
    - Automatic escaping of Excel formulas (`=`, `+`, `-`, `@`)
+   - Also guards against formulas with leading whitespace, tabs, or newlines
+   - Handles quoted values that start with formula characters
    - Prevents formula execution in spreadsheet applications
    - Configurable through options
 
@@ -140,6 +144,8 @@ const options = {
 
 ## Security Audit Notes
 
+- **Third-party audit**: No formal external audit has been completed as of 2026-01-31.
+- **Internal checks**: `npm audit` and regression tests are run during releases.
 - `npm audit` currently reports a **moderate** advisory for `xml2js`, pulled in via `blessed-contrib` → `map-canvas` (dev-only tooling).
 - This does **not** affect runtime dependencies for `jtcsv`, but it remains in the dev dependency tree until upstream updates.
 
@@ -179,5 +185,3 @@ For security-related issues:
 - **PGP Key**: [Link to PGP key if available]
 
 For non-security issues, use the [GitHub Issues](https://github.com/Linol-Hamelton/jtcsv/issues) page.
-
-

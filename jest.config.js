@@ -1,7 +1,7 @@
 const IS_COVERAGE_RUN = process.env.npm_lifecycle_event === 'test:coverage' ||
   process.argv.includes('--coverage');
 const ENFORCE_COVERAGE = process.env.JTCSV_COVERAGE_STRICT === '1';
-const COVERAGE_TARGET = process.env.JTCSV_COVERAGE_TARGET || 'js';
+const COVERAGE_TARGET = process.env.JTCSV_COVERAGE_TARGET || 'ts';
 const COVERAGE_SCOPE = process.env.JTCSV_COVERAGE_SCOPE || 'full';
 
 const COVERAGE_JS_FULL = [
@@ -95,6 +95,10 @@ module.exports = {
   ],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
+    '^jtcsv$': '<rootDir>/index.ts',
+    '^jtcsv/browser$': '<rootDir>/src/browser/index.ts',
+    '^jtcsv/plugins$': '<rootDir>/src/index-with-plugins.ts',
+    '^jtcsv/schema$': '<rootDir>/src/utils/schema-validator.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^(\\.{1,2}/.*)\\.ts$': '$1',
   },

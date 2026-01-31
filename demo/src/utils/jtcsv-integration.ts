@@ -18,12 +18,12 @@ export class JtcsvIntegration {
     
     try {
       // Prefer browser entry for demo
-      this.jtcsv = await import('../../../src/browser/index.js');
+      this.jtcsv = await import('../../../src/browser/index');
       this.mode = 'real';
       console.log('[OK] JTCSV loaded from browser entry');
     } catch (error) {
       try {
-        this.jtcsv = await import('../../../index.js');
+        this.jtcsv = await import('../../../index');
         this.mode = 'real';
         console.log('[OK] JTCSV loaded from local build');
       } catch (error2) {

@@ -1,4 +1,6 @@
 # План перехода проекта jtcsv на TypeScript
+Current version: 3.1.0
+
 
 ## Текущее состояние
 - Проект написан на JavaScript с JSDoc комментариями

@@ -9,7 +9,7 @@ import http from "http";
 import fs from "fs";
 import path from "path";
 import url from "url";
-import * as jtcsv from "../../index.js";
+import * as jtcsv from "../../index";
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';

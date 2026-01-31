@@ -1,4 +1,6 @@
 # @jtcsv/nextjs
+Current version: 3.1.0
+
 
 Next.js helpers for JTCSV: API route handler, React hooks, and browser helpers.
 

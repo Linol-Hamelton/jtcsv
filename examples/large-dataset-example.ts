@@ -1,7 +1,7 @@
 // Large dataset example for jtcsv
 // Demonstrates handling of large datasets and memory efficiency
 
-import { jsonToCsv } from '../index-core.js';
+import { jsonToCsv } from 'jtcsv';
 import fs from 'fs';
 import path from 'path';
 

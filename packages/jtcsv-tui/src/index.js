@@ -14,7 +14,7 @@ try {
   jtcsv = require('jtcsv');
 } catch (error) {
   if (error.code === 'MODULE_NOT_FOUND') {
-    jtcsv = require('../../../index.js');
+    jtcsv = require('../../../dist/index.js');
   } else {
     throw error;
   }

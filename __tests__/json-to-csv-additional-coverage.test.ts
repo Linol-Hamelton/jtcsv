@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import fs from 'fs';
 import vm from 'vm';
+import ts from 'typescript';
 import { createRequire } from 'module';
 import { createInstrumenter } from 'istanbul-lib-instrument';
 import { jsonToCsv, deepUnwrap, preprocessData } from '../json-to-csv';
@@ -123,8 +124,14 @@ describe('module export guard', () => {
   test('runs without a module object', () => {
     const filePath = require.resolve('../json-to-csv');
     const source = fs.readFileSync(filePath, 'utf8');
+    const transpiled = ts.transpileModule(source, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2019
+      }
+    }).outputText;
     const instrumenter = createInstrumenter({ coverageVariable: '__coverage__' });
-    const instrumented = instrumenter.instrumentSync(source, filePath);
+    const instrumented = instrumenter.instrumentSync(transpiled, filePath);
 
     global.__coverage__ = global.__coverage__ || {};
     const moduleStub = {};
@@ -143,6 +150,7 @@ describe('module export guard', () => {
       setTimeout,
       clearTimeout,
       module: moduleStub,
+      exports: {},
       require: createRequire(filePath)
     };
     context.global = context;

@@ -14,7 +14,7 @@ try {
   jtcsv = await import("jtcsv");
 } catch (error) {
   if (error.code === 'MODULE_NOT_FOUND') {
-    jtcsv = await import("../../../index.js");
+    jtcsv = await import("../../../dist/index.js");
   } else {
     throw error;
   }

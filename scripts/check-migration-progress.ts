@@ -251,10 +251,10 @@ function printResults() {
     const priorityFiles = results.pendingFiles.filter(file => {
       const fileName = path.basename(file.js);
       return [
-        'json-to-csv.js',
-        'csv-to-json.js',
-        'index.js',
-        'index-core.js'
+        'json-to-csv.ts',
+        'csv-to-json.ts',
+        'index.ts',
+        'index-core.ts'
       ].includes(fileName);
     });
     

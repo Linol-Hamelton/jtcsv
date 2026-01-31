@@ -1,4 +1,6 @@
 # jtcsv Testing Guide
+Current version: 3.1.0
+
 
 Complete guide to running tests and performance benchmarks for jtcsv.
 

@@ -5,7 +5,7 @@
  * including caching, streaming, batch processing, and memory management.
  */
 
-const { csvToJson, jsonToCsv, createCsvToJsonStream, createJsonToCsvStream } = require('../../index.js');
+const { csvToJson, jsonToCsv, createCsvToJsonStream, createJsonToCsvStream } = require('jtcsv');
 const fs = require('fs');
 const { pipeline } = require('stream/promises');
 const { performance, PerformanceObserver } = require('perf_hooks');

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const {  performance  } = await import("perf_hooks");
-import jtcsv from "../index.js";
+import jtcsv from "jtcsv";
 
 const rows = Number(process.env.JTCSV_PROFILE_ROWS || 10000);
 const iterations = Number(process.env.JTCSV_PROFILE_ITERS || 5);

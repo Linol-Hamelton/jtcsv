@@ -200,7 +200,7 @@ class FastPathEngine {
     while (i <= csv.length) {
       const char = i < csv.length ? csv[i] : '\n';
 
-      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+      if (!rowHasData && char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
         rowHasData = true;
       }
 
@@ -238,7 +238,7 @@ class FastPathEngine {
       const char = i < csv.length ? csv[i] : '\n';
       const nextChar = i + 1 < csv.length ? csv[i + 1] : '';
 
-      if (char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
+      if (!rowHasData && char !== '\r' && char !== '\n' && char !== ' ' && char !== '\t') {
         rowHasData = true;
       }
 
@@ -499,14 +499,22 @@ class FastPathEngine {
             continue;
           }
 
-          let j = i + 1;
-          while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
-            j++;
-          }
-          if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+          if (nextChar === delimiter || nextChar === '\n' || nextChar === '\r' || i + 1 >= csv.length) {
             insideQuotes = false;
             i++;
             continue;
+          }
+
+          if (nextChar === ' ' || nextChar === '\t') {
+            let j = i + 1;
+            while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
+              j++;
+            }
+            if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+              insideQuotes = false;
+              i++;
+              continue;
+            }
           }
 
           currentField += '"';
@@ -634,14 +642,22 @@ class FastPathEngine {
             continue;
           }
 
-          let j = i + 1;
-          while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
-            j++;
-          }
-          if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+          if (nextChar === delimiter || nextChar === '\n' || nextChar === '\r' || i + 1 >= csv.length) {
             insideQuotes = false;
             i++;
             continue;
+          }
+
+          if (nextChar === ' ' || nextChar === '\t') {
+            let j = i + 1;
+            while (j < csv.length && (csv[j] === ' ' || csv[j] === '\t')) {
+              j++;
+            }
+            if (j >= csv.length || csv[j] === delimiter || csv[j] === '\n' || csv[j] === '\r') {
+              insideQuotes = false;
+              i++;
+              continue;
+            }
           }
 
           currentField += '"';

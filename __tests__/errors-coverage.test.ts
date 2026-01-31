@@ -91,13 +91,19 @@ describe('errors module coverage', () => {
 
   test('error classes expose codes and names', () => {
     const sec = new SecurityError('nope');
-    const fsError = new FileSystemError('fs fail', new Error('root'));
+    const fsError = new FileSystemError('fs fail', new Error('root'), {
+      hint: 'check permissions',
+      docs: 'docs/ERRORS.md',
+      context: { filePath: '/tmp/test.csv' }
+    });
     const limit = new LimitError('too big', 10, 11);
     const config = new ConfigurationError('bad cfg');
 
     expect(sec.code).toBe('SECURITY_ERROR');
     expect(sec.name).toBe('SecurityError');
     expect(fsError.originalError).toBeInstanceOf(Error);
+    expect(fsError.hint).toBe('check permissions');
+    expect(fsError.docs).toBe('docs/ERRORS.md');
     expect(limit.limit).toBe(10);
     expect(limit.actual).toBe(11);
     expect(config.code).toBe('CONFIGURATION_ERROR');
@@ -131,11 +137,15 @@ describe('errors module coverage', () => {
       .expected('x')
       .actual('y')
       .suggestion('fix')
+      .hint('try trimming whitespace')
+      .docs('docs/ERRORS.md')
       .codeSnippet('snippet');
 
     const message = ctx.buildMessage('base');
     expect(message).toContain('base at line 1, column 2');
     expect(message).toContain('Suggestion: fix');
+    expect(message).toContain('Hint: try trimming whitespace');
+    expect(message).toContain('Docs: docs/ERRORS.md');
     expect(message).toContain('Code snippet: snippet');
 
     expect(() => ctx.throwParsingError('parse')).toThrow(ParsingError);

@@ -32,6 +32,10 @@ export interface JsonToCsvOptions {
   flattenMaxDepth?: number;
   /** How to handle arrays ('stringify', 'join', 'expand') */
   arrayHandling?: 'stringify' | 'join' | 'expand';
+  /** Warn when record count exceeds this threshold (default: 1000000) */
+  memoryWarningThreshold?: number;
+  /** Safety limit for in-memory conversion (default: 5000000). Set to Infinity to disable. */
+  memoryLimit?: number;
 }
 
 export interface SaveAsCsvOptions extends JsonToCsvOptions {
@@ -74,7 +78,9 @@ export interface CsvToJsonOptions {
   /** Hooks for custom processing */
   hooks?: {
     beforeConvert?: (csv: string, options: CsvToJsonOptions) => string;
+    perRow?: (row: Record<string, any>, index: number, context?: { options: CsvToJsonOptions }) => Record<string, any>;
     afterConvert?: (result: any[], options: CsvToJsonOptions) => any[];
+    transformHooks?: import('../core/transform-hooks').TransformHooks;
     onError?: (error: Error, csv: string, options: CsvToJsonOptions) => void;
   };
   /** Prevent CSV injection attacks by escaping formulas (default: true) */
@@ -83,6 +89,14 @@ export interface CsvToJsonOptions {
   rfc4180Compliant?: boolean;
   /** Warn about extra fields not in headers (default: false) */
   warnExtraFields?: boolean;
+  /** Error recovery strategy for row-level errors (default: 'throw') */
+  onError?: 'skip' | 'warn' | 'throw';
+  /** Custom error handler for row-level errors */
+  errorHandler?: (error: Error, line: string, lineNumber: number) => void;
+  /** Warn when row count exceeds this threshold (default: 1000000) */
+  memoryWarningThreshold?: number;
+  /** Safety limit for in-memory conversion (default: 5000000). Set to Infinity to disable. */
+  memoryLimit?: number;
 }
 
 // JSON save интерфейсы

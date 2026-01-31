@@ -1,4 +1,6 @@
 # jtcsv FAQ (Frequently Asked Questions)
+Current version: 3.1.0
+
 
 ## Table of Contents
 

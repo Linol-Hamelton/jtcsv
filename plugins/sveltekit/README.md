@@ -1,4 +1,6 @@
 # @jtcsv/sveltekit
+Current version: 3.1.0
+
 
 Helpers for parsing CSV requests and returning CSV responses in SvelteKit.
 

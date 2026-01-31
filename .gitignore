@@ -170,6 +170,7 @@ __tests__/output/
 # Temporary folders
 tmp/
 temp/
+....
 
 # OS generated files
 .DS_Store?

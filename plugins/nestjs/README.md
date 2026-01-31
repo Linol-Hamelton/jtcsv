@@ -1,4 +1,6 @@
 # @jtcsv/nestjs
+Current version: 3.1.0
+
 
 NestJS interceptors for parsing CSV payloads and returning CSV responses.
 

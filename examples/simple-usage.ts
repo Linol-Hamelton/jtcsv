@@ -9,7 +9,7 @@
  */
 
 // Используем require для совместимости с текущей структурой проекта
-const { jsonToCsv, csvToJson } = require('../index.js');
+const { jsonToCsv, csvToJson } = require('jtcsv');
 import type { JsonToCsvOptions, CsvToJsonOptions } from '../src/types';
 
 (async () => {

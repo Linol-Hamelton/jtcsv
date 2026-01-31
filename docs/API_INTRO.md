@@ -1,4 +1,6 @@
 # jtcsv API Documentation
+Current version: 3.1.0
+
 
 Welcome to the jtcsv API documentation. This library provides complete JSON<->CSV bidirectional conversion with streaming support, security features, and TypeScript types.
 

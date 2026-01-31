@@ -10,6 +10,9 @@ export interface ErrorDetails {
   lineNumber?: number;
   limit?: any;
   actual?: any;
+  hint?: string;
+  docs?: string;
+  context?: any;
 }
 
 /**
@@ -18,12 +21,18 @@ export interface ErrorDetails {
 export class JTCSVError extends Error {
   code: string;
   details: ErrorDetails;
+  hint?: string;
+  docs?: string;
+  context?: any;
 
   constructor(message: string, code: string = 'JTCSV_ERROR', details: ErrorDetails = {}) {
     super(message);
     this.name = 'JTCSVError';
     this.code = code;
     this.details = details;
+    this.hint = details.hint;
+    this.docs = details.docs;
+    this.context = details.context;
     
     // Сохранение stack trace
     if (Error.captureStackTrace) {
@@ -245,6 +254,14 @@ export function createErrorMessage(
     
     if (error instanceof LimitError && error.limit && error.actual) {
       message += ` (limit: ${error.limit}, actual: ${error.actual})`;
+    }
+
+    if (error.hint) {
+      message += `\nHint: ${error.hint}`;
+    }
+
+    if (error.docs) {
+      message += `\nDocs: ${error.docs}`;
     }
   }
   

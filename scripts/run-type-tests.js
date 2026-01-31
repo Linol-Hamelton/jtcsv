@@ -19,7 +19,7 @@ function ensurePackage(name, typesPath, mainPath) {
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg, null, 2));
 }
 
-ensurePackage('jtcsv', '../../index.d.ts', '../../index.js');
+ensurePackage('jtcsv', '../../index.d.ts', '../../dist/index.js');
 ensurePackage('jtcsv-browser-json', '../../src/browser/json-to-csv-browser.d.ts');
 ensurePackage('jtcsv-browser-csv', '../../src/browser/csv-to-json-browser.d.ts');
 

@@ -445,7 +445,7 @@ export const predefinedHooks = {
    * @param onError - Обработчик ошибки
    * @returns Хук валидации
    */
-  validate<T>(validator: (item: T, index: number) => boolean, onError: (errors: any[]) => void = console.error): HookFunction<T[], T[]> {
+  validate<T>(validator: (item: T, index: number) => boolean, onError: (errors: any[] | string, details?: any[]) => void = console.error): HookFunction<T[], T[]> {
     return (data: T[]) => {
       if (Array.isArray(data)) {
         const validData: T[] = [];
@@ -465,7 +465,11 @@ export const predefinedHooks = {
         });
 
         if (errors.length > 0) {
-          onError(errors);
+          if (onError.length >= 2) {
+            onError('Validation errors', errors);
+          } else {
+            onError(errors);
+          }
         }
 
         return validData;
@@ -480,7 +484,7 @@ export const predefinedHooks = {
    * @param onError - Обработчик ошибки
    * @returns Асинхронный хук валидации
    */
-  validateAsync<T>(validator: (item: T, index: number) => Promise<boolean>, onError: (errors: any[]) => void = console.error): AsyncHookFunction<T[], T[]> {
+  validateAsync<T>(validator: (item: T, index: number) => Promise<boolean>, onError: (errors: any[] | string, details?: any[]) => void = console.error): AsyncHookFunction<T[], T[]> {
     return async (data: T[]) => {
       if (Array.isArray(data)) {
         const validData: T[] = [];
@@ -500,7 +504,11 @@ export const predefinedHooks = {
         }
 
         if (errors.length > 0) {
-          onError(errors);
+          if (onError.length >= 2) {
+            onError('Validation errors', errors);
+          } else {
+            onError(errors);
+          }
         }
 
         return validData;

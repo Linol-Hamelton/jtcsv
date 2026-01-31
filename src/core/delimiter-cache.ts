@@ -300,11 +300,21 @@ export async function getGlobalDelimiterCacheAsync(maxSize: number = 100): Promi
   return getGlobalDelimiterCache(maxSize);
 }
 
+export default DelimiterCache;
+
 // Экспорт для CommonJS
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    DelimiterCache,
-    getGlobalDelimiterCache,
-    getGlobalDelimiterCacheAsync
-  };
+  const current = module.exports;
+  if (current && current.__esModule) {
+    current.DelimiterCache = DelimiterCache;
+    current.getGlobalDelimiterCache = getGlobalDelimiterCache;
+    current.getGlobalDelimiterCacheAsync = getGlobalDelimiterCacheAsync;
+    current.default = DelimiterCache;
+  } else {
+    module.exports = DelimiterCache;
+    module.exports.DelimiterCache = DelimiterCache;
+    module.exports.getGlobalDelimiterCache = getGlobalDelimiterCache;
+    module.exports.getGlobalDelimiterCacheAsync = getGlobalDelimiterCacheAsync;
+    module.exports.default = DelimiterCache;
+  }
 }

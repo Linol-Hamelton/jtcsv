@@ -117,6 +117,42 @@ export default [
     },
     plugins: basePlugins('browser')
   },
+  // ==================== Р‘Р РђРЈР—Р•Р РќР«Р™ Р‘РђРќР”Р› (COMPAT) ====================
+  // UMD
+  {
+    input: 'src/browser/index.ts',
+    output: {
+      file: 'dist/jtcsv.umd.js',
+      format: 'umd',
+      name: 'jtcsv',
+      sourcemap: !isProduction,
+      globals: {},
+      exports: 'named'
+    },
+    plugins: basePlugins('browser')
+  },
+  // ESM
+  {
+    input: 'src/browser/index.ts',
+    output: {
+      file: 'dist/jtcsv.esm.js',
+      format: 'es',
+      sourcemap: !isProduction,
+      exports: 'named'
+    },
+    plugins: basePlugins('esm')
+  },
+  // CJS
+  {
+    input: 'src/browser/index.ts',
+    output: {
+      file: 'dist/jtcsv.cjs.js',
+      format: 'cjs',
+      sourcemap: !isProduction,
+      exports: 'named'
+    },
+    plugins: basePlugins('node')
+  },
   // ESM полная
   {
     input: 'src/browser/index.ts',

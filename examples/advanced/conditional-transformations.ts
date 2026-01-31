@@ -5,7 +5,7 @@
  * with conditional logic, field validation, and custom formatting.
  */
 
-const {  csvToJson, jsonToCsv, createCsvToJsonStream  } = await import("../../index.js");
+const { csvToJson, jsonToCsv, createCsvToJsonStream } = await import('jtcsv');
 import fs from "fs";
 const {  pipeline  } = await import("stream/promises");
 

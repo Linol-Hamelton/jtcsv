@@ -1,4 +1,6 @@
 # @jtcsv/nuxt
+Current version: 3.1.0
+
 
 Nuxt module that injects `jtcsv` into the Nuxt app and provides a `useJtcsv` composable.
 
