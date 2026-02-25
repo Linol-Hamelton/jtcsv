@@ -50,14 +50,19 @@ jtcsv includes several security features by default:
    - Cross-platform path validation (Windows and Linux)
 
 3. **Input Validation**
-   - Type checking for all input parameters
-   - Size limits to prevent memory exhaustion
-   - Array bounds checking
+    - Type checking for all input parameters
+    - Size limits to prevent memory exhaustion
+    - Array bounds checking
 
-4. **Error Handling**
-   - Custom error classes for different failure modes
-   - No exposure of sensitive information in error messages
-   - Graceful degradation
+4. **Data Integrity Protections**
+    - Automatic repair of row shifts (`repairRowShifts: true`) to correct misaligned columns caused by missing quotes
+    - Quote normalization (`normalizeQuotes: true`) to convert single quotes, backticks, and smart quotes to standard double quotes
+    - RFC 4180 compliance (`rfc4180Compliant: true`) for strict CSV standard adherence
+
+5. **Error Handling**
+    - Custom error classes for different failure modes
+    - No exposure of sensitive information in error messages
+    - Graceful degradation
 
 ### Security Best Practices
 

@@ -18,7 +18,10 @@ Fast JSON <-> CSV conversion with streaming helpers, NDJSON/TSV support, and opt
 - Browser bundle with Web Worker helpers
 - Optional plugin system and framework adapters
 - CLI and optional TUI
+- Fast‑path engine for 2–3× faster parsing of simple CSV patterns
+- Comprehensive security features: CSV injection prevention, path traversal protection, RFC 4180 compliance, automatic row shift repair, quote normalization
 - Performance-optimized - fast number parsing, single-pass BOM stripping, efficient delimiter detection
+- Built‑in benchmarks and performance monitoring (see `BENCHMARK-RESULTS.md`)
 
 ## Documentation
 - docs/README.md (docs hub)
