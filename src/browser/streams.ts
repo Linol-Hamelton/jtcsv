@@ -8,6 +8,7 @@ import { csvToJsonIterator } from './csv-to-json-browser';
 import type { CsvToJsonOptions, JsonToCsvOptions } from '../types';
 
 const DEFAULT_MAX_CHUNK_SIZE = 64 * 1024;
+const PHONE_KEYS = new Set(['phone', 'phonenumber', 'phone_number', 'tel', 'telephone']);
 
 function isReadableStream(value: any): value is ReadableStream {
   return value && typeof value.getReader === 'function';
@@ -86,6 +87,43 @@ function detectInputFormat(input: any, options: any): 'json' | 'ndjson' | 'csv' 
   return 'unknown';
 }
 
+function normalizeQuotesInField(value: string): string {
+  // Не нормализуем кавычки в JSON-строках - это ломает структуру JSON
+  // Проверяем, выглядит ли значение как JSON (объект или массив)
+  if ((value.startsWith('{') && value.endsWith('}')) ||
+      (value.startsWith('[') && value.endsWith(']'))) {
+    return value; // Возвращаем как есть для JSON
+  }
+  
+  let normalized = value.replace(/"{2,}/g, '"');
+  // Убираем правило, которое ломает JSON: не заменяем "," на ","
+  // normalized = normalized.replace(/"\s*,\s*"/g, ',');
+  normalized = normalized.replace(/"\n/g, '\n').replace(/\n"/g, '\n');
+  if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
+    normalized = normalized.slice(1, -1);
+  }
+  return normalized;
+}
+
+function normalizePhoneValue(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return trimmed;
+  }
+  return trimmed.replace(/["'\\]/g, '');
+}
+
+function normalizeValueForCsv(value: any, key: string | undefined, normalizeQuotes: boolean): any {
+  if (!normalizeQuotes || typeof value !== 'string') {
+    return value;
+  }
+  const base = normalizeQuotesInField(value);
+  if (key && PHONE_KEYS.has(String(key).toLowerCase())) {
+    return normalizePhoneValue(base);
+  }
+  return base;
+}
+
 async function* jsonToCsvChunkIterator(input: any, options: JsonToCsvOptions = {}): AsyncGenerator<string> {
   const format = detectInputFormat(input, options);
   
@@ -131,6 +169,7 @@ async function* jsonToCsvChunkIterator(input: any, options: JsonToCsvOptions = {
   const delimiter = options.delimiter || ';';
   const includeHeaders = options.includeHeaders !== false;
   const preventInjection = options.preventCsvInjection !== false;
+  const normalizeQuotes = options.normalizeQuotes !== false;
   const isPotentialFormula = (input: string): boolean => {
     let idx = 0;
     while (idx < input.length) {
@@ -186,7 +225,8 @@ async function* jsonToCsvChunkIterator(input: any, options: JsonToCsvOptions = {
     
     const row = headers.map(header => {
       const value = item[header];
-      const strValue = value === null || value === undefined ? '' : String(value);
+      const normalized = normalizeValueForCsv(value, header, normalizeQuotes);
+      const strValue = normalized === null || normalized === undefined ? '' : String(normalized);
       
       if (strValue.includes('"') || strValue.includes('\n') || strValue.includes('\r') || strValue.includes(delimiter)) {
         return `"${strValue.replace(/"/g, '""')}"`;

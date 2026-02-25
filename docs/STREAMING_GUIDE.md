@@ -6,6 +6,15 @@ Current version: 3.1.0
 
 jtcsv provides powerful streaming capabilities for processing large CSV/JSON files without loading them entirely into memory. This guide covers all streaming APIs, best practices, and real-world examples.
 
+## Interactive streaming example
+<iframe
+  src="https://stackblitz.com/github/Linol-Hamelton/jtcsv?embed=1&file=docs/embeds/streaming.js&view=editor"
+  width="100%"
+  height="520"
+  style="border:0;border-radius:12px;overflow:hidden;"
+  title="JTCSV Streaming (StackBlitz)"
+></iframe>
+
 ## Why Streaming?
 
 - **Memory Efficiency**: Process files larger than available RAM

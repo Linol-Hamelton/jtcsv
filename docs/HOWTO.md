@@ -2,6 +2,15 @@
 Current version: 3.1.0
 
 
+## Interactive basic usage
+<iframe
+  src="https://stackblitz.com/github/Linol-Hamelton/jtcsv?embed=1&file=docs/embeds/basic.js&view=editor"
+  width="100%"
+  height="520"
+  style="border:0;border-radius:12px;overflow:hidden;"
+  title="JTCSV Basic Usage (StackBlitz)"
+></iframe>
+
 ## Export Database to CSV in 5 Lines
 
 ### Using PostgreSQL with pg

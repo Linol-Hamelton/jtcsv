@@ -8,6 +8,9 @@ Current version: 3.1.0
 
 Fast JSON <-> CSV conversion with streaming helpers, NDJSON/TSV support, and optional integrations.
 
+**Try Live:** `playground.html` (local) - `npm run demo:web`
+[TRY LIVE](playground.html)
+
 ## Features
 - JSON <-> CSV conversion with security defaults
 - Streaming helpers and async iterator API
@@ -15,12 +18,16 @@ Fast JSON <-> CSV conversion with streaming helpers, NDJSON/TSV support, and opt
 - Browser bundle with Web Worker helpers
 - Optional plugin system and framework adapters
 - CLI and optional TUI
-- **Performance‑optimized** – fast number parsing, single‑pass BOM stripping, efficient delimiter detection
+- Performance-optimized - fast number parsing, single-pass BOM stripping, efficient delimiter detection
 
 ## Documentation
 - docs/README.md (docs hub)
+- docs/GETTING_STARTED.md (5-minute quick start)
 - docs/API_DECISION_TREE.md (pick the right API)
+- docs/API_CANONICALIZATION.md (canonical names and aliases)
 - docs/ERRORS.md (error reference)
+- docs/TROUBLESHOOTING.md (common errors and fixes)
+- docs/recipes/index.md (practical recipes)
 - docs/SCHEMA_VALIDATOR.md (schema format)
 - docs/BROWSER.md (browser API)
 - docs/CLI.md (CLI usage)
@@ -28,6 +35,29 @@ Fast JSON <-> CSV conversion with streaming helpers, NDJSON/TSV support, and opt
 - docs/PLUGIN_AUTHORING.md (plugin authoring guide)
 - docs/BENCHMARKS.md (public benchmarks)
 - docs/PLUGIN_REGISTRY.md (community plugins)
+- docs/integrations/index.md (framework integrations)
+
+## Playground
+- Local HTML playground: `playground.html` (open in a browser)
+- Vite demo: `npm run demo:web` (runs on http://localhost:3000)
+
+<iframe
+  src="https://stackblitz.com/github/Linol-Hamelton/jtcsv?embed=1&file=playground.html&view=preview"
+  width="100%"
+  height="520"
+  style="border:0;border-radius:12px;overflow:hidden;"
+  title="JTCSV Playground (StackBlitz)"
+></iframe>
+
+
+## Integrations
+- docs/integrations/index.md (overview)
+- docs/integrations/express.md (Express upload API)
+- docs/integrations/fastify.md (Fastify upload API)
+- docs/integrations/react-hook-form.md (React Hook Form uploader)
+- docs/integrations/nextjs-app-router.md (Next.js App Router upload)
+- docs/integrations/drizzle-orm.md (Drizzle ORM import)
+- docs/integrations/graphql.md (GraphQL upload)
 
 ## Entry points
 - `jtcsv` (main)
@@ -74,6 +104,11 @@ const { csvToJsonIterator } = require('jtcsv');
 
 const csv = 'id,name\n1,Jane\n2,John';
 
+for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
+  console.log(row);
+}
+```
+
 ### Command Line Interface
 
 JTCSV includes a powerful CLI for batch conversion, file processing, and data transformation.
@@ -86,17 +121,13 @@ npx jtcsv csv-to-json data.csv --output data.json
 npx jtcsv json-to-csv data.json --delimiter ";" --output out.csv
 
 # Stream processing with NDJSON
-npx jtcsv csv-to-ndjson large.csv --stream > output.ndjson
+npx jtcsv csv-to-ndjson large.csv output.ndjson --stream
 
 # See all options
 npx jtcsv --help
 ```
 
 Full documentation: `docs/CLI.md`
-for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
-  console.log(row);
-}
-```
 
 ## Browser usage
 - Bundler: `import { csvToJson, jsonToCsv } from 'jtcsv/browser';`

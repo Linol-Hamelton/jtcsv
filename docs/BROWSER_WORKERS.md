@@ -4,6 +4,15 @@ Current version: 3.1.0
 
 JTCSV includes a browser worker pool for CSV parsing to keep large workloads off the main thread.
 
+## Interactive worker example
+<iframe
+  src="https://stackblitz.com/github/Linol-Hamelton/jtcsv?embed=1&file=docs/embeds/workers.js&view=editor"
+  width="100%"
+  height="520"
+  style="border:0;border-radius:12px;overflow:hidden;"
+  title="JTCSV Web Workers (StackBlitz)"
+></iframe>
+
 ## Exports (jtcsv/browser)
 
 - `createWorkerPool(options)`

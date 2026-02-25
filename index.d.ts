@@ -12,12 +12,14 @@ import { Readable, Writable, Transform } from 'stream';
     template?: Record<string, any>;
     /** Maximum number of records to process (optional, no limit by default) */
     maxRecords?: number;
-    /** Prevent CSV injection attacks by escaping formulas (default: true) */
-    preventCsvInjection?: boolean;
-    /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
-    rfc4180Compliant?: boolean;
-    /** JSON schema for data validation and formatting */
-    schema?: Record<string, any>;
+  /** Prevent CSV injection attacks by escaping formulas (default: true) */
+  preventCsvInjection?: boolean;
+  /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
+  rfc4180Compliant?: boolean;
+  /** Normalize excessive quotes in JSON string values before CSV export (default: true) */
+  normalizeQuotes?: boolean;
+  /** JSON schema for data validation and formatting */
+  schema?: Record<string, any>;
     /** Warn when record count exceeds this threshold (default: 1000000) */
     memoryWarningThreshold?: number;
     /** Safety limit for in-memory conversion (default: 5000000). Set to Infinity to disable. */
@@ -57,6 +59,10 @@ import { Readable, Writable, Transform } from 'stream';
     onError?: 'skip' | 'warn' | 'throw';
     /** Custom error handler for row-level errors */
     errorHandler?: (error: Error, line: string, lineNumber: number) => void;
+    /** Attempt to repair shifted rows with trailing empty fields (default: true) */
+    repairRowShifts?: boolean;
+    /** Normalize excessive quotes in parsed fields (default: true) */
+    normalizeQuotes?: boolean;
     /** Warn when row count exceeds this threshold (default: 1000000) */
     memoryWarningThreshold?: number;
     /** Safety limit for in-memory conversion (default: 5000000). Set to Infinity to disable. */

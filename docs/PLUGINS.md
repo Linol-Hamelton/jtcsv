@@ -5,6 +5,15 @@ Current version: 3.1.0
 The plugin-enabled API is exported from `jtcsv/plugins` (see `src/index-with-plugins.js`).
 It wraps the core JSON/CSV functions with hook and middleware support.
 
+## Interactive plugin example
+<iframe
+  src="https://stackblitz.com/github/Linol-Hamelton/jtcsv?embed=1&file=docs/embeds/plugins.js&view=editor"
+  width="100%"
+  height="520"
+  style="border:0;border-radius:12px;overflow:hidden;"
+  title="JTCSV Plugins (StackBlitz)"
+></iframe>
+
 ## Quick start
 ```javascript
 const { create } = require('jtcsv/plugins');

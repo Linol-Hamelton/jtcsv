@@ -163,6 +163,8 @@ ${color('CONVERSION OPTIONS:', 'bright')}
   ${color('--no-trim', 'cyan')}            Don't trim whitespace from CSV values
   ${color('--no-fast-path', 'cyan')}       Disable fast-path parser (force quote-aware)
   ${color('--fast-path-mode=', 'cyan')}MODE  Fast path output mode (objects|compact)
+  ${color('--repair-row-shifts', 'cyan')}  Repair shifted rows with trailing empty fields
+  ${color('--normalize-quotes', 'cyan')}  Normalize excessive quotes in parsed fields
   ${color('--rename=', 'cyan')}JSON       Rename columns (JSON map)
   ${color('--template=', 'cyan')}JSON      Column order template (JSON object)
   ${color('--no-injection-protection', 'cyan')}  Disable CSV injection protection
@@ -303,6 +305,7 @@ try {
       maxRecords: options.maxRecords,
       preventCsvInjection: options.preventCsvInjection,
       rfc4180Compliant: options.rfc4180Compliant,
+      normalizeQuotes: options.normalizeQuotes,
       schema: options.schema, // Add schema option
       flatten: options.flatten,
       flattenSeparator: options.flattenSeparator,
@@ -382,6 +385,8 @@ async function convertCsvToJson(inputFile, outputFile, options: any): Promise<Co
       maxRows: options.maxRows,
       useFastPath: options.useFastPath,
       fastPathMode: options.fastPathMode,
+      repairRowShifts: options.repairRowShifts,
+      normalizeQuotes: options.normalizeQuotes,
       schema: options.schema // Add schema option if supported
     };
 
@@ -497,7 +502,9 @@ async function saveAsCsv(inputFile, outputFile, options: any): Promise<Conversio
           hasHeaders: options.hasHeaders,
           trim: options.trim,
           parseNumbers: options.parseNumbers,
-          parseBooleans: options.parseBooleans
+          parseBooleans: options.parseBooleans,
+          repairRowShifts: options.repairRowShifts,
+          normalizeQuotes: options.normalizeQuotes
         });
 
         const transformedJson = transformLoader.applyTransform(
@@ -508,7 +515,8 @@ async function saveAsCsv(inputFile, outputFile, options: any): Promise<Conversio
         // Конвертировать обратно в CSV
         transformedData = jtcsv.jsonToCsv(transformedJson, {
           delimiter: options.delimiter,
-          includeHeaders: options.includeHeaders
+          includeHeaders: options.includeHeaders,
+          normalizeQuotes: options.normalizeQuotes
         });
 
         if (!options.silent) {
@@ -641,7 +649,8 @@ async function convertNdjsonToCsv(inputFile, outputFile, options: any): Promise<
       renameMap: options.renameMap,
       template: options.template,
       preventCsvInjection: options.preventCsvInjection,
-      rfc4180Compliant: options.rfc4180Compliant
+      rfc4180Compliant: options.rfc4180Compliant,
+      normalizeQuotes: options.normalizeQuotes
     };
 
     // Convert to CSV
@@ -1907,6 +1916,8 @@ function parseOptions(args: any): any {
     parseBooleans: false,
     useFastPath: true,
     fastPathMode: 'objects',
+    repairRowShifts: true,
+    normalizeQuotes: true,
     preventCsvInjection: true,
     rfc4180Compliant: true,
     maxRecords: undefined,
@@ -1986,6 +1997,12 @@ function parseOptions(args: any): any {
         ) {
           throw new Error('Invalid --fast-path-mode value (objects|compact)');
         }
+        break;
+      case 'repair-row-shifts':
+        options.repairRowShifts = true;
+        break;
+      case 'normalize-quotes':
+        options.normalizeQuotes = true;
         break;
       case 'rename':
         try {

@@ -108,6 +108,33 @@
             margin: 25px 0;
             align-items: center;
         }
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 15px 0 5px;
+            align-items: center;
+        }
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .option-grid label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            color: #475569;
+        }
+        .option-grid input {
+            accent-color: #4f46e5;
+        }
         select, button {
             padding: 12px 24px;
             border-radius: 10px;
@@ -210,6 +237,24 @@ id,name,age,email
 2,Jane Smith,25,jane@example.com">id,name,age,email
 1,John Doe,30,john@example.com
 2,Jane Smith,25,jane@example.com</textarea>
+                <div class="control-group">
+                    <select id="exampleSelect">
+                        <option value="basic" selected>Example: Basic CSV</option>
+                        <option value="semicolon">Example: Semicolon-delimited</option>
+                        <option value="tsv">Example: TSV (tab)</option>
+                        <option value="quoted">Example: Quoted fields</option>
+                        <option value="injection">Example: CSV injection edge</option>
+                    </select>
+                    <button class="secondary" id="loadExampleBtn"><i class="fas fa-flask"></i> Load Example</button>
+                </div>
+                <div class="option-grid">
+                    <label><input type="checkbox" id="livePreview" checked> Live preview</label>
+                    <label><input type="checkbox" id="hasHeaders" checked> Has headers</label>
+                    <label><input type="checkbox" id="autoDetect" checked> Auto-detect delimiter</label>
+                    <label><input type="checkbox" id="parseNumbers"> Parse numbers</label>
+                    <label><input type="checkbox" id="parseBooleans"> Parse booleans</label>
+                    <label><input type="checkbox" id="trimValues" checked> Trim values</label>
+                </div>
                 <div class="controls">
                     <select id="delimiter">
                         <option value="," selected>Comma ( , )</option>
@@ -218,6 +263,8 @@ id,name,age,email
                         <option value="|">Pipe ( | )</option>
                     </select>
                     <button id="csvToJsonBtn"><i class="fas fa-arrow-right"></i> Convert to JSON</button>
+                    <button class="secondary" id="copyCsvCodeBtn"><i class="fas fa-code"></i> Copy Code</button>
+                    <button class="secondary" id="shareBtn"><i class="fas fa-link"></i> Share</button>
                     <button class="secondary" id="clearCsvBtn"><i class="fas fa-trash"></i> Clear</button>
                 </div>
                 <div class="output-info">
@@ -229,8 +276,14 @@ id,name,age,email
             <div class="panel">
                 <h2><i class="fas fa-file-code"></i> JSON Output</h2>
                 <textarea id="jsonOutput" placeholder="JSON will appear here..." readonly></textarea>
+                <div class="option-grid">
+                    <label><input type="checkbox" id="includeHeaders" checked> Include headers</label>
+                    <label><input type="checkbox" id="preventInjection" checked> Prevent CSV injection</label>
+                    <label><input type="checkbox" id="rfc4180" checked> RFC 4180 compliant</label>
+                </div>
                 <div class="controls">
                     <button id="jsonToCsvBtn"><i class="fas fa-arrow-left"></i> Convert to CSV</button>
+                    <button class="secondary" id="copyJsonCodeBtn"><i class="fas fa-code"></i> Copy Code</button>
                     <button class="secondary" id="copyJsonBtn"><i class="fas fa-copy"></i> Copy JSON</button>
                     <button class="danger" id="clearJsonBtn"><i class="fas fa-trash"></i> Clear</button>
                 </div>
@@ -244,10 +297,10 @@ id,name,age,email
         </div>
         <footer>
             <p>
-                <strong>JTCSV v<span id="version">2.3.0</span></strong> – 
-                <a href="https://github.com/your-org/jtcsv" target="_blank">GitHub</a> • 
+                <strong>JTCSV v<span id="version">3.1.0</span></strong> – 
+                <a href="https://github.com/Linol-Hamelton/jtcsv" target="_blank">GitHub</a> • 
                 <a href="https://www.npmjs.com/package/jtcsv" target="_blank">npm</a> • 
-                <a href="https://jtcsv.dev/docs" target="_blank">Documentation</a>
+                <a href="https://github.com/Linol-Hamelton/jtcsv/tree/main/docs" target="_blank">Documentation</a>
             </p>
             <p style="margin-top: 10px; font-size: 0.9rem;">
                 This playground uses the browser build of JTCSV. All processing happens locally – no data is sent to any server.
@@ -255,7 +308,7 @@ id,name,age,email
         </footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jtcsv@latest/dist/jtcsv.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jtcsv@latest/dist/jtcsv.umd.js"></script>
     <script>
         // Get UI elements
         const csvInput = document.getElementById('csvInput');
@@ -263,9 +316,23 @@ id,name,age,email
         const delimiterSelect = document.getElementById('delimiter');
         const csvToJsonBtn = document.getElementById('csvToJsonBtn');
         const jsonToCsvBtn = document.getElementById('jsonToCsvBtn');
+        const exampleSelect = document.getElementById('exampleSelect');
+        const loadExampleBtn = document.getElementById('loadExampleBtn');
         const clearCsvBtn = document.getElementById('clearCsvBtn');
         const clearJsonBtn = document.getElementById('clearJsonBtn');
         const copyJsonBtn = document.getElementById('copyJsonBtn');
+        const copyCsvCodeBtn = document.getElementById('copyCsvCodeBtn');
+        const copyJsonCodeBtn = document.getElementById('copyJsonCodeBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const livePreviewToggle = document.getElementById('livePreview');
+        const hasHeadersToggle = document.getElementById('hasHeaders');
+        const autoDetectToggle = document.getElementById('autoDetect');
+        const parseNumbersToggle = document.getElementById('parseNumbers');
+        const parseBooleansToggle = document.getElementById('parseBooleans');
+        const trimValuesToggle = document.getElementById('trimValues');
+        const includeHeadersToggle = document.getElementById('includeHeaders');
+        const preventInjectionToggle = document.getElementById('preventInjection');
+        const rfc4180Toggle = document.getElementById('rfc4180');
         const csvError = document.getElementById('csvError');
         const jsonError = document.getElementById('jsonError');
         const successMsg = document.getElementById('successMsg');
@@ -284,21 +351,162 @@ id,name,age,email
             setTimeout(() => successMsg.style.display = 'none', 3000);
         }
 
-        // Convert CSV to JSON
-        csvToJsonBtn.addEventListener('click', async () => {
+        function ensureLibrary() {
+            if (typeof jtcsv === 'undefined') {
+                showError(csvError, 'JTCSV library failed to load. Check your network or CDN.');
+                return false;
+            }
+            return true;
+        }
+
+        function escapeTemplateLiteral(value) {
+            return value.replace(/`/g, '\\`').replace(/\\$\\{/g, '\\\\${');
+        }
+
+        const examples = {
+            basic: {
+                delimiter: ',',
+                csv: 'id,name,age,email\\n1,John Doe,30,john@example.com\\n2,Jane Smith,25,jane@example.com'
+            },
+            semicolon: {
+                delimiter: ';',
+                csv: 'id;name;role\\n1;Sam;Admin\\n2;Alex;Viewer'
+            },
+            tsv: {
+                delimiter: '\\t',
+                csv: 'id\\tproduct\\tprice\\n1\\tKeyboard\\t49.99\\n2\\tMouse\\t19.99'
+            },
+            quoted: {
+                delimiter: ',',
+                csv: 'id,name,notes\\n1,\"Doe, Jane\",\"Line 1\\nLine 2\"\\n2,\"Smith, John\",\"Quoted \\'value\\'\"'
+            },
+            injection: {
+                delimiter: ',',
+                csv: 'id,formula\\n1,=SUM(1,2)\\n2,+CMD|\\' /C calc\\'!A0'
+            }
+        };
+
+        loadExampleBtn.addEventListener('click', () => {
+            const selected = examples[exampleSelect.value] || examples.basic;
+            csvInput.value = selected.csv;
+            delimiterSelect.value = selected.delimiter;
+            if (livePreviewToggle.checked) {
+                runCsvToJson(false);
+            }
+        });
+
+        function encodeState(value) {
+            return btoa(unescape(encodeURIComponent(value)));
+        }
+
+        function decodeState(value) {
+            return decodeURIComponent(escape(atob(value)));
+        }
+
+        function applyStateFromUrl() {
+            if (!location.hash || location.hash.length < 2) {
+                return;
+            }
+            const params = new URLSearchParams(location.hash.slice(1));
+            const csvParam = params.get('csv');
+            if (csvParam) {
+                try {
+                    csvInput.value = decodeState(csvParam);
+                } catch (err) {
+                    console.warn('Failed to decode CSV from URL', err);
+                }
+            }
+            const delimiter = params.get('delimiter');
+            if (delimiter) {
+                delimiterSelect.value = decodeState(delimiter);
+            }
+            const toggleMap = [
+                ['hasHeaders', hasHeadersToggle],
+                ['autoDetect', autoDetectToggle],
+                ['parseNumbers', parseNumbersToggle],
+                ['parseBooleans', parseBooleansToggle],
+                ['trim', trimValuesToggle],
+                ['includeHeaders', includeHeadersToggle],
+                ['preventInjection', preventInjectionToggle],
+                ['rfc4180', rfc4180Toggle],
+                ['livePreview', livePreviewToggle]
+            ];
+            toggleMap.forEach(([key, el]) => {
+                const value = params.get(key);
+                if (value !== null) {
+                    el.checked = value === '1';
+                }
+            });
+            if (livePreviewToggle.checked) {
+                runCsvToJson(false);
+            }
+        }
+
+        function runCsvToJson(showToast = true) {
             const csv = csvInput.value.trim();
             if (!csv) {
-                showError(csvError, 'Please enter some CSV data.');
+                jsonOutput.value = '';
                 return;
             }
             const delimiter = delimiterSelect.value;
             try {
-                const result = jtcsv.csvToJson(csv, { delimiter });
+                if (!ensureLibrary()) {
+                    return;
+                }
+                const options = {
+                    delimiter,
+                    hasHeaders: hasHeadersToggle.checked,
+                    autoDetect: autoDetectToggle.checked,
+                    parseNumbers: parseNumbersToggle.checked,
+                    parseBooleans: parseBooleansToggle.checked,
+                    trim: trimValuesToggle.checked
+                };
+                const result = jtcsv.csvToJson(csv, options);
                 jsonOutput.value = JSON.stringify(result, null, 2);
                 jsonError.style.display = 'none';
-                showSuccess('CSV converted to JSON successfully!');
+                if (showToast) {
+                    showSuccess('CSV converted to JSON successfully!');
+                }
             } catch (err) {
                 showError(csvError, 'Error parsing CSV: ' + err.message);
+            }
+        }
+
+        // Convert CSV to JSON
+        csvToJsonBtn.addEventListener('click', async () => {
+            if (!csvInput.value.trim()) {
+                showError(csvError, 'Please enter some CSV data.');
+                return;
+            }
+            runCsvToJson(true);
+        });
+
+        const previewControls = [
+            csvInput,
+            delimiterSelect,
+            hasHeadersToggle,
+            autoDetectToggle,
+            parseNumbersToggle,
+            parseBooleansToggle,
+            trimValuesToggle
+        ];
+
+        previewControls.forEach((control) => {
+            control.addEventListener('input', () => {
+                if (livePreviewToggle.checked) {
+                    runCsvToJson(false);
+                }
+            });
+            control.addEventListener('change', () => {
+                if (livePreviewToggle.checked) {
+                    runCsvToJson(false);
+                }
+            });
+        });
+
+        livePreviewToggle.addEventListener('change', () => {
+            if (livePreviewToggle.checked) {
+                runCsvToJson(false);
             }
         });
 
@@ -310,9 +518,18 @@ id,name,age,email
                 return;
             }
             try {
+                if (!ensureLibrary()) {
+                    return;
+                }
                 const data = JSON.parse(jsonText);
                 const delimiter = delimiterSelect.value;
-                const csv = jtcsv.jsonToCsv(data, { delimiter });
+                const options = {
+                    delimiter,
+                    includeHeaders: includeHeadersToggle.checked,
+                    preventCsvInjection: preventInjectionToggle.checked,
+                    rfc4180Compliant: rfc4180Toggle.checked
+                };
+                const csv = jtcsv.jsonToCsv(data, options);
                 csvInput.value = csv;
                 csvError.style.display = 'none';
                 showSuccess('JSON converted to CSV successfully!');
@@ -342,6 +559,90 @@ id,name,age,email
                 .then(() => showSuccess('JSON copied to clipboard!'))
                 .catch(err => showError(jsonError, 'Failed to copy: ' + err));
         });
+
+        copyCsvCodeBtn.addEventListener('click', () => {
+            if (!csvInput.value.trim()) {
+                showError(csvError, 'No CSV to generate code.');
+                return;
+            }
+            const delimiter = delimiterSelect.value;
+            const snippet = [
+                "const { csvToJson } = require('jtcsv');",
+                '',
+                `const csv = \`${escapeTemplateLiteral(csvInput.value.trim())}\`;`,
+                'const rows = csvToJson(csv, {',
+                `  delimiter: '${delimiter}',`,
+                `  hasHeaders: ${hasHeadersToggle.checked},`,
+                `  autoDetect: ${autoDetectToggle.checked},`,
+                `  parseNumbers: ${parseNumbersToggle.checked},`,
+                `  parseBooleans: ${parseBooleansToggle.checked},`,
+                `  trim: ${trimValuesToggle.checked}`,
+                '});',
+                '',
+                'console.log(rows);'
+            ].join('\\n');
+            navigator.clipboard.writeText(snippet)
+                .then(() => showSuccess('CSV→JSON code copied!'))
+                .catch(err => showError(csvError, 'Failed to copy: ' + err));
+        });
+
+        copyJsonCodeBtn.addEventListener('click', () => {
+            if (!jsonOutput.value.trim()) {
+                showError(jsonError, 'No JSON to generate code.');
+                return;
+            }
+            let dataSnippet;
+            try {
+                const parsed = JSON.parse(jsonOutput.value);
+                dataSnippet = JSON.stringify(parsed, null, 2);
+            } catch (err) {
+                showError(jsonError, 'JSON output is invalid.');
+                return;
+            }
+            const delimiter = delimiterSelect.value;
+            const snippet = [
+                "const { jsonToCsv } = require('jtcsv');",
+                '',
+                `const data = ${dataSnippet};`,
+                'const csv = jsonToCsv(data, {',
+                `  delimiter: '${delimiter}',`,
+                `  includeHeaders: ${includeHeadersToggle.checked},`,
+                `  preventCsvInjection: ${preventInjectionToggle.checked},`,
+                `  rfc4180Compliant: ${rfc4180Toggle.checked}`,
+                '});',
+                '',
+                'console.log(csv);'
+            ].join('\\n');
+            navigator.clipboard.writeText(snippet)
+                .then(() => showSuccess('JSON→CSV code copied!'))
+                .catch(err => showError(jsonError, 'Failed to copy: ' + err));
+        });
+
+        shareBtn.addEventListener('click', () => {
+            if (!csvInput.value.trim()) {
+                showError(csvError, 'Add some CSV data before sharing.');
+                return;
+            }
+            const params = new URLSearchParams();
+            params.set('csv', encodeState(csvInput.value.trim()));
+            params.set('delimiter', encodeState(delimiterSelect.value));
+            params.set('hasHeaders', hasHeadersToggle.checked ? '1' : '0');
+            params.set('autoDetect', autoDetectToggle.checked ? '1' : '0');
+            params.set('parseNumbers', parseNumbersToggle.checked ? '1' : '0');
+            params.set('parseBooleans', parseBooleansToggle.checked ? '1' : '0');
+            params.set('trim', trimValuesToggle.checked ? '1' : '0');
+            params.set('includeHeaders', includeHeadersToggle.checked ? '1' : '0');
+            params.set('preventInjection', preventInjectionToggle.checked ? '1' : '0');
+            params.set('rfc4180', rfc4180Toggle.checked ? '1' : '0');
+            params.set('livePreview', livePreviewToggle.checked ? '1' : '0');
+            const newUrl = `${location.origin}${location.pathname}#${params.toString()}`;
+            navigator.clipboard.writeText(newUrl)
+                .then(() => showSuccess('Shareable URL copied!'))
+                .catch(err => showError(csvError, 'Failed to copy URL: ' + err));
+            location.hash = params.toString();
+        });
+
+        applyStateFromUrl();
 
         // Load version from library if available
         if (typeof jtcsv !== 'undefined' && jtcsv.VERSION) {

@@ -6,6 +6,7 @@ yarn-error.log*
 
 # Build outputs
 dist/
+dist-types/
 
 # Coverage directory used by tools like istanbul
 coverage/

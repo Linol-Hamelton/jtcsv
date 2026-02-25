@@ -52,6 +52,7 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
       addBOM = false,
       preventCsvInjection = true,
       rfc4180Compliant = true,
+      normalizeQuotes = true,
       flatten = false,
       flattenSeparator = '.',
       flattenMaxDepth = 5,
@@ -90,6 +91,10 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
     if (schema && typeof schema !== 'object') {
       throw new ConfigurationError('schema must be an object');
     }
+
+    if (normalizeQuotes !== undefined && typeof normalizeQuotes !== 'boolean') {
+      throw new ConfigurationError('normalizeQuotes must be a boolean');
+    }
     
     // Create schema validator if schema is provided
     // TODO: Fix schema validator types
@@ -99,6 +104,44 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
     let outputHeaders: string[] = [];
     let headersWritten = false;
     let recordCount = 0;
+    const phoneKeys = new Set(['phone', 'phonenumber', 'phone_number', 'tel', 'telephone']);
+
+    const normalizeQuotesInField = (value: string): string => {
+      // Не нормализуем кавычки в JSON-строках - это ломает структуру JSON
+      // Проверяем, выглядит ли значение как JSON (объект или массив)
+      if ((value.startsWith('{') && value.endsWith('}')) ||
+          (value.startsWith('[') && value.endsWith(']'))) {
+        return value; // Возвращаем как есть для JSON
+      }
+      
+      let normalized = value.replace(/"{2,}/g, '"');
+      // Убираем правило, которое ломает JSON: не заменяем "," на ","
+      // normalized = normalized.replace(/"\s*,\s*"/g, ',');
+      normalized = normalized.replace(/"\n/g, '\n').replace(/\n"/g, '\n');
+      if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
+        normalized = normalized.slice(1, -1);
+      }
+      return normalized;
+    };
+
+    const normalizePhoneValue = (value: string): string => {
+      const trimmed = value.trim();
+      if (trimmed === '') {
+        return trimmed;
+      }
+      return trimmed.replace(/["'\\]/g, '');
+    };
+
+    const normalizeValueForCsv = (value: any, key: string) => {
+      if (!normalizeQuotes || typeof value !== 'string') {
+        return value;
+      }
+      const base = normalizeQuotesInField(value);
+      if (phoneKeys.has(String(key).toLowerCase())) {
+        return normalizePhoneValue(base);
+      }
+      return base;
+    };
     
     // Create transform stream
     const transformStream = new Transform({
@@ -201,6 +244,8 @@ export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Tra
               }
             }
             
+            value = normalizeValueForCsv(value, header);
+
             // Convert to string
             const stringValue = String(value);
             

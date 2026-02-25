@@ -4,6 +4,21 @@ Current version: 3.1.0
 
 Use this guide to pick the right CSV -> JSON API depending on where your data lives and how big it is.
 
+## Mermaid decision tree
+```mermaid
+flowchart TD
+  A[I need to convert data] --> B{What format do you have?}
+  B -->|CSV| C{Where is the CSV?}
+  B -->|JSON| J{How big is it?}
+  J -->|Small or medium| J1[jsonToCsv(data, options)]
+  J -->|Large or streaming| J2[createJsonToCsvStream(options)]
+  C -->|CSV string in memory| C1[csvToJson(csv, options)]
+  C -->|Node file path| D{File size?}
+  C -->|Browser File or Blob| C2[parseCsvFile / parseCsvFileStream]
+  D -->|Small or known| D1[readCsvAsJson(filePath, options)]
+  D -->|Large or unknown| D2[createCsvFileToJsonStream(filePath, options)]
+```
+
 ## Quick Decision
 
 1) Do you already have a CSV string in memory?

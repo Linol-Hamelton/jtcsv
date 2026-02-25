@@ -92,6 +92,10 @@ function validateInput(data: any[], options?: JsonToCsvOptions) {
     throw new ConfigurationError('rfc4180Compliant must be a boolean');
   }
   
+  if (options?.normalizeQuotes !== undefined && typeof options.normalizeQuotes !== 'boolean') {
+    throw new ConfigurationError('normalizeQuotes must be a boolean');
+  }
+  
   // Validate schema
   if (options?.schema && typeof options.schema !== 'object') {
     throw new ConfigurationError('schema must be an object');
@@ -396,6 +400,19 @@ export function validateFilePath(filePath: string, options: { allowRelative?: bo
     throw new SecurityError('Relative file paths are not allowed');
   }
 
+  // Block UNC/network paths on Windows to avoid remote access/hangs
+  if (process.platform === 'win32') {
+    const normalizedWin = normalized.replace(/\//g, '\\');
+    if (normalizedWin.startsWith('\\\\')) {
+      if (!normalizedWin.toLowerCase().startsWith('\\\\?\\')) {
+        throw new SecurityError('UNC paths are not allowed');
+      }
+      if (normalizedWin.toLowerCase().startsWith('\\\\?\\unc\\')) {
+        throw new SecurityError('UNC paths are not allowed');
+      }
+    }
+  }
+
   const ext = require('path').extname(normalized);
   if (!ext || ext.toLowerCase() !== '.csv') {
     throw new ValidationError('File must have .csv extension');
@@ -442,6 +459,7 @@ export function jsonToCsv(
       maxRecords,
       preventCsvInjection = true,
       rfc4180Compliant = true,
+      normalizeQuotes = true,
       schema = null,
       flatten = false,
       flattenSeparator = '.',
@@ -580,6 +598,45 @@ export function jsonToCsv(
         finalKeys[i] = finalHeaders[i];
       }
     }
+
+    const phoneKeys = new Set(['phone', 'phonenumber', 'phone_number', 'tel', 'telephone']);
+
+    const normalizeQuotesInField = (value: string): string => {
+      // Не нормализуем кавычки в JSON-строках - это ломает структуру JSON
+      // Проверяем, выглядит ли значение как JSON
+      if ((value.startsWith('{') && value.endsWith('}')) ||
+          (value.startsWith('[') && value.endsWith(']'))) {
+        return value; // Возвращаем как есть для JSON
+      }
+      
+      let normalized = value.replace(/"{2,}/g, '"');
+      // Убираем правило, которое ломает JSON: не заменяем "," на ","
+      // normalized = normalized.replace(/"\s*,\s*"/g, ',');
+      normalized = normalized.replace(/"\n/g, '\n').replace(/\n"/g, '\n');
+      if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
+        normalized = normalized.slice(1, -1);
+      }
+      return normalized;
+    };
+
+    const normalizePhoneValue = (value: string): string => {
+      const trimmed = value.trim();
+      if (trimmed === '') {
+        return trimmed;
+      }
+      return trimmed.replace(/["'\\]/g, '');
+    };
+
+    const normalizeValueForCsv = (value: any, key?: string) => {
+      if (!normalizeQuotes || typeof value !== 'string') {
+        return value;
+      }
+      const base = normalizeQuotesInField(value);
+      if (key && phoneKeys.has(String(key).toLowerCase())) {
+        return normalizePhoneValue(base);
+      }
+      return base;
+    };
     
     /**
      * Escapes a value for CSV format with CSV injection protection
@@ -676,7 +733,8 @@ export function jsonToCsv(
       for (let j = 0; j < finalKeys.length; j++) {
         const key = finalKeys[j];
         const value = item && typeof item === 'object' ? item[key] : undefined;
-        rowValues.push(escapeValue(value));
+        const normalized = normalizeValueForCsv(value, key);
+        rowValues.push(escapeValue(normalized));
       }
       
       rows.push(rowValues.join(delimiter));

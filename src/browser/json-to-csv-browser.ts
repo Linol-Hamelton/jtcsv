@@ -55,6 +55,10 @@ function validateInput(data: any[], options: JsonToCsvOptions): boolean {
   if (options?.rfc4180Compliant !== undefined && typeof options.rfc4180Compliant !== 'boolean') {
     throw new ConfigurationError('rfc4180Compliant must be a boolean');
   }
+
+  if (options?.normalizeQuotes !== undefined && typeof options.normalizeQuotes !== 'boolean') {
+    throw new ConfigurationError('normalizeQuotes must be a boolean');
+  }
   
   return true;
 }
@@ -110,6 +114,47 @@ function escapeCsvValue(value: string, preventInjection: boolean = true): string
   return str;
 }
 
+function normalizeQuotesInField(value: string): string {
+  // Не нормализуем кавычки в JSON-строках - это ломает структуру JSON
+  // Проверяем, выглядит ли значение как JSON (объект или массив)
+  if ((value.startsWith('{') && value.endsWith('}')) ||
+      (value.startsWith('[') && value.endsWith(']'))) {
+    return value; // Возвращаем как есть для JSON
+  }
+  
+  let normalized = value.replace(/"{2,}/g, '"');
+  // Убираем правило, которое ломает JSON: не заменяем "," на ","
+  // normalized = normalized.replace(/"\s*,\s*"/g, ',');
+  normalized = normalized.replace(/"\n/g, '\n').replace(/\n"/g, '\n');
+  if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
+    normalized = normalized.slice(1, -1);
+  }
+  return normalized;
+}
+
+function normalizePhoneValue(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return trimmed;
+  }
+  return trimmed.replace(/["'\\]/g, '');
+}
+
+function normalizeValueForCsv(value: any, key: string | undefined, normalizeQuotes: boolean): any {
+  if (!normalizeQuotes || typeof value !== 'string') {
+    return value;
+  }
+  const base = normalizeQuotesInField(value);
+  if (!key) {
+    return base;
+  }
+  const phoneKeys = new Set(['phone', 'phonenumber', 'phone_number', 'tel', 'telephone']);
+  if (phoneKeys.has(String(key).toLowerCase())) {
+    return normalizePhoneValue(base);
+  }
+  return base;
+}
+
 /**
  * Извлечение всех уникальных ключей из массива объектов
  * @private
@@ -147,6 +192,7 @@ export function jsonToCsv(data: any[], options: JsonToCsvOptions = {}): string {
     const maxRecords = options.maxRecords || data.length;
     const preventInjection = options.preventCsvInjection !== false;
     const rfc4180Compliant = options.rfc4180Compliant !== false;
+    const normalizeQuotes = options.normalizeQuotes !== false;
     
     // Ограничение количества записей
     const limitedData = data.slice(0, maxRecords);
@@ -171,7 +217,8 @@ export function jsonToCsv(data: any[], options: JsonToCsvOptions = {}): string {
     for (const item of limitedData) {
       const rowValues = allKeys.map(key => {
         const value = item?.[key];
-        return escapeCsvValue(value, preventInjection);
+        const normalized = normalizeValueForCsv(value, key, normalizeQuotes);
+        return escapeCsvValue(normalized, preventInjection);
       });
       
       lines.push(rowValues.join(delimiter));
@@ -207,6 +254,7 @@ export async function* jsonToCsvIterator(data: any[] | AsyncIterable<any>, optio
   const includeHeaders = options.includeHeaders !== false;
   const preventInjection = options.preventCsvInjection !== false;
   const rfc4180Compliant = options.rfc4180Compliant !== false;
+  const normalizeQuotes = options.normalizeQuotes !== false;
   
   let isFirstChunk = true;
   let allKeys: string[] = [];
@@ -232,7 +280,8 @@ export async function* jsonToCsvIterator(data: any[] | AsyncIterable<any>, optio
     for (const item of data) {
       const rowValues = allKeys.map(key => {
         const value = item?.[key];
-        return escapeCsvValue(value, preventInjection);
+        const normalized = normalizeValueForCsv(value, key, normalizeQuotes);
+        return escapeCsvValue(normalized, preventInjection);
       });
       
       yield rowValues.join(delimiter) + (rfc4180Compliant ? '\r\n' : '\n');

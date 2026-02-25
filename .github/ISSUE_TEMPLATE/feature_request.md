@@ -1,25 +1,61 @@
-Current version: 3.1.0
-
 ---
 name: Feature Request
-about: Suggest a new feature or improvement for JTCSV
+about: Suggest an idea for this project
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
-
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## 💡 Feature Description
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+A clear and concise description of the feature you'd like to see.
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+## 🎯 Problem Statement
 
-**Use case**
-Explain how this feature would be used in real‑world scenarios. Provide example code if possible.
+Is your feature request related to a problem? Please describe.
 
-**Additional context**
-Add any other context, screenshots, or references about the feature request here.
+Example: I'm always frustrated when [...]
+
+## 💭 Proposed Solution
+
+Describe the solution you'd like to see.
+
+## 🔄 Alternatives Considered
+
+A clear description of any alternative solutions or features you've considered.
+
+## 📊 Example Usage
+
+```typescript
+// How you would use this feature
+import { csvToJson } from 'jtcsv';
+
+const result = csvToJson(csv, {
+  // New option
+  newFeature: true
+});
+```
+
+## 📈 Use Cases
+
+Describe specific use cases for this feature:
+
+1. Use case 1: ...
+2. Use case 2: ...
+3. Use case 3: ...
+
+## 🔗 Related Features
+
+Are there any related features in other libraries that we could learn from?
+
+- Papa Parse: ...
+- csv-parser: ...
+- Other: ...
+
+## 📚 Additional Context
+
+Add any other context or screenshots about the feature request here.
+
+## 🎨 Mock-ups
+
+If applicable, add mock-ups or diagrams to help explain your idea.

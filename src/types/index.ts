@@ -22,6 +22,8 @@ export interface JsonToCsvOptions {
   preventCsvInjection?: boolean;
   /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
   rfc4180Compliant?: boolean;
+  /** Normalize excessive quotes in JSON string values before CSV export (default: true) */
+  normalizeQuotes?: boolean;
   /** JSON schema for data validation and formatting */
   schema?: Record<string, any>;
   /** Whether to flatten nested objects into dot notation keys */
@@ -97,6 +99,10 @@ export interface CsvToJsonOptions {
   memoryWarningThreshold?: number;
   /** Safety limit for in-memory conversion (default: 5000000). Set to Infinity to disable. */
   memoryLimit?: number;
+  /** Attempt to repair shifted rows with trailing empty fields (default: true) */
+  repairRowShifts?: boolean;
+  /** Normalize excessive quotes in parsed fields (default: true) */
+  normalizeQuotes?: boolean;
 }
 
 // JSON save интерфейсы

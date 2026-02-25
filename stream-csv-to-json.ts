@@ -57,7 +57,9 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
       useFastPath = true,
       fastPathMode = 'objects',
       onError = 'throw',
-      errorHandler
+      errorHandler,
+      repairRowShifts = true,
+      normalizeQuotes = true
     } = options;
     
     // Validate options
@@ -103,10 +105,14 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
     
     let buffer = '';
     let headers: string[] = [];
+    let finalHeaders: string[] = [];
     let headersProcessed = false;
     let rowCount = 0;
     let inputLineNumber = 0;
     let finalDelimiter = delimiter;
+    let pendingRow: AnyObject | null = null;
+    let pendingRowLineNumber: number | null = null;
+    let pendingRowLine: string | null = null;
 
     const normalizeValue = (value: any): any => {
       let normalized = value;
@@ -136,6 +142,209 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
         }
       }
       return normalized;
+    };
+
+    const isEmptyValue = (value: any): boolean =>
+      value === undefined || value === null || value === '';
+
+    const hasOddQuotes = (value: any): boolean => {
+      if (typeof value !== 'string') {
+        return false;
+      }
+      let count = 0;
+      for (let i = 0; i < value.length; i++) {
+        if (value[i] === '"') {
+          count++;
+        }
+      }
+      return count % 2 === 1;
+    };
+
+    const hasAnyQuotes = (value: any): boolean =>
+      typeof value === 'string' && value.includes('"');
+
+    const normalizeQuotesInField = (value: any): any => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+      // Не нормализуем кавычки в JSON-строках - это ломает структуру JSON
+      // Проверяем, выглядит ли значение как JSON (объект или массив)
+      if ((value.startsWith('{') && value.endsWith('}')) ||
+          (value.startsWith('[') && value.endsWith(']'))) {
+        return value; // Возвращаем как есть для JSON
+      }
+      
+      let normalized = value.replace(/"{2,}/g, '"');
+      // Убираем правило, которое ломает JSON: не заменяем "," на ","
+      // normalized = normalized.replace(/"\s*,\s*"/g, ',');
+      normalized = normalized.replace(/"\n/g, '\n').replace(/\n"/g, '\n');
+      if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
+        normalized = normalized.slice(1, -1);
+      }
+      return normalized;
+    };
+
+    const normalizePhoneValue = (value: any): any => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+      const trimmed = value.trim();
+      if (trimmed === '') {
+        return trimmed;
+      }
+      return trimmed.replace(/["'\\]/g, '');
+    };
+
+    const normalizeRowQuotes = (row: AnyObject, headersList: string[]): AnyObject => {
+      const normalized: AnyObject = {};
+      const phoneKeys = new Set(['phone', 'phonenumber', 'phone_number', 'tel', 'telephone']);
+      for (const header of headersList) {
+        const baseValue = normalizeQuotesInField(row[header]);
+        if (phoneKeys.has(String(header).toLowerCase())) {
+          normalized[header] = normalizePhoneValue(baseValue);
+        } else {
+          normalized[header] = baseValue;
+        }
+      }
+      return normalized;
+    };
+
+    const looksLikeUserAgent = (value: any): boolean => {
+      if (typeof value !== 'string') {
+        return false;
+      }
+      return /Mozilla\/|Opera\/|MSIE|AppleWebKit|Gecko|Safari|Chrome\//.test(value);
+    };
+
+    const isHexColor = (value: any): boolean =>
+      typeof value === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+
+    const attemptMergeRows = (row: AnyObject, nextRow: AnyObject): AnyObject | null => {
+      const headerCount = finalHeaders.length;
+      if (headerCount === 0) {
+        return null;
+      }
+      const values = finalHeaders.map((header) => row[header]);
+      let lastNonEmpty = -1;
+      for (let i = headerCount - 1; i >= 0; i--) {
+        if (!isEmptyValue(values[i])) {
+          lastNonEmpty = i;
+          break;
+        }
+      }
+      const missingCount = headerCount - 1 - lastNonEmpty;
+      if (lastNonEmpty >= 0 && missingCount > 0) {
+        const nextValues = finalHeaders.map((header) => nextRow[header]);
+        const nextTrailingEmpty = nextValues
+          .slice(headerCount - missingCount)
+          .every((value) => isEmptyValue(value));
+        const leadValues = nextValues
+          .slice(0, missingCount)
+          .filter((value) => !isEmptyValue(value));
+        const shouldMerge = nextTrailingEmpty
+          && leadValues.length > 0
+          && (hasOddQuotes(values[lastNonEmpty]) || hasAnyQuotes(values[lastNonEmpty]));
+
+        if (shouldMerge) {
+          const toAppend = leadValues.map((value) => String(value));
+          if (toAppend.length > 0) {
+            const base = isEmptyValue(values[lastNonEmpty]) ? '' : String(values[lastNonEmpty]);
+            values[lastNonEmpty] = base ? `${base}\n${toAppend.join('\n')}` : toAppend.join('\n');
+          }
+          for (let i = 0; i < missingCount; i++) {
+            values[lastNonEmpty + 1 + i] = nextValues[missingCount + i];
+          }
+          const merged: AnyObject = {};
+          for (let i = 0; i < headerCount; i++) {
+            merged[finalHeaders[i]] = values[i];
+          }
+          return merged;
+        }
+      }
+
+      if (headerCount >= 6) {
+        const nextValues = finalHeaders.map((header) => nextRow[header]);
+        const nextHex = nextValues[4];
+        const nextUserAgentHead = nextValues[2];
+        const nextUserAgentTail = nextValues[3];
+        const shouldMergeUserAgent = isEmptyValue(values[4])
+          && isEmptyValue(values[5])
+          && isHexColor(nextHex)
+          && (looksLikeUserAgent(nextUserAgentHead) || looksLikeUserAgent(nextUserAgentTail));
+
+        if (shouldMergeUserAgent) {
+          const addressParts = [values[3], nextValues[0], nextValues[1]]
+            .filter((value) => !isEmptyValue(value))
+            .map((value) => String(value));
+          values[3] = addressParts.join('\n');
+          const uaHead = isEmptyValue(nextUserAgentHead) ? '' : String(nextUserAgentHead);
+          const uaTail = isEmptyValue(nextUserAgentTail) ? '' : String(nextUserAgentTail);
+          const joiner = uaHead && uaTail ? (uaTail.startsWith(' ') ? '' : ',') : '';
+          values[4] = uaHead + joiner + uaTail;
+          values[5] = String(nextHex);
+          const merged: AnyObject = {};
+          for (let i = 0; i < headerCount; i++) {
+            merged[finalHeaders[i]] = values[i];
+          }
+          return merged;
+        }
+      }
+
+      return null;
+    };
+
+    const finalizeHeaders = (nextHeaders: string[]) => {
+      headers = nextHeaders;
+      finalHeaders = headers.map((header) => renameMap[header] || header);
+      headersProcessed = true;
+    };
+
+    const emitRow = (
+      row: AnyObject,
+      line: string,
+      lineNumber: number,
+      stream: Transform
+    ) => {
+      if (maxRows !== Infinity && rowCount >= maxRows) {
+        throw new LimitError(
+          `CSV size exceeds maximum limit of ${maxRows} rows`,
+          maxRows,
+          rowCount + 1
+        );
+      }
+      let outputRow = row;
+      if (normalizeQuotes) {
+        outputRow = normalizeRowQuotes(outputRow, finalHeaders);
+      }
+
+      if (schemaValidators && Object.keys(schemaValidators).length > 0) {
+        for (const [field, validator] of Object.entries(schemaValidators)) {
+          const typedValidator = validator as any;
+          const value = outputRow[field];
+          if (typeof typedValidator.validate === 'function' && !typedValidator.validate(value)) {
+            throw new ValidationError(`Invalid value for field "${field}"`);
+          }
+          if (typeof typedValidator.format === 'function') {
+            outputRow[field] = typedValidator.format(value);
+          }
+        }
+      }
+
+      if (customTransform) {
+        let transformed: AnyObject;
+        try {
+          transformed = customTransform(outputRow);
+        } catch (error: any) {
+          throw new ValidationError(`Transform function error: ${error.message}`);
+        }
+        if (!transformed || typeof transformed !== 'object') {
+          throw new ValidationError('Transform function must return an object');
+        }
+        stream.push(transformed);
+      } else {
+        stream.push(outputRow);
+      }
+      rowCount++;
     };
 
     const handleRowError = (error: Error, line: string, lineNumber: number): boolean => {
@@ -175,11 +384,15 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
           buffer = lines.pop() || '';
           
           // Process complete lines
+          let errorLine = '';  // Объявляем вне цикла для доступа в catch
+          let errorLineNumber = 0;
           for (const line of lines) {
             if (line.trim() === '') {
               continue; // Skip empty lines
             }
             inputLineNumber += 1;
+            errorLine = line;
+            errorLineNumber = inputLineNumber;
             
             // Check max rows limit
             if (rowCount >= maxRows) {
@@ -206,18 +419,16 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
               // Process headers
               if (!headersProcessed) {
                 if (hasHeaders) {
-                  headers = values;
-                  headersProcessed = true;
+                  finalizeHeaders(values);
                   continue;
                 } else {
                   // Generate default headers
-                  headers = values.map((_, index) => `column${index + 1}`);
-                  headersProcessed = true;
+                  finalizeHeaders(values.map((_, index) => `column${index + 1}`));
                 }
               }
-              
-              // Apply rename map to headers
-              const finalHeaders = headers.map(header => renameMap[header] || header);
+              if (finalHeaders.length === 0) {
+                finalHeaders = headers.map((header) => renameMap[header] || header);
+              }
               
               // Handle field count mismatch
               if (values.length !== finalHeaders.length) {
@@ -235,42 +446,44 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
                 const value = normalizeValue(values[j]);
                 row[finalHeaders[j]] = value;
               }
-              
-              // Apply schema validation if provided
-              if (schemaValidators && Object.keys(schemaValidators).length > 0) {
-                for (const [field, validator] of Object.entries(schemaValidators)) {
-                  const typedValidator = validator as any;
-                  const value = row[field];
-                  if (typeof typedValidator.validate === 'function' && !typedValidator.validate(value)) {
-                    throw new ValidationError(`Invalid value for field "${field}"`);
-                  }
-                  if (typeof typedValidator.format === 'function') {
-                    row[field] = typedValidator.format(value);
-                  }
-                }
-              }
 
-              if (customTransform) {
-                let transformed: AnyObject;
-                try {
-                  transformed = customTransform(row);
-                } catch (error: any) {
-                  throw new ValidationError(`Transform function error: ${error.message}`);
+              if (repairRowShifts) {
+                if (!pendingRow) {
+                  pendingRow = row;
+                  pendingRowLineNumber = inputLineNumber;
+                  pendingRowLine = line;
+                  continue;
                 }
-                if (!transformed || typeof transformed !== 'object') {
-                  throw new ValidationError('Transform function must return an object');
+
+                const merged = attemptMergeRows(pendingRow, row);
+                if (merged) {
+                  const baseLine = pendingRowLine ?? line;
+                  const baseLineNumber = pendingRowLineNumber ?? inputLineNumber;
+                  pendingRow = null;
+                  pendingRowLine = null;
+                  pendingRowLineNumber = null;
+                  errorLine = baseLine;
+                  errorLineNumber = baseLineNumber;
+                  emitRow(merged, baseLine, baseLineNumber, this);
+                } else {
+                  const baseLine = pendingRowLine ?? line;
+                  const baseLineNumber = pendingRowLineNumber ?? inputLineNumber;
+                  const rowToEmit = pendingRow;
+                  pendingRow = row;
+                  pendingRowLine = line;
+                  pendingRowLineNumber = inputLineNumber;
+                  errorLine = baseLine;
+                  errorLineNumber = baseLineNumber;
+                  emitRow(rowToEmit, baseLine, baseLineNumber, this);
                 }
-                this.push(transformed);
               } else {
-                this.push(row);
+                emitRow(row, line, inputLineNumber, this);
               }
-              
-              rowCount++;
             } catch (error: any) {
               if (!headersProcessed && hasHeaders) {
                 throw error;
               }
-              if (handleRowError(error as Error, line, inputLineNumber)) {
+              if (handleRowError(error as Error, errorLine, errorLineNumber)) {
                 continue;
               }
             }
@@ -285,6 +498,8 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
       flush(callback: TransformCallback) {
         // Process any remaining data in buffer
         if (buffer.trim() !== '') {
+          let errorLine = buffer;  // Объявляем вне try для доступа в catch
+          let errorLineNumber = inputLineNumber;
           try {
             // Check max rows limit
             if (rowCount >= maxRows) {
@@ -296,6 +511,7 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
             }
             if (rowCount < maxRows) {
               inputLineNumber += 1;
+              errorLineNumber = inputLineNumber;
               // Auto-detect delimiter if needed
               if (!finalDelimiter && autoDetect && !headersProcessed) {
                 finalDelimiter = autoDetectDelimiterFromLine(buffer, candidates);
@@ -309,14 +525,14 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
               
               if (!headersProcessed) {
                 if (hasHeaders) {
-                  headers = values;
-                  headersProcessed = true;
+                  finalizeHeaders(values);
                 } else {
-                  headers = values.map((_, index) => `column${index + 1}`);
-                  headersProcessed = true;
+                  finalizeHeaders(values.map((_, index) => `column${index + 1}`));
                 }
               } else {
-                const finalHeaders = headers.map(header => renameMap[header] || header);
+                if (finalHeaders.length === 0) {
+                  finalHeaders = headers.map((header) => renameMap[header] || header);
+                }
                 
                 if (values.length !== finalHeaders.length) {
                   throw ParsingError.fieldCountMismatch(
@@ -333,32 +549,36 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
                   row[finalHeaders[j]] = value;
                 }
 
-                if (schemaValidators && Object.keys(schemaValidators).length > 0) {
-                  for (const [field, validator] of Object.entries(schemaValidators)) {
-                    const typedValidator = validator as any;
-                    const value = row[field];
-                    if (typeof typedValidator.validate === 'function' && !typedValidator.validate(value)) {
-                      throw new ValidationError(`Invalid value for field "${field}"`);
+                if (repairRowShifts) {
+                  if (!pendingRow) {
+                    pendingRow = row;
+                    pendingRowLineNumber = inputLineNumber;
+                    pendingRowLine = buffer;
+                  } else {
+                    const merged = attemptMergeRows(pendingRow, row);
+                    if (merged) {
+                      const baseLine = pendingRowLine ?? buffer;
+                      const baseLineNumber = pendingRowLineNumber ?? inputLineNumber;
+                      pendingRow = null;
+                      pendingRowLine = null;
+                      pendingRowLineNumber = null;
+                      errorLine = baseLine;
+                      errorLineNumber = baseLineNumber;
+                      emitRow(merged, baseLine, baseLineNumber, this);
+                    } else {
+                      const baseLine = pendingRowLine ?? buffer;
+                      const baseLineNumber = pendingRowLineNumber ?? inputLineNumber;
+                      const rowToEmit = pendingRow;
+                      pendingRow = row;
+                      pendingRowLine = buffer;
+                      pendingRowLineNumber = inputLineNumber;
+                      errorLine = baseLine;
+                      errorLineNumber = baseLineNumber;
+                      emitRow(rowToEmit, baseLine, baseLineNumber, this);
                     }
-                    if (typeof typedValidator.format === 'function') {
-                      row[field] = typedValidator.format(value);
-                    }
                   }
-                }
-
-                if (customTransform) {
-                  let transformed: AnyObject;
-                  try {
-                    transformed = customTransform(row);
-                  } catch (error: any) {
-                    throw new ValidationError(`Transform function error: ${error.message}`);
-                  }
-                  if (!transformed || typeof transformed !== 'object') {
-                    throw new ValidationError('Transform function must return an object');
-                  }
-                  this.push(transformed);
                 } else {
-                  this.push(row);
+                  emitRow(row, buffer, inputLineNumber, this);
                 }
               }
             }
@@ -368,7 +588,7 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
               return;
             }
             try {
-              if (handleRowError(error as Error, buffer, inputLineNumber)) {
+              if (handleRowError(error as Error, errorLine, errorLineNumber)) {
                 callback();
                 return;
               }
@@ -378,7 +598,28 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
             }
           }
         }
-        
+
+        if (pendingRow) {
+          const baseLine = pendingRowLine ?? '';
+          const baseLineNumber = pendingRowLineNumber ?? inputLineNumber;
+          try {
+            emitRow(pendingRow, baseLine, baseLineNumber, this);
+          } catch (error: any) {
+            try {
+              if (handleRowError(error as Error, baseLine, baseLineNumber)) {
+                callback();
+                return;
+              }
+            } catch (handledError: any) {
+              callback(handledError);
+              return;
+            }
+          }
+          pendingRow = null;
+          pendingRowLine = null;
+          pendingRowLineNumber = null;
+        }
+
         callback();
       }
     });

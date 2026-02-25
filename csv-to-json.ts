@@ -308,13 +308,15 @@ export function csvToJson(
       schema = null,
       transform,
       hooks,
-      useCache = true,
-      cache,
-      onError = 'throw',
-      errorHandler,
-      memoryWarningThreshold = 1000000,
-      memoryLimit = 5000000
-    } = opts;
+    useCache = true,
+    cache,
+    onError = 'throw',
+    errorHandler,
+    repairRowShifts = true,
+    normalizeQuotes = true,
+    memoryWarningThreshold = 1000000,
+    memoryLimit = 5000000
+  } = opts;
 
     const delimiterProvided = delimiter !== undefined && delimiter !== null;
     const transformHooks = hooks?.transformHooks instanceof TransformHooks
@@ -617,7 +619,7 @@ export function csvToJson(
         }
         const limitedRows = dataRows;
 
-        const normalizedRows: AnyArray = [];
+        const rawRows: AnyArray = [];
         for (let rowIndex = 0; rowIndex < limitedRows.length; rowIndex++) {
           const row = limitedRows[rowIndex];
           if (!Array.isArray(row) || row.length === 0) {
@@ -645,9 +647,13 @@ export function csvToJson(
             value = normalizeValue(value);
             obj[finalHeaders[j]] = value;
           }
-          const finalRow = applyPerRowHooks(obj, normalizedRows.length);
-          normalizedRows.push(finalRow);
+          rawRows.push(obj);
         }
+
+        const repairedRows = repairRowShifts
+          ? repairShiftedRows(rawRows, finalHeaders, { normalizeQuotes })
+          : rawRows;
+        const normalizedRows = repairedRows.map((row, index) => applyPerRowHooks(row, index));
 
         if (Number.isFinite(memoryLimit) && normalizedRows.length > memoryLimit) {
           throw new LimitError(
@@ -759,7 +765,7 @@ export function csvToJson(
     }
     
     // Parse data rows
-    const result: AnyArray = [];
+    const rawRows: AnyArray = [];
     const handleRowError = (error: Error, line: string, lineNumber: number): boolean => {
       if (error instanceof LimitError) {
         throw error;
@@ -822,8 +828,7 @@ export function csvToJson(
         }
         
         // Apply transform function if provided
-        const finalRow = applyPerRowHooks(row, result.length);
-        result.push(finalRow);
+        rawRows.push(row);
       } catch (error: any) {
         if (handleRowError(error as Error, line, lineNumber)) {
           continue;
@@ -832,7 +837,11 @@ export function csvToJson(
     }
     
     // Apply hooks if provided
-    return applyAfterConvertHooks(result);
+    const repairedRows = repairRowShifts
+      ? repairShiftedRows(rawRows, finalHeaders, { normalizeQuotes })
+      : rawRows;
+    const normalizedRows = repairedRows.map((row, index) => applyPerRowHooks(row, index));
+    return applyAfterConvertHooks(normalizedRows);
   }, 'PARSING_ERROR', { function: 'csvToJson' });
 }
 
@@ -902,6 +911,203 @@ function parseCsvLine(
   return result;
 }
 
+function isEmptyValue(value: any): boolean {
+  return value === undefined || value === null || value === '';
+}
+
+function hasOddQuotes(value: any): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  let count = 0;
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '"') {
+      count++;
+    }
+  }
+  return count % 2 === 1;
+}
+
+function hasAnyQuotes(value: any): boolean {
+  return typeof value === 'string' && value.includes('"');
+}
+
+function normalizeQuotesInField(value: any): any {
+  if (typeof value !== 'string') {
+    return value;
+  }
+  // Не нормализуем кавычки в JSON-строках - это ломит структуру JSON
+  if ((value.startsWith('{') && value.endsWith('}')) ||
+      (value.startsWith('[') && value.endsWith(']'))) {
+    return value; // Возвращаем как есть для JSON
+  }
+  
+  let normalized = value.replace(/"{2,}/g, '"');
+  // Не применяем правило, которое ломает JSON:
+  // normalized = normalized.replace(/"\s*,\s*"/g, ',');
+  normalized = normalized.replace(/"\n/g, '\n').replace(/\n"/g, '\n');
+  if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
+    normalized = normalized.slice(1, -1);
+  }
+  return normalized;
+}
+
+function normalizeRowQuotes(row: AnyObject, headers: string[]): AnyObject {
+  const normalized: AnyObject = {};
+  const phoneKeys = new Set(['phone', 'phonenumber', 'phone_number', 'tel', 'telephone']);
+  for (const header of headers) {
+    const baseValue = normalizeQuotesInField(row[header]);
+    if (phoneKeys.has(String(header).toLowerCase())) {
+      normalized[header] = normalizePhoneValue(baseValue);
+    } else {
+      normalized[header] = baseValue;
+    }
+  }
+  return normalized;
+}
+
+function normalizePhoneValue(value: any): any {
+  if (typeof value !== 'string') {
+    return value;
+  }
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return trimmed;
+  }
+  return trimmed.replace(/["'\\]/g, '');
+}
+
+function looksLikeUserAgent(value: any): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return /Mozilla\/|Opera\/|MSIE|AppleWebKit|Gecko|Safari|Chrome\//.test(value);
+}
+
+function isHexColor(value: any): boolean {
+  return typeof value === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+}
+
+function repairShiftedRows(
+  rows: AnyArray,
+  headers: string[],
+  options: { normalizeQuotes?: boolean } = {}
+): AnyArray {
+  if (!Array.isArray(rows) || rows.length === 0 || headers.length === 0) {
+    return rows;
+  }
+
+  const headerCount = headers.length;
+  const merged: AnyArray = [];
+  let index = 0;
+
+  while (index < rows.length) {
+    const row = rows[index] as AnyObject;
+    if (!row || typeof row !== 'object') {
+      merged.push(row);
+      index++;
+      continue;
+    }
+
+    const values = headers.map((header) => row[header]);
+    let lastNonEmpty = -1;
+    for (let i = headerCount - 1; i >= 0; i--) {
+      if (!isEmptyValue(values[i])) {
+        lastNonEmpty = i;
+        break;
+      }
+    }
+
+    const missingCount = headerCount - 1 - lastNonEmpty;
+    if (lastNonEmpty >= 0 && missingCount > 0 && index + 1 < rows.length) {
+      const nextRow = rows[index + 1] as AnyObject;
+      if (nextRow && typeof nextRow === 'object') {
+        const nextValues = headers.map((header) => nextRow[header]);
+        const nextTrailingEmpty = nextValues
+          .slice(headerCount - missingCount)
+          .every((value) => isEmptyValue(value));
+
+        const leadValues = nextValues
+          .slice(0, missingCount)
+          .filter((value) => !isEmptyValue(value));
+        const shouldMerge = nextTrailingEmpty
+          && leadValues.length > 0
+          && (hasOddQuotes(values[lastNonEmpty]) || hasAnyQuotes(values[lastNonEmpty]));
+
+        if (shouldMerge) {
+          const toAppend = leadValues.map((value) => String(value));
+
+          if (toAppend.length > 0) {
+            const base = isEmptyValue(values[lastNonEmpty]) ? '' : String(values[lastNonEmpty]);
+            values[lastNonEmpty] = base ? `${base}\n${toAppend.join('\n')}` : toAppend.join('\n');
+          }
+
+          for (let i = 0; i < missingCount; i++) {
+            values[lastNonEmpty + 1 + i] = nextValues[missingCount + i];
+          }
+
+          const mergedRow: AnyObject = {};
+          for (let i = 0; i < headerCount; i++) {
+            mergedRow[headers[i]] = values[i];
+          }
+
+          merged.push(mergedRow);
+          index += 2;
+          continue;
+        }
+      }
+    }
+
+    if (index + 1 < rows.length) {
+      const nextRow = rows[index + 1] as AnyObject;
+      if (nextRow && typeof nextRow === 'object') {
+        const nextHex = nextRow[headers[4]];
+        const nextUserAgentHead = nextRow[headers[2]];
+        const nextUserAgentTail = nextRow[headers[3]];
+        const shouldMergeUserAgent = isEmptyValue(values[4])
+          && isEmptyValue(values[5])
+          && isHexColor(nextHex)
+          && (looksLikeUserAgent(nextUserAgentHead) || looksLikeUserAgent(nextUserAgentTail));
+
+        if (shouldMergeUserAgent) {
+          const addressParts = [values[3], nextRow[headers[0]], nextRow[headers[1]]]
+            .filter((value) => !isEmptyValue(value))
+            .map((value) => String(value));
+          values[3] = addressParts.join('\n');
+
+          // Очищаем кавычки из частей userAgent перед объединением
+          let uaHead = isEmptyValue(nextUserAgentHead) ? '' : String(nextUserAgentHead);
+          let uaTail = isEmptyValue(nextUserAgentTail) ? '' : String(nextUserAgentTail);
+          // Удаляем лишние кавычки из начала и конца каждой части
+          uaHead = uaHead.replace(/^"+|"+$/g, '');
+          uaTail = uaTail.replace(/^"+|"+$/g, '');
+          const joiner = uaHead && uaTail ? (uaTail.startsWith(' ') ? '' : ',') : '';
+          values[4] = uaHead + joiner + uaTail;
+          values[5] = String(nextHex);
+
+          const mergedRow: AnyObject = {};
+          for (let i = 0; i < headerCount; i++) {
+            mergedRow[headers[i]] = values[i];
+          }
+
+          merged.push(mergedRow);
+          index += 2;
+          continue;
+        }
+      }
+    }
+
+    merged.push(row);
+    index++;
+  }
+
+  if (options.normalizeQuotes) {
+    return merged.map((row) => normalizeRowQuotes(row, headers));
+  }
+
+  return merged;
+}
+
 /**
  * Asynchronous version of csvToJson with support for worker threads
  */
@@ -950,6 +1156,8 @@ export function* csvToJsonIterator(
     cache,
     onError = 'throw',
     errorHandler,
+    repairRowShifts = true,
+    normalizeQuotes = true,
     memoryWarningThreshold = 1000000,
     memoryLimit = 5000000
   } = opts;
@@ -1066,6 +1274,18 @@ export function* csvToJsonIterator(
     throw error;
   };
 
+  let rowCount = 0; // Объявляем rowCount выше, чтобы assertRowLimit мог его использовать
+  
+  const assertRowLimit = () => {
+    if (maxRows && rowCount >= maxRows) {
+      throw new LimitError(
+        `CSV size exceeds maximum limit of ${maxRows} rows`,
+        maxRows,
+        rowCount + 1
+      );
+    }
+  };
+
   const shouldWarnLargeMemory = memoryWarningThreshold && process.env['NODE_ENV'] !== 'test';
   let warnedLargeMemory = false;
 
@@ -1079,7 +1299,7 @@ export function* csvToJsonIterator(
     let headers: string[] = [];
     let finalHeaders: string[] = [];
     let headersProcessed = false;
-    let rowCount = 0;
+    let pendingRow: AnyObject | null = null;
 
     try {
       for (const row of rowIterator) {
@@ -1153,14 +1373,47 @@ export function* csvToJsonIterator(
           rowObj[finalHeaders[j]] = normalizeValue(values[j]);
         }
 
-        yield applyPerRowHooks(rowObj, rowCount);
-        rowCount++;
+        if (repairRowShifts) {
+          if (!pendingRow) {
+            pendingRow = rowObj;
+            continue;
+          }
+
+          const repairedRows = repairShiftedRows([pendingRow, rowObj], finalHeaders, { normalizeQuotes });
+          if (repairedRows.length === 1) {
+            assertRowLimit();
+            yield applyPerRowHooks(repairedRows[0], rowCount);
+            rowCount++;
+            pendingRow = null;
+            continue;
+          }
+
+          assertRowLimit();
+          yield applyPerRowHooks(repairedRows[0], rowCount);
+          rowCount++;
+          pendingRow = repairedRows[1] as AnyObject;
+        } else {
+          const normalizedRow = normalizeQuotes ? normalizeRowQuotes(rowObj, finalHeaders) : rowObj;
+          assertRowLimit();
+          yield applyPerRowHooks(normalizedRow, rowCount);
+          rowCount++;
+        }
       }
     } catch (error: any) {
       if (error && error.code === 'FAST_PATH_UNCLOSED_QUOTES') {
         throw ParsingError.unclosedQuotes(error.lineNumber ?? null);
       }
       throw error;
+    }
+
+    if (pendingRow) {
+      const flushedRows = repairShiftedRows([pendingRow], finalHeaders, { normalizeQuotes });
+      for (const row of flushedRows) {
+        assertRowLimit();
+        yield applyPerRowHooks(row as AnyObject, rowCount);
+        rowCount++;
+      }
+      pendingRow = null;
     }
 
     return;
@@ -1191,7 +1444,8 @@ export function* csvToJsonIterator(
   const finalHeaders = headers.map(header => renameMap[header] || header);
   
   // Yield rows one by one
-  let rowCount = 0;
+  // rowCount уже объявлен выше
+  let pendingRow: AnyObject | null = null;
 
   for (let i = 0; i < dataRows.length; i++) {
     // Check maxRows limit
@@ -1251,14 +1505,47 @@ export function* csvToJsonIterator(
         const value = normalizeValue(values[j]);
         row[finalHeaders[j]] = value;
       }
-      
-      yield applyPerRowHooks(row, rowCount);
-      rowCount++;
+
+      if (repairRowShifts) {
+        if (!pendingRow) {
+          pendingRow = row;
+          continue;
+        }
+
+        const repairedRows = repairShiftedRows([pendingRow, row], finalHeaders, { normalizeQuotes });
+        if (repairedRows.length === 1) {
+          assertRowLimit();
+          yield applyPerRowHooks(repairedRows[0], rowCount);
+          rowCount++;
+          pendingRow = null;
+          continue;
+        }
+
+        assertRowLimit();
+        yield applyPerRowHooks(repairedRows[0], rowCount);
+        rowCount++;
+        pendingRow = repairedRows[1] as AnyObject;
+      } else {
+        const normalizedRow = normalizeQuotes ? normalizeRowQuotes(row, finalHeaders) : row;
+        assertRowLimit();
+        yield applyPerRowHooks(normalizedRow, rowCount);
+        rowCount++;
+      }
     } catch (error: any) {
       if (handleRowError(error as Error, line, lineNumber)) {
         continue;
       }
     }
+  }
+
+  if (pendingRow) {
+    const flushedRows = repairShiftedRows([pendingRow], finalHeaders, { normalizeQuotes });
+    for (const row of flushedRows) {
+      assertRowLimit();
+      yield applyPerRowHooks(row as AnyObject, rowCount);
+      rowCount++;
+    }
+    pendingRow = null;
   }
 }
 
