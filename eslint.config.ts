@@ -75,9 +75,9 @@ export default [
       'no-console': 'off'
     }
   },
-  // Browser code (ESM modules)
+  // Browser code (ESM modules) - TypeScript files
   {
-    files: ['src/browser/**/*.js', 'src/browser/workers/**/*.js'],
+    files: ['src/browser/**/*.ts', 'src/browser/workers/**/*.ts'],
     languageOptions: {
       sourceType: 'module',
       ecmaVersion: 'latest',
