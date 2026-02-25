@@ -19,10 +19,13 @@ import {
 } from '../index';
 
 // Skip threshold checks during coverage (instrumentation slows everything down)
+// Also skip in CI environment (variable performance of cloud runners)
 const IS_COVERAGE = (process.env.npm_lifecycle_event || '').startsWith('test:coverage') ||
                     process.argv.includes('--coverage') ||
                     !!process.env.JTCSV_COVERAGE_SCOPE ||
                     !!process.env.JTCSV_COVERAGE_TARGET;
+
+const IS_CI = !!process.env.CI;
 
 const STRICT_PERF = process.env.JTCSV_PERF_STRICT === '1';
 
@@ -56,8 +59,9 @@ const OPTIONS_DEGRADATION_MAX = STRICT_PERF ? 0.5 : 0.6;
 
 // Helper to conditionally check threshold
 function checkThreshold(actual, threshold, name) {
-  if (IS_COVERAGE) {
-    // During coverage, just verify it runs (any positive number)
+  if (IS_COVERAGE || IS_CI) {
+    // During coverage or CI, just verify it runs (any positive number)
+    // CI runners have variable performance, so strict thresholds are unreliable
     expect(actual).toBeGreaterThan(0);
   } else {
     expect(actual).toBeGreaterThan(threshold);
