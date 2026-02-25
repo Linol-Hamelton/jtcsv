@@ -1,0 +1,83 @@
+{
+  "timestamp": "2026-02-25T02:41:17.493Z",
+  "nodeVersion": "v22.21.0",
+  "platform": "win32",
+  "arch": "x64",
+  "results": {
+    "csvToJson": [
+      {
+        "name": "JTCSV",
+        "avgTime": 47.392419999999994,
+        "minTime": 37.49329999999998,
+        "maxTime": 55.99340000000001,
+        "memoryUsage": 13742744,
+        "opsPerSec": 211,
+        "relativeMargin": "39.04"
+      },
+      {
+        "name": "JTCSV (FastPath Stream)",
+        "avgTime": 64.34178000000006,
+        "minTime": 53.14490000000001,
+        "maxTime": 72.77539999999999,
+        "memoryUsage": 8392816,
+        "opsPerSec": 155,
+        "relativeMargin": "30.51"
+      },
+      {
+        "name": "JTCSV (FastPath Compact)",
+        "avgTime": 22.11435999999994,
+        "minTime": 18.00499999999988,
+        "maxTime": 26.235499999999774,
+        "memoryUsage": 8278320,
+        "opsPerSec": 452,
+        "relativeMargin": "37.22"
+      }
+    ],
+    "jsonToCsv": [
+      {
+        "name": "JTCSV",
+        "avgTime": 72.94948000000014,
+        "minTime": 36.07389999999987,
+        "maxTime": 100.52420000000029,
+        "memoryUsage": 14266752,
+        "opsPerSec": 137,
+        "relativeMargin": "88.35"
+      }
+    ],
+    "scaling": [
+      {
+        "rows": 1000,
+        "csvToJson": {
+          "avgTime": 4.2451666666665915,
+          "memoryUsage": 925584
+        },
+        "jsonToCsv": {
+          "avgTime": 8.92433333333338,
+          "memoryUsage": 4507872
+        }
+      },
+      {
+        "rows": 10000,
+        "csvToJson": {
+          "avgTime": 33.86306666666678,
+          "memoryUsage": 8326984
+        },
+        "jsonToCsv": {
+          "avgTime": 97.37643333333351,
+          "memoryUsage": 14161576
+        }
+      },
+      {
+        "rows": 100000,
+        "csvToJson": {
+          "avgTime": 415.25903333333343,
+          "memoryUsage": 66631000
+        },
+        "jsonToCsv": {
+          "avgTime": 908.4393,
+          "memoryUsage": 58948232
+        }
+      }
+    ]
+  }
+}
