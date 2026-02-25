@@ -56,6 +56,24 @@ module.exports = [
       'no-console': 'off'
     }
   },
+  // TypeScript source files
+  {
+    files: ['src/**/*.ts'],
+    languageOptions: {
+      sourceType: 'module',
+      ecmaVersion: 'latest',
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+        ...globals.worker,
+        define: 'readonly',
+        self: 'readonly'
+      }
+    },
+    rules: {
+      'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }]
+    }
+  },
   // Examples and benchmarks
   {
     files: ['**/examples/**/*.js', 'benchmark.js', 'test-*.js'],
