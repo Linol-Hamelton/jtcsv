@@ -8,6 +8,9 @@ yarn-error.log*
 dist/
 dist-types/
 
+# Benchmark results
+benchmark-results.json
+
 # Coverage directory used by tools like istanbul
 coverage/
 

@@ -14,7 +14,6 @@
 
 import { performance } from "perf_hooks";
 import * as fs from "fs";
-import * as path from "path";
 
 // Parse command line arguments
 const args = process.argv.slice(2);

@@ -77,7 +77,12 @@ jobs:
             if [ -f "$file" ]; then
               node_version=$(echo "$file" | grep -oE '[0-9]+')
               echo "### Node.js $node_version" >> $GITHUB_STEP_SUMMARY
-              cat "$file" | jq -r '.results[] | "- \(.name): \(.opsPerSec) ops/sec (±\(.relativeMargin)%)"' >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### CSV to JSON" >> $GITHUB_STEP_SUMMARY
+              cat "$file" | jq -r '.results.csvToJson[]? | "- \(.name): \(.opsPerSec) ops/sec (±\(.relativeMargin)%)"' >> $GITHUB_STEP_SUMMARY || true
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### JSON to CSV" >> $GITHUB_STEP_SUMMARY
+              cat "$file" | jq -r '.results.jsonToCsv[]? | "- \(.name): \(.opsPerSec) ops/sec (±\(.relativeMargin)%)"' >> $GITHUB_STEP_SUMMARY || true
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
           done
