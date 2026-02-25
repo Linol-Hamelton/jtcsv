@@ -6,12 +6,24 @@
  * 
  * Compares JTCSV performance against popular CSV/JSON libraries
  * Run with: node benchmark.js
+ * 
+ * Options:
+ *   --ci           Run in CI mode (reduced output, exit on error)
+ *   --output FILE  Write results to JSON file
  */
 
 import { performance } from "perf_hooks";
+import * as fs from "fs";
+import * as path from "path";
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const isCI = args.includes('--ci');
+const outputIndex = args.indexOf('--output');
+const outputFile = outputIndex !== -1 && args[outputIndex + 1] ? args[outputIndex + 1] : null;
 
 // Import JTCSV
-import jtcsv from "./index";
+import * as jtcsv from "./index";
 
 // Try to import competitors
 let csvParser, Papa, json2csv;
@@ -447,18 +459,68 @@ async function runBenchmarks() {
   });
   
   console.log('└' + '─'.repeat(58) + '┘');
-  
+   
   // JTCVS advantages
-  console.log(color('\n🎯 JTCSV Unique Advantages:', 'green'));
-  console.log(color('='.repeat(60), 'dim'));
-  console.log('\n✅ ' + color('Bidirectional:', 'bright') + ' CSV ↔ JSON in one library');
-  console.log('✅ ' + color('Zero Dependencies:', 'bright') + ' No external packages needed');
-  console.log('✅ ' + color('Security Built-in:', 'bright') + ' CSV injection protection');
-  console.log('✅ ' + color('Auto-detect:', 'bright') + ' Automatic delimiter detection');
-  console.log('✅ ' + color('Streaming API:', 'bright') + ' Built-in streaming support');
-  console.log('✅ ' + color('TypeScript:', 'bright') + ' Full TypeScript definitions');
-  
+  if (!isCI) {
+    console.log(color('\n🎯 JTCSV Unique Advantages:', 'green'));
+    console.log(color('='.repeat(60), 'dim'));
+    console.log('\n✅ ' + color('Bidirectional:', 'bright') + ' CSV ↔ JSON in one library');
+    console.log('✅ ' + color('Zero Dependencies:', 'bright') + ' No external packages needed');
+    console.log('✅ ' + color('Security Built-in:', 'bright') + ' CSV injection protection');
+    console.log('✅ ' + color('Auto-detect:', 'bright') + ' Automatic delimiter detection');
+    console.log('✅ ' + color('Streaming API:', 'bright') + ' Built-in streaming support');
+    console.log('✅ ' + color('TypeScript:', 'bright') + ' Full TypeScript definitions');
+  }
+   
   console.log(color('\n✅ Benchmark completed!', 'green'));
+
+  // Write results to file if --output is specified
+  if (outputFile) {
+    const results = {
+      timestamp: new Date().toISOString(),
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      results: {
+        csvToJson: csvToJsonBenchmark.results.map(r => ({
+          name: r.name,
+          avgTime: r.avgTime,
+          minTime: r.minTime,
+          maxTime: r.maxTime,
+          memoryUsage: r.memoryUsage,
+          opsPerSec: Math.round(10000 / r.avgTime),
+          relativeMargin: r.times.length > 1 
+            ? ((Math.max(...r.times) - Math.min(...r.times)) / r.avgTime * 100).toFixed(2)
+            : '0.00'
+        })),
+        jsonToCsv: jsonToCsvBenchmark.results.map(r => ({
+          name: r.name,
+          avgTime: r.avgTime,
+          minTime: r.minTime,
+          maxTime: r.maxTime,
+          memoryUsage: r.memoryUsage,
+          opsPerSec: Math.round(10000 / r.avgTime),
+          relativeMargin: r.times.length > 1 
+            ? ((Math.max(...r.times) - Math.min(...r.times)) / r.avgTime * 100).toFixed(2)
+            : '0.00'
+        })),
+        scaling: scaleResults.map(s => ({
+          rows: s.rows,
+          csvToJson: {
+            avgTime: s.csvToJson.avgTime,
+            memoryUsage: s.csvToJson.memoryUsage
+          },
+          jsonToCsv: {
+            avgTime: s.jsonToCsv.avgTime,
+            memoryUsage: s.jsonToCsv.memoryUsage
+          }
+        }))
+      }
+    };
+    
+    fs.writeFileSync(outputFile, JSON.stringify(results, null, 2));
+    console.log(color(`\n📄 Results written to: ${outputFile}`, 'green'));
+  }
 }
 
 // Handle errors
