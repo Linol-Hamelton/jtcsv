@@ -11,6 +11,8 @@ Start with `README.md` for the unified docs hub.
 - API_CANONICALIZATION.md - canonical names and alias mapping.
 - recipes/index.md - practical recipes and workflows.
 - HOWTO.md - usage snippets and examples.
+- MIGRATION_CSVTOJSON.md - migration from csvtojson library.
+- MIGRATION_PAPAPARSE.md - migration from Papa Parse library.
 - BUILD_INSTRUCTIONS.md - build and release notes.
 - TESTING.md - testing overview and commands.
 - PERFORMANCE.md - benchmark notes.

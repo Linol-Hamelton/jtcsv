@@ -18,6 +18,34 @@ we recommend for new code.
 - `csvToJsonStream()` - CSV string -> ReadableStream
 - `jsonToCsvStream()` - JSON -> ReadableStream
 
+## Canonical function names (NDJSON)
+- `jsonToNdjson()` - Convert JSON array to NDJSON string
+- `ndjsonToJson()` - Parse NDJSON string to JSON array
+- `parseNdjsonStream()` - Async iterator over NDJSON stream
+- `createNdjsonToCsvStream()` - Transform NDJSON to CSV
+- `createCsvToNdjsonStream()` - Transform CSV to NDJSON
+- `getNdjsonStats()` - Statistics about NDJSON data
+
+## Canonical function names (TSV)
+- `jsonToTsv()` - Convert JSON array to TSV string
+- `tsvToJson()` - Parse TSV string to JSON array
+- `validateTsv()` - Validate TSV structure
+- `isTsv()` - Detect if string is likely TSV
+- `readTsvAsJson()` - Read TSV file as JSON
+- `readTsvAsJsonSync()` - Synchronous TSV file reading
+- `saveAsTsv()` - Save JSON as TSV file
+- `saveAsTsvSync()` - Synchronous TSV save
+- `createJsonToTsvStream()` - Stream JSON to TSV
+- `createTsvToJsonStream()` - Stream TSV to JSON
+
+## Canonical function names (utilities)
+- `autoDetectDelimiter()` - Auto-detect CSV delimiter
+- `validateFilePath()` - Security validation for file paths
+- `isEmail()`, `isUrl()`, `isDate()` - Built-in validators
+- `createBatchProcessor()` - Batch processing helper
+- `asyncIterUtils` - Utilities for async iteration
+- `detectEncoding()`, `convertToUtf8()` - Encoding utilities
+
 ## Aliases (supported, not preferred)
 Use these only when maintaining existing code.
 
