@@ -1,8 +1,10 @@
 import js from "@eslint/js";
 import globals from "globals";
+import tseslint from 'typescript-eslint';
 
 export default [
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     languageOptions: {
       ecmaVersion: 'latest',
@@ -62,6 +64,7 @@ export default [
     languageOptions: {
       sourceType: 'module',
       ecmaVersion: 'latest',
+      parser: tseslint.parser,
       globals: {
         ...globals.node,
         ...globals.browser,
@@ -71,7 +74,36 @@ export default [
       }
     },
     rules: {
-      'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }]
+      'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }],
+      '@typescript-eslint/no-explicit-any': 'off',
+      'indent': 'off',
+      '@typescript-eslint/no-require-imports': 'warn',
+      'prefer-const': 'warn',
+      'no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': 'off'
+    }
+  },
+  // Root TypeScript core files
+  {
+    files: ['index.ts', 'json-to-csv.ts', 'csv-to-json.ts', 'errors.ts', 'stream-json-to-csv.ts', 'stream-csv-to-json.ts', 'json-save.ts'],
+    languageOptions: {
+      sourceType: 'module',
+      ecmaVersion: 'latest',
+      parser: tseslint.parser,
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+        ...globals.jest
+      }
+    },
+    rules: {
+      'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }],
+      '@typescript-eslint/no-explicit-any': 'off',
+      'indent': 'off',
+      '@typescript-eslint/no-require-imports': 'warn',
+      'prefer-const': 'warn',
+      'no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': 'off'
     }
   },
   // Examples and benchmarks
@@ -132,6 +164,12 @@ export default [
         varsIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_'
       }]
+    }
+  },
+  {
+    files: ['**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off'
     }
   },
   // Ignore patterns

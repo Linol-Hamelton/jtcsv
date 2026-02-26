@@ -692,7 +692,6 @@ export function csvToJson(
     }
     
     // Apply row limit if specified
-    let rowsToProcess = lines;
     if (maxRows && lines.length > maxRows) {
       throw new LimitError(
         `CSV size exceeds maximum limit of ${maxRows} rows`,
@@ -703,15 +702,15 @@ export function csvToJson(
     
     // Parse headers
     let headers: string[] = [];
-    let dataRows = rowsToProcess;
+    let dataRows = lines;
     
     if (hasHeaders) {
-      const headerLine = rowsToProcess[0];
+      const headerLine = lines[0];
       headers = parseCsvLine(headerLine, finalDelimiter, trim, 1);
-      dataRows = rowsToProcess.slice(1);
+      dataRows = lines.slice(1);
     } else {
       // Generate default headers (col0, col1, ...)
-      const firstRow = parseCsvLine(rowsToProcess[0], finalDelimiter, trim, 1);
+      const firstRow = parseCsvLine(lines[0], finalDelimiter, trim, 1);
       headers = firstRow.map((_, index) => `column${index + 1}`);
     }
 

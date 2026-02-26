@@ -848,7 +848,6 @@ function autoDetectDelimiterFromLine(
     // Bonus for consistent field count (check for quotes)
     const fields = line.split(delimiter);
     let hasQuotes = false;
-    let consistent = true;
     
     for (const field of fields) {
       if (field.includes('"') || field.includes("'")) {

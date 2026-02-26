@@ -741,7 +741,7 @@ export function jsonToCsv(
     }
     
     // Apply RFC 4180 compliance if requested
-    let csv = rows.join(rfc4180Compliant ? '\r\n' : '\n');
+    const csv = rows.join(rfc4180Compliant ? '\r\n' : '\n');
     
     return csv;
   }, 'PARSING_ERROR', { function: 'jsonToCsv' });
