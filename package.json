@@ -93,7 +93,7 @@
     "tsc:dev": "tsc --project tsconfig.dev.json",
     "tsc:build": "tsc --project tsconfig.build.json",
     "tsc:watch": "tsc --project tsconfig.dev.json --watch",
-    "tsc:check": "tsc --noEmit",
+    "tsc:check": "tsc --noEmit --project tsconfig.build.json",
     "tsc:check-strict": "tsc --noEmit --strict",
     "tsc:types": "tsc --project tsconfig.types.json",
     "test:ts": "jest --config jest.config.ts.js",
