@@ -13,8 +13,7 @@ import {
   LimitError,
   ConfigurationError,
   safeExecuteSync,
-  safeExecuteAsync,
-  ErrorCode
+  safeExecuteAsync
 } from './errors';
 
 import { Transform, Readable, Writable, TransformCallback } from 'stream';
@@ -23,7 +22,7 @@ import { CsvToJsonStreamOptions, AnyObject, AnyArray } from './src/types';
 
 // Import schema validator from utils
 import { createSchemaValidators } from './src/utils/schema-validator';
-import { createBomStripStream, detectBom, stripBomFromString } from './src/utils/bom-utils';
+import { createBomStripStream } from './src/utils/bom-utils';
 
 /**
  * Creates a transform stream that converts CSV chunks to JSON objects
@@ -54,8 +53,8 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
       maxRows = Infinity,
       transform: customTransform,
       schema,
-      useFastPath = true,
-      fastPathMode = 'objects',
+      _useFastPath = true,
+      _fastPathMode = 'objects',
       onError = 'throw',
       errorHandler,
       repairRowShifts = true,
@@ -678,13 +677,13 @@ export function createJsonCollectorStream(
  * @returns Promise with JSON array
  */
 export async function streamCsvToJson(
-  csv: string,
-  options?: CsvToJsonStreamOptions
+  _csv: string,
+  _options?: CsvToJsonStreamOptions
 ): Promise<AnyArray>;
 export async function streamCsvToJson(
-  readableStream: Readable,
-  writableStream: Writable,
-  options?: CsvToJsonStreamOptions
+  _readableStream: Readable,
+  _writableStream: Writable,
+  _options?: CsvToJsonStreamOptions
 ): Promise<void>;
 export async function streamCsvToJson(
   csvOrStream: string | Readable,
@@ -738,11 +737,11 @@ export async function streamCsvToJsonAsync(
     useWorkers?: boolean;
     workerCount?: number;
     chunkSize?: number;
-    onProgress?: (progress: { processed: number; total: number; percentage: number }) => void;
+    _onProgress?: (_progress: { processed: number; total: number; percentage: number }) => void;
   } = {}
 ): Promise<AnyArray> {
   return safeExecuteAsync(async () => {
-    const { useWorkers = false, workerCount, chunkSize, onProgress, ...streamOptions } = options;
+    const { _useWorkers = false, _workerCount: _unusedWorkerCount, _chunkSize: _unusedChunkSize, _onProgress: _unusedOnProgress, ...streamOptions } = options;
     
     // For now, use the standard streaming version
     // TODO: Implement worker thread support for large datasets
@@ -764,7 +763,9 @@ export async function createCsvFileToJsonStream(
   return safeExecuteAsync(async () => {
     const { validatePath = true, ...streamOptions } = options;
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require('path');
     let safePath = filePath;
 
@@ -800,7 +801,9 @@ export async function createCsvFileToJsonStream(
     const bomStripStream = createBomStripStream();
     
     // Create pipeline
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { pipeline } = require('stream');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PassThrough } = require('stream');
     
     const outputStream = new PassThrough({ objectMode: true });

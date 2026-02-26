@@ -11,8 +11,7 @@ import {
   LimitError,
   ConfigurationError,
   safeExecuteSync,
-  safeExecuteAsync,
-  ErrorCode
+  safeExecuteAsync
 } from './errors';
 
 import { Transform, Readable, Writable, TransformCallback } from 'stream';
@@ -384,13 +383,13 @@ export function createCsvCollectorStream(
  * @returns Promise with CSV string
  */
 export async function streamJsonToCsv(
-  data: AnyArray | AnyObject,
-  options?: JsonToCsvStreamOptions
+  _data: AnyArray | AnyObject,
+  _options?: JsonToCsvStreamOptions
 ): Promise<string>;
 export async function streamJsonToCsv(
-  readableStream: Readable,
-  writableStream: Writable,
-  options?: JsonToCsvStreamOptions
+  _readableStream: Readable,
+  _writableStream: Writable,
+  _options?: JsonToCsvStreamOptions
 ): Promise<void>;
 export async function streamJsonToCsv(
   dataOrStream: AnyArray | AnyObject | Readable,
@@ -437,11 +436,11 @@ export async function streamJsonToCsvAsync(
     useWorkers?: boolean;
     workerCount?: number;
     chunkSize?: number;
-    onProgress?: (progress: { processed: number; total: number; percentage: number }) => void;
+    _onProgress?: (_progress: { processed: number; total: number; percentage: number }) => void;
   } = {}
 ): Promise<string> {
   return safeExecuteAsync(async () => {
-    const { useWorkers = false, workerCount, chunkSize, onProgress, ...streamOptions } = options;
+    const { _useWorkers = false, _workerCount: _unusedWorkerCount, _chunkSize: _unusedChunkSize, _onProgress: _unusedOnProgress, ...streamOptions } = options;
     
     // For now, use the standard streaming version
     // TODO: Implement worker thread support for large datasets
@@ -465,7 +464,9 @@ export async function saveJsonStreamAsCsv(
   return safeExecuteAsync(async () => {
     const { validatePath = true, ...streamOptions } = options;
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require('path');
     let safePath = filePath;
     

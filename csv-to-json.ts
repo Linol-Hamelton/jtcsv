@@ -13,14 +13,13 @@ import {
   LimitError,
   ConfigurationError,
   safeExecuteSync,
-  safeExecuteAsync,
-  ErrorCode
+  safeExecuteAsync
 } from './errors';
 
 import { TransformHooks, predefinedHooks } from './src/core/transform-hooks';
 import { DelimiterCache } from './src/core/delimiter-cache';
 import FastPathEngine from './src/engines/fast-path-engine';
-import { stripBomFromString, normalizeCsvInput } from './src/utils/bom-utils';
+import { normalizeCsvInput } from './src/utils/bom-utils';
 import { CsvToJsonOptions, AsyncCsvToJsonOptions, AnyObject, AnyArray } from './src/types';
 
 // Глобальный экземпляр кэша для авто-детектирования разделителя
@@ -305,7 +304,7 @@ export function csvToJson(
       maxRows,
       useFastPath = true,
       fastPathMode = 'objects',
-      schema = null,
+      _schema = null,
       transform,
       hooks,
     useCache = true,
@@ -502,7 +501,7 @@ export function csvToJson(
           return normalized;
         };
 
-        const handleFastPathError = (error: Error, rowIndex: number, row: AnyArray) => {
+        const _handleFastPathError = (error: Error, rowIndex: number, row: AnyArray) => {
           if (errorHandler) {
             errorHandler(error, row.join(finalDelimiter), hasHeaders ? rowIndex + 2 : rowIndex + 1);
           }
@@ -1117,7 +1116,7 @@ export async function csvToJsonAsync(
   return safeExecuteAsync(async () => {
     // For now, use the synchronous version
     // In the future, this will use worker threads for large datasets
-    const { useWorkers = false, workerCount, chunkSize, onProgress, ...syncOptions } = options;
+    const { _useWorkers = false, _workerCount, _chunkSize, _onProgress, ...syncOptions } = options;
     
     // Simple implementation - just call the synchronous version
     // TODO: Implement worker thread support for large datasets
@@ -1590,6 +1589,7 @@ export async function readCsvAsJson(
 ): Promise<AnyArray> {
   return safeExecuteAsync(async () => {
     const { validatePath = true, ...csvOptions } = options;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('fs');
     
     // Validate file path if requested
@@ -1634,6 +1634,7 @@ export function readCsvAsJsonSync(
   filePath: string,
   options: CsvToJsonOptions & { validatePath?: boolean } = {}
 ): AnyArray {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');
   
   // Validate file path

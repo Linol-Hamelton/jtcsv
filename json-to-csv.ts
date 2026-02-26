@@ -13,8 +13,7 @@ import {
   LimitError,
   ConfigurationError,
   safeExecuteSync,
-  safeExecuteAsync,
-  ErrorCode
+  safeExecuteAsync
 } from './errors';
 
 import { createSchemaValidators } from './src/utils/schema-validator';
@@ -27,8 +26,8 @@ import type {
 } from './src/types';
 
 type SchemaValidator = {
-  validate?: (value: any) => boolean;
-  format?: (value: any) => any;
+  validate?: (_value: any) => boolean;
+  format?: (_value: any) => any;
 };
 
 /**
@@ -413,6 +412,7 @@ export function validateFilePath(filePath: string, options: { allowRelative?: bo
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const ext = require('path').extname(normalized);
   if (!ext || ext.toLowerCase() !== '.csv') {
     throw new ValidationError('File must have .csv extension');
@@ -757,7 +757,7 @@ export async function jsonToCsvAsync(
   return safeExecuteAsync(async () => {
     // For now, use the synchronous version
     // In the future, this will use worker threads for large datasets
-    const { useWorkers = false, workerCount, chunkSize, onProgress, ...syncOptions } = options;
+    const { _useWorkers = false, _workerCount: _unusedWorkerCount, _chunkSize: _unusedChunkSize, _onProgress: _unusedOnProgress, ...syncOptions } = options;
     
     // Simple implementation - just call the synchronous version
     // TODO: Implement worker thread support for large datasets
@@ -780,7 +780,9 @@ export async function saveAsCsv(
       validateFilePath(filePath);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require('path');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('fs');
     const resolvedPath = path.resolve(filePath);
     const dir = path.dirname(resolvedPath);
