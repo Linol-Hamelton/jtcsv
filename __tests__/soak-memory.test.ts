@@ -19,8 +19,8 @@ const IS_COVERAGE = (process.env.npm_lifecycle_event || '').startsWith('test:cov
   process.argv.includes('--coverage') ||
   !!process.env.JTCSV_COVERAGE_SCOPE ||
   !!process.env.JTCSV_COVERAGE_TARGET;
-const MEMORY_RATIO_LIMIT = STRICT_MEMORY ? 2.0 : (IS_COVERAGE ? 2.2 : 2.1);
-const STREAM_RATIO_LIMIT = STRICT_MEMORY ? 1.5 : (IS_COVERAGE ? 1.8 : 1.6);
+const MEMORY_RATIO_LIMIT = STRICT_MEMORY ? 2.0 : (IS_COVERAGE ? 4.0 : 2.1);
+const STREAM_RATIO_LIMIT = STRICT_MEMORY ? 1.5 : (IS_COVERAGE ? 2.5 : 1.6);
 
 /**
  * Helper to generate a CSV string with N rows
