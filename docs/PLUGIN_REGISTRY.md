@@ -5,15 +5,10 @@ Current version: 3.1.0
 This page lists community-maintained plugins and integrations for JTCSV.
 
 ## Official
-- `@jtcsv/express-middleware`
-- `@jtcsv/fastify`
-- `@jtcsv/nextjs`
 - `@jtcsv/nestjs`
-- `@jtcsv/remix`
-- `@jtcsv/nuxt`
-- `@jtcsv/sveltekit`
-- `@jtcsv/hono`
-- `@jtcsv/trpc`
+- `@jtcsv/angular`
+- `@jtcsv/svelte`
+- `@jtcsv/vue`
 
 ## Community
 Add your plugin here by opening a PR with:

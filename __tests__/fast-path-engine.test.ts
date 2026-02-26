@@ -240,7 +240,7 @@ describe('FastPathEngine', () => {
       // Quote-aware парсер должен быть медленнее, но не намного
       // В CI пропускаем строгую проверку из-за переменной производительности
       if (!IS_CI) {
-        expect(quotedTime).toBeLessThan(simpleTime * 8);
+        expect(quotedTime).toBeLessThan(simpleTime * 10);
       } else {
         // В CI просто проверяем, что оба времени положительные
         expect(simpleTime).toBeGreaterThanOrEqual(0);

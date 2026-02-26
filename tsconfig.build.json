@@ -5,26 +5,38 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    
+
     // Более строгие проверки для production (отложены до завершения миграции)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    
+
     // Отключаем проверку JavaScript файлов
     "allowJs": false,
     "checkJs": false,
-    
+
+    // Пропускаем проверки типов для внешних библиотек
+    "skipLibCheck": true,
+
     // Оптимизация вывода
     "removeComments": true,
     "stripInternal": true,
-    
+
     // Для production
     "incremental": false
   },
   "include": [
-    "**/*.ts",
-    "**/*.d.ts"
-  ],
+    "src/**/*.ts",
+    "index*.ts",
+    "csv-to-json.ts",
+    "json-to-csv.ts",
+    "stream-*.ts",
+    "errors.ts",
+    "schema.d.ts",
+    "browser.d.ts",
+    "workers.d.ts",
+    "plugins.d.ts",
+    ],
+  }
   "exclude": [
     "node_modules",
     "dist",
