@@ -9,53 +9,36 @@ export { createJsonToCsvStream, streamJsonToCsv, saveJsonStreamAsCsv, createJson
 export { createCsvToJsonStream, streamCsvToJson, createCsvFileToJsonStream, createJsonCollectorStream } from './stream-csv-to-json';
 
 // ============================================================================
-// DEPRECATED ALIASES - Will be removed in v4.0.0
+// DEPRECATED ALIASES - To be removed in jtcsv 5.0
+// Each emits a one-time `process.emitWarning` on first call.
 // Use canonical functions instead:
-//   - csvToJsonFile() → readCsvAsJson()
-//   - csvToJsonFileSync() → readCsvAsJsonSync()
-//   - csvToJsonStream() → createCsvToJsonStream()
-//   - csvFileToJsonStream() → createCsvFileToJsonStream()
+//   - csvToJsonFile()       -> readCsvAsJson()
+//   - csvToJsonFileSync()   -> readCsvAsJsonSync()
+//   - csvToJsonStream()     -> createCsvToJsonStream()
+//   - csvFileToJsonStream() -> createCsvFileToJsonStream()
 // ============================================================================
+import { readCsvAsJson as _readCsvAsJson, readCsvAsJsonSync as _readCsvAsJsonSync } from './csv-to-json';
+import {
+  createCsvToJsonStream as _createCsvToJsonStream,
+  createCsvFileToJsonStream as _createCsvFileToJsonStream,
+} from './stream-csv-to-json';
+import { deprecate } from './src/utils/deprecate';
 
-/**
- * @deprecated Use `readCsvAsJson()` instead. This alias will be removed in v4.0.0.
- * @example
- * // Before (deprecated):
- * const data = await csvToJsonFile('data.csv');
- * // After:
- * const data = await readCsvAsJson('data.csv');
- */
-export { readCsvAsJson as csvToJsonFile } from './csv-to-json';
+/** @deprecated Use `readCsvAsJson()` instead. Removed in jtcsv 5.0. */
+export const csvToJsonFile = deprecate(_readCsvAsJson, 'csvToJsonFile', 'readCsvAsJson');
 
-/**
- * @deprecated Use `readCsvAsJsonSync()` instead. This alias will be removed in v4.0.0.
- * @example
- * // Before (deprecated):
- * const data = csvToJsonFileSync('data.csv');
- * // After:
- * const data = readCsvAsJsonSync('data.csv');
- */
-export { readCsvAsJsonSync as csvToJsonFileSync } from './csv-to-json';
+/** @deprecated Use `readCsvAsJsonSync()` instead. Removed in jtcsv 5.0. */
+export const csvToJsonFileSync = deprecate(_readCsvAsJsonSync, 'csvToJsonFileSync', 'readCsvAsJsonSync');
 
-/**
- * @deprecated Use `createCsvToJsonStream()` instead. This alias will be removed in v4.0.0.
- * @example
- * // Before (deprecated):
- * const stream = csvToJsonStream(options);
- * // After:
- * const stream = createCsvToJsonStream(options);
- */
-export { createCsvToJsonStream as csvToJsonStream } from './stream-csv-to-json';
+/** @deprecated Use `createCsvToJsonStream()` instead. Removed in jtcsv 5.0. */
+export const csvToJsonStream = deprecate(_createCsvToJsonStream, 'csvToJsonStream', 'createCsvToJsonStream');
 
-/**
- * @deprecated Use `createCsvFileToJsonStream()` instead. This alias will be removed in v4.0.0.
- * @example
- * // Before (deprecated):
- * const stream = csvFileToJsonStream(filePath, options);
- * // After:
- * const stream = createCsvFileToJsonStream(filePath, options);
- */
-export { createCsvFileToJsonStream as csvFileToJsonStream } from './stream-csv-to-json';
+/** @deprecated Use `createCsvFileToJsonStream()` instead. Removed in jtcsv 5.0. */
+export const csvFileToJsonStream = deprecate(
+  _createCsvFileToJsonStream,
+  'csvFileToJsonStream',
+  'createCsvFileToJsonStream',
+);
 
 // Re-export from submodules
 import NdjsonParser from './src/formats/ndjson-parser';

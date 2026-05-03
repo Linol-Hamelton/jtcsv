@@ -8,7 +8,7 @@ export interface ErrorMeta {
   hint?: string;
   docs?: string;
   context?: ErrorContextValue;
-  originalError?: Error;
+  originalError?: Error | null;
 }
 
 /**
@@ -19,8 +19,8 @@ export class JtcsvError extends Error {
   hint?: string;
   docs?: string;
   context?: ErrorContextValue;
-  originalError?: Error;
-  
+  originalError?: Error | null;
+
   constructor(message: string, code: string = 'JTCSV_ERROR', meta: ErrorMeta = {}) {
     super(message);
     this.name = 'JtcsvError';
