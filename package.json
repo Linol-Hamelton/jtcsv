@@ -2,19 +2,56 @@
   "name": "jtcsv",
   "version": "3.1.1",
   "description": "Complete JSON<->CSV and CSV<->JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and optional ecosystem (zero-deps core)",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
   "browser": "dist/jtcsv.umd.js",
-  "module": "dist/jtcsv.esm.js",
   "types": "index.d.ts",
   "bin": {
     "jtcsv": "dist/bin/jtcsv.js"
   },
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/jtcsv.esm.js",
+      "types": "./index.d.ts",
+      "require": "./dist/index.cjs.js",
+      "import": "./dist/index.esm.js",
       "browser": "./dist/jtcsv.umd.js",
-      "default": "./dist/index.js"
+      "default": "./dist/index.cjs.js"
+    },
+    "./csv": {
+      "types": "./dist/types/src/entry-csv.d.ts",
+      "require": "./dist/csv.cjs.js",
+      "import": "./dist/csv.esm.js",
+      "default": "./dist/csv.cjs.js"
+    },
+    "./json": {
+      "types": "./dist/types/src/entry-json.d.ts",
+      "require": "./dist/json.cjs.js",
+      "import": "./dist/json.esm.js",
+      "default": "./dist/json.cjs.js"
+    },
+    "./streams": {
+      "types": "./dist/types/src/entry-streams.d.ts",
+      "require": "./dist/streams.cjs.js",
+      "import": "./dist/streams.esm.js",
+      "default": "./dist/streams.cjs.js"
+    },
+    "./ndjson": {
+      "types": "./dist/types/src/entry-ndjson.d.ts",
+      "require": "./dist/ndjson.cjs.js",
+      "import": "./dist/ndjson.esm.js",
+      "default": "./dist/ndjson.cjs.js"
+    },
+    "./tsv": {
+      "types": "./dist/types/src/entry-tsv.d.ts",
+      "require": "./dist/tsv.cjs.js",
+      "import": "./dist/tsv.esm.js",
+      "default": "./dist/tsv.cjs.js"
+    },
+    "./errors": {
+      "types": "./dist/types/src/entry-errors.d.ts",
+      "require": "./dist/errors.cjs.js",
+      "import": "./dist/errors.esm.js",
+      "default": "./dist/errors.cjs.js"
     },
     "./browser": {
       "types": "./browser.d.ts",
@@ -25,9 +62,9 @@
     },
     "./plugins": {
       "types": "./plugins.d.ts",
-      "require": "./dist/src/index-with-plugins.js",
-      "import": "./dist/src/index-with-plugins.js",
-      "default": "./dist/src/index-with-plugins.js"
+      "require": "./dist/plugins.cjs.js",
+      "import": "./dist/plugins.esm.js",
+      "default": "./dist/plugins.cjs.js"
     },
     "./cli": {
       "require": "./dist/bin/jtcsv.js",
@@ -36,28 +73,29 @@
     },
     "./schema": {
       "types": "./schema.d.ts",
-      "require": "./dist/src/utils/schema-validator.js",
-      "import": "./dist/src/utils/schema-validator.js",
-      "default": "./dist/src/utils/schema-validator.js"
-    }
+      "require": "./dist/schema.cjs.js",
+      "import": "./dist/schema.esm.js",
+      "default": "./dist/schema.cjs.js"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "test": "jest",
-    "test:unit": "jest --testPathIgnorePatterns=\"(__tests__/benchmark-suite.test.js|__tests__/load-tests.test.js|__tests__/soak-memory.test.js|__tests__/security-fuzzing.test.js|__tests__/memory-profiling.test.js)\"",
+    "test:unit": "jest --testPathIgnorePatterns=\"(__tests__/benchmark-suite\\.test|__tests__/load-tests\\.test|__tests__/soak-memory\\.test|__tests__/security-fuzzing\\.test|__tests__/memory-profiling\\.test)\"",
     "test:coverage": "node scripts/run-coverage.js --target=ts --scope=full --strict=0",
     "test:coverage:entry": "node scripts/run-coverage.js --target=ts --scope=entry --strict=1",
     "test:coverage:ts": "node scripts/run-coverage.js --target=ts --scope=full --strict=0",
     "test:watch": "jest --watch",
     "test:browser": "jest --testEnvironment=jsdom",
-    "test:plugins": "jest __tests__/plugin-system.test.js",
-    "test:fastpath": "jest __tests__/fast-path-engine.test.js",
-    "test:ndjson": "jest __tests__/ndjson-parser.test.js",
-    "test:performance": "jest __tests__/*.test.js --testNamePattern=\"Производительность|производительность\"",
-    "test:benchmark": "jest __tests__/benchmark-suite.test.js --testTimeout=60000",
-    "test:load": "jest __tests__/load-tests.test.js --testTimeout=300000",
-    "test:load:large": "cross-env LOAD_TEST_SIZE=large jest __tests__/load-tests.test.js --testTimeout=300000",
-    "test:security": "jest __tests__/security-fuzzing.test.js --testTimeout=60000",
-    "test:memory": "node --expose-gc node_modules/jest/bin/jest __tests__/memory-profiling.test.js --testTimeout=120000",
+    "test:plugins": "jest __tests__/plugin-system.test",
+    "test:fastpath": "jest __tests__/fast-path-engine.test",
+    "test:ndjson": "jest __tests__/ndjson-parser.test",
+    "test:performance": "jest --testNamePattern=\"Производительность|производительность\"",
+    "test:benchmark": "jest __tests__/benchmark-suite.test --testTimeout=60000",
+    "test:load": "jest __tests__/load-tests.test --testTimeout=300000",
+    "test:load:large": "cross-env LOAD_TEST_SIZE=large jest __tests__/load-tests.test --testTimeout=300000",
+    "test:security": "jest __tests__/security-fuzzing.test --testTimeout=60000",
+    "test:memory": "node --expose-gc node_modules/jest/bin/jest __tests__/memory-profiling.test --testTimeout=120000",
     "test:express": "cd plugins/express-middleware && npm test",
     "test:fastify": "cd plugins/fastify-plugin && npm test",
     "test:nextjs": "cd plugins/nextjs-api && npm test",
@@ -65,7 +103,7 @@
     "lint:all": "eslint .",
     "lint:plugins": "eslint plugins/",
     "security-check": "npm audit",
-    "prepublishOnly": "npm test && npm run build && eslint index.ts json-to-csv.ts csv-to-json.ts errors.ts stream-json-to-csv.ts stream-csv-to-json.ts json-save.ts",
+    "prepublishOnly": "npm test && npm run build && npm run size && eslint index.ts json-to-csv.ts csv-to-json.ts errors.ts stream-json-to-csv.ts stream-csv-to-json.ts json-save.ts",
     "tui": "node packages/jtcsv-tui/bin/jtcsv-tui.js",
     "cli": "node dist/bin/jtcsv.js",
     "build": "npm run tsc:build && rollup -c rollup.config.mjs",
@@ -78,7 +116,8 @@
     "demo:serve": "cd demo && npm run serve",
     "demo:plugins": "node examples/plugin-excel-exporter.js",
     "demo:express": "cd plugins/express-middleware && node example.js",
-    "size": "size-limit",
+    "size": "node scripts/check-bundle-size.js",
+    "size:legacy": "size-limit",
     "size:why": "size-limit --why",
     "benchmark": "npm run build && node dist/benchmark.js",
     "benchmark:fastpath": "npm run build && node dist/benchmark.js --fastpath",
@@ -165,31 +204,28 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv#readme",
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=18.17.0"
   },
   "files": [
+    "dist/**/*.js",
+    "dist/types/**/*.d.ts",
     "index.d.ts",
     "browser.d.ts",
     "plugins.d.ts",
     "schema.d.ts",
-    "bin/",
-    "dist/",
-    "src/",
-    "examples/"
+    "workers.d.ts",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "optionalDependencies": {
     "glob": "^11.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "7.18.6",
-    "@babel/plugin-proposal-optional-chaining": "7.21.0",
-    "@babel/plugin-syntax-dynamic-import": "7.8.3",
-    "@babel/plugin-syntax-jsx": "7.28.6",
     "@babel/preset-env": "^7.26.0",
-    "@babel/preset-react": "7.28.5",
+    "@babel/preset-react": "^7.26.0",
     "@eslint/js": "^9.18.0",
-    "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^28.0.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-terser": "^0.4.4",
@@ -223,23 +259,57 @@
   "sideEffects": false,
   "size-limit": [
     {
-      "path": "dist/jtcsv.umd.js",
-      "limit": "60 KB",
-      "ignore": [
-        "url"
-      ]
+      "name": "jtcsv/csv (entry, gz)",
+      "path": "dist/csv.esm.js",
+      "limit": "1 KB",
+      "brotli": false
     },
     {
-      "path": "dist/jtcsv.esm.js",
+      "name": "jtcsv/json (entry, gz)",
+      "path": "dist/json.esm.js",
+      "limit": "5 KB",
+      "brotli": false
+    },
+    {
+      "name": "jtcsv/streams (entry, gz)",
+      "path": "dist/streams.esm.js",
+      "limit": "1 KB",
+      "brotli": false
+    },
+    {
+      "name": "jtcsv/ndjson (entry, gz)",
+      "path": "dist/ndjson.esm.js",
+      "limit": "8 KB",
+      "brotli": false
+    },
+    {
+      "name": "jtcsv/tsv (entry, gz)",
+      "path": "dist/tsv.esm.js",
+      "limit": "6 KB",
+      "brotli": false
+    },
+    {
+      "name": "jtcsv/errors (entry, gz)",
+      "path": "dist/errors.esm.js",
+      "limit": "5 KB",
+      "brotli": false
+    },
+    {
+      "name": "jtcsv (full barrel, gz)",
+      "path": "dist/index.esm.js",
       "limit": "55 KB",
-      "ignore": [
-        "url"
-      ]
+      "brotli": false
+    },
+    {
+      "name": "jtcsv/browser UMD (CDN, gz)",
+      "path": "dist/jtcsv.umd.js",
+      "limit": "30 KB",
+      "brotli": false
     }
   ],
   "browserslist": [
-    "defaults",
-    "not IE 11",
-    "maintained node versions"
+    "defaults and supports es6-module",
+    "not dead",
+    "node >= 18.17"
   ]
 }

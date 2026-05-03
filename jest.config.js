@@ -85,10 +85,12 @@ module.exports = {
       tsconfig: 'tsconfig.json',
       useESM: false,
       diagnostics: {
-        warnOnly: true // Предупреждения вместо ошибок для постепенной миграции
+        warnOnly: true
       }
     }],
-    '^.+\\.jsx?$': 'babel-jest', // Для поддержки динамических импортов в JS файлах
+    // .js transform kept ONLY for plugins/*/index.js which still use ESM syntax.
+    // Once P1.2 (plugins triage) rewrites them as .ts, this can be removed.
+    '^.+\\.jsx?$': 'babel-jest'
   },
   transformIgnorePatterns: [
     'node_modules/(?!(jtcsv)/)'

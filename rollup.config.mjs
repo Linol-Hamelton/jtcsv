@@ -1,11 +1,13 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import { babel } from '@rollup/plugin-babel';
 import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// engines.node >=18.17 + browserslist "supports es6-module" → TS target ES2022
+// is good enough; no Babel transpile needed. Removes ~30 babel devDeps.
+// `target` arg kept only to switch resolve.browser flag.
 const basePlugins = (target = 'browser') => [
   resolve({
     browser: target === 'browser',
@@ -22,21 +24,6 @@ const basePlugins = (target = 'browser') => [
     compilerOptions: {
       sourceMap: !isProduction
     }
-  }),
-  babel({
-    babelHelpers: 'bundled',
-    presets: [
-      ['@babel/preset-env', {
-        targets: target === 'node' ? { node: '12.0.0' } : {
-          browsers: ['> 0.5%', 'last 2 versions', 'not dead']
-        },
-        modules: target === 'esm' ? false : 'auto',
-        loose: true,
-        bugfixes: true
-      }]
-    ],
-    comments: false,
-    compact: true
   }),
   isProduction && terser({
     compress: {
@@ -61,62 +48,12 @@ const basePlugins = (target = 'browser') => [
       comments: false,
       beautify: false
     },
-    ecma: 2020
+    ecma: 2022
   })
 ].filter(Boolean);
 
 export default [
-  // ==================== ЯДРО (CORE) ====================
-  // UMD ядро
-  {
-    input: 'src/browser/core.ts',
-    output: {
-      file: 'dist/jtcsv-core.umd.js',
-      format: 'umd',
-      name: 'jtcsv',
-      sourcemap: !isProduction,
-      globals: {},
-      exports: 'named'
-    },
-    plugins: basePlugins('browser')
-  },
-  // ESM ядро
-  {
-    input: 'src/browser/core.ts',
-    output: {
-      file: 'dist/jtcsv-core.esm.js',
-      format: 'es',
-      sourcemap: !isProduction,
-      exports: 'named'
-    },
-    plugins: basePlugins('esm')
-  },
-  // CJS ядро
-  {
-    input: 'src/browser/core.ts',
-    output: {
-      file: 'dist/jtcsv-core.cjs.js',
-      format: 'cjs',
-      sourcemap: !isProduction,
-      exports: 'named'
-    },
-    plugins: basePlugins('node')
-  },
-
-  // ==================== ПОЛНАЯ ВЕРСИЯ (FULL) ====================
-  // UMD полная
-  {
-    input: 'src/browser/index.ts',
-    output: {
-      file: 'dist/jtcsv-full.umd.js',
-      format: 'umd',
-      name: 'jtcsv',
-      sourcemap: !isProduction,
-      globals: {},
-      exports: 'named'
-    },
-    plugins: basePlugins('browser')
-  },
+  // ==================== BROWSER BUNDLE (./browser export) ====================
   // ==================== Р‘Р РђРЈР—Р•Р РќР«Р™ Р‘РђРќР”Р› (COMPAT) ====================
   // UMD
   {
@@ -153,31 +90,8 @@ export default [
     },
     plugins: basePlugins('node')
   },
-  // ESM полная
-  {
-    input: 'src/browser/index.ts',
-    output: {
-      file: 'dist/jtcsv-full.esm.js',
-      format: 'es',
-      sourcemap: !isProduction,
-      exports: 'named'
-    },
-    plugins: basePlugins('esm')
-  },
-  // CJS полная
-  {
-    input: 'src/browser/index.ts',
-    output: {
-      file: 'dist/jtcsv-full.cjs.js',
-      format: 'cjs',
-      sourcemap: !isProduction,
-      exports: 'named'
-    },
-    plugins: basePlugins('node')
-  },
 
-  // ==================== РАСШИРЕНИЯ ====================
-  // Web Workers расширение
+  // ==================== WEB WORKERS EXTENSION ====================
   {
     input: 'src/browser/extensions/workers.ts',
     output: {
@@ -199,5 +113,120 @@ export default [
       exports: 'named'
     },
     plugins: basePlugins('esm')
+  },
+
+  // ==================== CLI ====================
+  // bin/jtcsv.ts → dist/bin/jtcsv.js (used by package.json#bin)
+  // Note: shebang already at bin/jtcsv.ts:1; rollup preserves it.
+  {
+    input: 'bin/jtcsv.ts',
+    output: {
+      file: 'dist/bin/jtcsv.js',
+      format: 'cjs',
+      sourcemap: !isProduction,
+      exports: 'named'
+    },
+    external: ['fs', 'fs/promises', 'path', 'readline', 'stream', 'stream/promises', 'os', 'crypto', 'url', 'util', 'events', 'http', 'https', 'worker_threads'],
+    plugins: basePlugins('node')
+  },
+
+  // ==================== NODE ENTRY POINTS ====================
+  // index.ts → dist/index.cjs.js + dist/index.esm.js (full Node API: file IO, streams, NDJSON, TSV)
+  // Used by: require('jtcsv') / import 'jtcsv' on Node side.
+  {
+    input: 'index.ts',
+    output: [
+      {
+        file: 'dist/index.cjs.js',
+        format: 'cjs',
+        sourcemap: !isProduction,
+        exports: 'named'
+      },
+      {
+        file: 'dist/index.esm.js',
+        format: 'es',
+        sourcemap: !isProduction,
+        exports: 'named'
+      }
+    ],
+    external: ['fs', 'fs/promises', 'path', 'stream', 'stream/promises', 'os', 'crypto', 'url', 'util', 'events', 'worker_threads'],
+    plugins: basePlugins('node')
+  },
+
+  // src/index-with-plugins.ts → dist/plugins.{cjs,esm}.js
+  {
+    input: 'src/index-with-plugins.ts',
+    output: [
+      {
+        file: 'dist/plugins.cjs.js',
+        format: 'cjs',
+        sourcemap: !isProduction,
+        exports: 'named'
+      },
+      {
+        file: 'dist/plugins.esm.js',
+        format: 'es',
+        sourcemap: !isProduction,
+        exports: 'named'
+      }
+    ],
+    external: ['fs', 'fs/promises', 'path', 'stream', 'stream/promises', 'os', 'crypto', 'url', 'util', 'events', 'worker_threads'],
+    plugins: basePlugins('node')
+  },
+
+  // src/utils/schema-validator.ts → dist/schema.{cjs,esm}.js
+  {
+    input: 'src/utils/schema-validator.ts',
+    output: [
+      {
+        file: 'dist/schema.cjs.js',
+        format: 'cjs',
+        sourcemap: !isProduction,
+        exports: 'named'
+      },
+      {
+        file: 'dist/schema.esm.js',
+        format: 'es',
+        sourcemap: !isProduction,
+        exports: 'named'
+      }
+    ],
+    external: ['fs', 'fs/promises', 'path'],
+    plugins: basePlugins('node')
+  },
+
+  // ==================== SUBPATH EXPORTS ====================
+  // jtcsv/csv, jtcsv/json, jtcsv/streams, jtcsv/ndjson, jtcsv/tsv, jtcsv/errors
+  // Multi-entry config so rollup deduplicates shared code into _shared/*.
+  // Each entry is a thin barrel — users pay only for what they import.
+  {
+    input: {
+      csv:     'src/entry-csv.ts',
+      json:    'src/entry-json.ts',
+      streams: 'src/entry-streams.ts',
+      ndjson:  'src/entry-ndjson.ts',
+      tsv:     'src/entry-tsv.ts',
+      errors:  'src/entry-errors.ts',
+    },
+    output: [
+      {
+        dir: 'dist',
+        format: 'es',
+        entryFileNames: '[name].esm.js',
+        chunkFileNames: '_shared/[name]-[hash].esm.js',
+        sourcemap: !isProduction,
+        exports: 'named'
+      },
+      {
+        dir: 'dist',
+        format: 'cjs',
+        entryFileNames: '[name].cjs.js',
+        chunkFileNames: '_shared/[name]-[hash].cjs.js',
+        sourcemap: !isProduction,
+        exports: 'named'
+      }
+    ],
+    external: ['fs', 'fs/promises', 'path', 'stream', 'stream/promises', 'os', 'crypto', 'url', 'util', 'events', 'worker_threads'],
+    plugins: basePlugins('node')
   }
 ];

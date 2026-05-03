@@ -61,8 +61,8 @@ export class SecurityError extends JtcsvError {
  * Error for file system operations
  */
 export class FileSystemError extends JtcsvError {
-  originalError: Error | null;
-  
+  declare originalError: Error | null;
+
   constructor(message: string, originalError: Error | null = null, meta: ErrorMeta = {}) {
     super(message, 'FILE_SYSTEM_ERROR', { ...meta, originalError });
     this.name = 'FileSystemError';
@@ -76,7 +76,7 @@ export class FileSystemError extends JtcsvError {
 export class ParsingError extends JtcsvError {
   lineNumber: number | null;
   column: number | null;
-  context: ErrorContextValue;
+  declare context: ErrorContextValue;
   expected: string | null;
   actual: string | null;
   originalMessage: string;

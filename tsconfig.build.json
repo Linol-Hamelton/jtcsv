@@ -1,27 +1,26 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    // Оптимизации для production сборки
+    // Production-only: tsc emits ONLY declarations; rollup is the sole .js producer.
+    // Drops ~30 duplicate .js files from dist/ and stops the tsc/rollup race.
+    "emitDeclarationOnly": true,
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    "declarationMap": false,
+    "declarationDir": "./dist/types",
+    "outDir": "./dist/types",
+    "sourceMap": false,
+    "inlineSources": false,
+    "inlineSourceMap": false,
 
-    // Более строгие проверки для production (отложены до завершения миграции)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
 
-    // Отключаем проверку JavaScript файлов
     "allowJs": false,
     "checkJs": false,
-
-    // Пропускаем проверки типов для внешних библиотек
     "skipLibCheck": true,
 
-    // Оптимизация вывода
     "removeComments": true,
     "stripInternal": true,
-
-    // Для production
     "incremental": false
   },
   "include": [

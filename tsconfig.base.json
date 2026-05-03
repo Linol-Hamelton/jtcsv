@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    // Целевая версия ECMAScript
-    "target": "ES2020",
-    
-    // Система модулей
+    // Targets Node 18.17 LTS+ (engines.node >=18.17). ES2022 gives us
+    // top-level await, error cause, native structuredClone, Array.at,
+    // and class fields without Babel transpiles.
+    "target": "ES2022",
+
+    // Стiche to "commonjs" for now — flipping to NodeNext is its own task
+    // (P0.x, requires .ts file extension changes in imports).
     "module": "commonjs",
     "moduleResolution": "node",
-    
-    // Библиотеки
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["jest", "node"],
     
     // Поддержка JavaScript файлов (для инкрементальной миграции)

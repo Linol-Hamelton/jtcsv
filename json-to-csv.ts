@@ -757,7 +757,7 @@ export async function jsonToCsvAsync(
   return safeExecuteAsync(async () => {
     // For now, use the synchronous version
     // In the future, this will use worker threads for large datasets
-    const { _useWorkers = false, _workerCount: _unusedWorkerCount, _chunkSize: _unusedChunkSize, _onProgress: _unusedOnProgress, ...syncOptions } = options;
+    const { useWorkers: _useWorkers = false, workerCount: _unusedWorkerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...syncOptions } = options;
     
     // Simple implementation - just call the synchronous version
     // TODO: Implement worker thread support for large datasets

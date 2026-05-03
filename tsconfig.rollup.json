@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": false,
@@ -14,5 +14,15 @@
     "declarationMap": false,
     "sourceMap": true
   },
-  "include": ["src/browser/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "bin/**/*.ts",
+    "index.ts",
+    "csv-to-json.ts",
+    "json-to-csv.ts",
+    "stream-csv-to-json.ts",
+    "stream-json-to-csv.ts",
+    "json-save.ts",
+    "errors.ts"
+  ]
 }

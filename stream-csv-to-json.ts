@@ -53,8 +53,8 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
       maxRows = Infinity,
       transform: customTransform,
       schema,
-      _useFastPath = true,
-      _fastPathMode = 'objects',
+      useFastPath: _useFastPath = true,
+      fastPathMode: _fastPathMode = 'objects',
       onError = 'throw',
       errorHandler,
       repairRowShifts = true,
@@ -737,11 +737,11 @@ export async function streamCsvToJsonAsync(
     useWorkers?: boolean;
     workerCount?: number;
     chunkSize?: number;
-    _onProgress?: (_progress: { processed: number; total: number; percentage: number }) => void;
+    onProgress?: (progress: { processed: number; total: number; percentage: number }) => void;
   } = {}
 ): Promise<AnyArray> {
   return safeExecuteAsync(async () => {
-    const { _useWorkers = false, _workerCount: _unusedWorkerCount, _chunkSize: _unusedChunkSize, _onProgress: _unusedOnProgress, ...streamOptions } = options;
+    const { useWorkers: _useWorkers = false, workerCount: _unusedWorkerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...streamOptions } = options;
     
     // For now, use the standard streaming version
     // TODO: Implement worker thread support for large datasets

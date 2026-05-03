@@ -254,11 +254,11 @@ export async function saveAsJsonAsync(
     useWorkers?: boolean;
     workerCount?: number;
     chunkSize?: number;
-    _onProgress?: (_progress: { processed: number; total: number; percentage: number }) => void;
+    onProgress?: (progress: { processed: number; total: number; percentage: number }) => void;
   } = {}
 ): Promise<void> {
   return safeExecuteAsync(async () => {
-    const { _useWorkers = false, _workerCount: _unusedWorkerCount, _chunkSize: _unusedChunkSize, _onProgress: _unusedOnProgress, ...saveOptions } = options;
+    const { useWorkers: _useWorkers = false, workerCount: _unusedWorkerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...saveOptions } = options;
     
     // For now, use the standard async version
     // TODO: Implement worker thread support for large datasets

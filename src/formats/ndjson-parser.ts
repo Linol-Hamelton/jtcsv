@@ -468,8 +468,12 @@ class NdjsonParser {
 
 export default NdjsonParser;
 
-// CommonJS compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = NdjsonParser;
-  module.exports.default = NdjsonParser;
-}
+// Named exports — allow `require('jtcsv/.../ndjson-parser').parseStream(...)`
+// without going through `.default`. Mirror every static method so direct
+// CJS consumers keep their flat API after the rollup-safe export shape.
+export const parseStream = NdjsonParser.parseStream.bind(NdjsonParser);
+export const toNdjson = NdjsonParser.toNdjson.bind(NdjsonParser);
+export const fromNdjson = NdjsonParser.fromNdjson.bind(NdjsonParser);
+export const createNdjsonToCsvStream = NdjsonParser.createNdjsonToCsvStream.bind(NdjsonParser);
+export const createCsvToNdjsonStream = NdjsonParser.createCsvToNdjsonStream.bind(NdjsonParser);
+export const getStats = NdjsonParser.getStats.bind(NdjsonParser);

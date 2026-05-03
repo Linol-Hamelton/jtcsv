@@ -10,12 +10,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-const { pipeline } = require('stream/promises');
+import { pipeline } from 'stream/promises';
 import * as jtcsv from '../index';
-const transformLoader = require('../src/utils/transform-loader');
-const schemaValidator = require('../src/utils/schema-validator');
+import * as transformLoaderImport from '../src/utils/transform-loader';
+import * as schemaValidatorImport from '../src/utils/schema-validator';
 
-const VERSION = require('../package.json').version;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformLoader: any = transformLoaderImport;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const schemaValidator: any = schemaValidatorImport;
+// VERSION is kept in sync with package.json by the release process.
+const VERSION = '3.1.1';
 
 type ConversionResult = {
   records?: number;

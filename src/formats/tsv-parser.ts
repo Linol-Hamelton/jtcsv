@@ -333,8 +333,14 @@ class TsvParser {
 
 export default TsvParser;
 
-// CommonJS compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = TsvParser;
-  module.exports.default = TsvParser;
-}
+// Named exports for direct CJS require() compatibility (rollup-safe)
+export const jsonToTsv = TsvParser.jsonToTsv.bind(TsvParser);
+export const tsvToJson = TsvParser.tsvToJson.bind(TsvParser);
+export const isTsv = TsvParser.isTsv.bind(TsvParser);
+export const createJsonToTsvStream = TsvParser.createJsonToTsvStream.bind(TsvParser);
+export const createTsvToJsonStream = TsvParser.createTsvToJsonStream.bind(TsvParser);
+export const readTsvAsJson = TsvParser.readTsvAsJson.bind(TsvParser);
+export const readTsvAsJsonSync = TsvParser.readTsvAsJsonSync.bind(TsvParser);
+export const saveAsTsv = TsvParser.saveAsTsv.bind(TsvParser);
+export const saveAsTsvSync = TsvParser.saveAsTsvSync.bind(TsvParser);
+export const validateTsv = TsvParser.validateTsv.bind(TsvParser);

@@ -304,7 +304,7 @@ export function csvToJson(
       maxRows,
       useFastPath = true,
       fastPathMode = 'objects',
-      _schema = null,
+      schema: _schema = null,
       transform,
       hooks,
     useCache = true,
@@ -1116,7 +1116,7 @@ export async function csvToJsonAsync(
   return safeExecuteAsync(async () => {
     // For now, use the synchronous version
     // In the future, this will use worker threads for large datasets
-    const { _useWorkers = false, _workerCount, _chunkSize, _onProgress, ...syncOptions } = options;
+    const { useWorkers: _useWorkers = false, workerCount: _workerCount, chunkSize: _chunkSize, onProgress: _onProgress, ...syncOptions } = options;
     
     // Simple implementation - just call the synchronous version
     // TODO: Implement worker thread support for large datasets
