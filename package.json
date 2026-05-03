@@ -275,6 +275,7 @@
   "type": "commonjs",
   "sideEffects": false,
   "workspaces": [
+    "packages/jtcsv-codemod",
     "packages/jtcsv-excel",
     "packages/jtcsv-tui",
     "packages/jtcsv-validator",

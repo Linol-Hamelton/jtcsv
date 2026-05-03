@@ -1,0 +1,44 @@
+{
+  "name": "@jtcsv/codemod",
+  "version": "0.1.0",
+  "description": "jscodeshift transforms for migrating to jtcsv from papaparse, csvtojson, csv-parser, and similar libraries",
+  "bin": {
+    "jtcsv-codemod": "bin/cli.js"
+  },
+  "main": "transforms/index.js",
+  "license": "MIT",
+  "author": "Ruslan Fomenko",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "packages/jtcsv-codemod"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-codemod#readme",
+  "keywords": [
+    "jscodeshift",
+    "codemod",
+    "migration",
+    "papaparse",
+    "csvtojson",
+    "csv-parser",
+    "jtcsv"
+  ],
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "jscodeshift": "^0.15.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "files": [
+    "bin/",
+    "transforms/",
+    "README.md"
+  ]
+}
