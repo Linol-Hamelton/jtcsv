@@ -17,6 +17,7 @@ import {
 } from './errors';
 
 import { createSchemaValidators } from './src/utils/schema-validator';
+import { parallelJsonToCsv } from './src/workers/parallelize';
 import type {
   AsyncJsonToCsvOptions,
   DeepUnwrapOptions,
@@ -748,20 +749,26 @@ export function jsonToCsv(
 }
 
 /**
- * Asynchronous version of jsonToCsv with support for worker threads
+ * Asynchronous JSON→CSV with optional worker-thread parallelization.
+ * See csvToJsonAsync() for the option semantics; thresholds for JSON are
+ * row-count rather than byte-count (default 5000 rows).
  */
 export async function jsonToCsvAsync(
   data: any[],
   options: AsyncJsonToCsvOptions = {}
 ) {
   return safeExecuteAsync(async () => {
-    // For now, use the synchronous version
-    // In the future, this will use worker threads for large datasets
-    const { useWorkers: _useWorkers = false, workerCount: _unusedWorkerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...syncOptions } = options;
-    
-    // Simple implementation - just call the synchronous version
-    // TODO: Implement worker thread support for large datasets
-    return jsonToCsv(data, syncOptions);
+    const { useWorkers = false, workerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...syncOptions } = options;
+    if (!useWorkers || !Array.isArray(data)) {
+      return jsonToCsv(data, syncOptions);
+    }
+    return parallelJsonToCsv(
+      data,
+      syncOptions as Record<string, unknown>,
+      { concurrency: workerCount ?? 0 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (input, opts) => jsonToCsv(input as any, opts as any),
+    );
   }, 'PARSING_ERROR', { function: 'jsonToCsvAsync' });
 }
 

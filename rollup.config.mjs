@@ -174,6 +174,21 @@ export default [
     plugins: basePlugins('node')
   },
 
+  // src/workers/parser-worker.ts → dist/_worker.cjs.js
+  // Loaded by parallelize.ts into a worker_threads.Worker. CJS-only
+  // because Node's worker_threads.Worker accepts a path to a CJS/ESM file.
+  {
+    input: 'src/workers/parser-worker.ts',
+    output: {
+      file: 'dist/_worker.cjs.js',
+      format: 'cjs',
+      sourcemap: !isProduction,
+      exports: 'named'
+    },
+    external: ['fs', 'fs/promises', 'path', 'stream', 'stream/promises', 'os', 'crypto', 'url', 'util', 'events', 'worker_threads'],
+    plugins: basePlugins('node')
+  },
+
   // src/utils/schema-validator.ts → dist/schema.{cjs,esm}.js
   {
     input: 'src/utils/schema-validator.ts',

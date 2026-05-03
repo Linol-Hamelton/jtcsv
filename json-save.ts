@@ -259,9 +259,11 @@ export async function saveAsJsonAsync(
 ): Promise<void> {
   return safeExecuteAsync(async () => {
     const { useWorkers: _useWorkers = false, workerCount: _unusedWorkerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...saveOptions } = options;
-    
-    // For now, use the standard async version
-    // TODO: Implement worker thread support for large datasets
+    // saveAsJson is I/O-bound (a single fs.writeFile). Worker threads help
+    // CPU-bound work (parsing, serialization), not the I/O syscall itself.
+    // We accept the useWorkers flag for API symmetry but route to the
+    // standard async path; future work could parallelize JSON.stringify
+    // for very large objects via streaming serialization.
     await saveAsJson(data, filePath, saveOptions);
   }, 'FILE_SYSTEM_ERROR', { function: 'saveAsJsonAsync' });
 }

@@ -18,6 +18,7 @@ import {
 
 import { TransformHooks, predefinedHooks } from './src/core/transform-hooks';
 import { DelimiterCache } from './src/core/delimiter-cache';
+import { parallelCsvToJson } from './src/workers/parallelize';
 import FastPathEngine from './src/engines/fast-path-engine';
 import { normalizeCsvInput } from './src/utils/bom-utils';
 import { CsvToJsonOptions, AsyncCsvToJsonOptions, AnyObject, AnyArray } from './src/types';
@@ -1107,20 +1108,35 @@ function repairShiftedRows(
 }
 
 /**
- * Asynchronous version of csvToJson with support for worker threads
+ * Asynchronous CSV→JSON with optional worker-thread parallelization.
+ *
+ * - `useWorkers: false` (default) — synchronous in the calling thread.
+ * - `useWorkers: true, workerCount: N` — N workers; 0 = `availableParallelism()`.
+ * - Worker path activates only when `csv.length >= 256KB` (overridable).
+ *
+ * Falls back to sync silently if worker_threads is unavailable (browser
+ * builds, restricted runtimes) or if a worker errors out.
  */
 export async function csvToJsonAsync(
   csv: string,
   options: AsyncCsvToJsonOptions = {}
 ): Promise<AnyArray> {
   return safeExecuteAsync(async () => {
-    // For now, use the synchronous version
-    // In the future, this will use worker threads for large datasets
-    const { useWorkers: _useWorkers = false, workerCount: _workerCount, chunkSize: _chunkSize, onProgress: _onProgress, ...syncOptions } = options;
-    
-    // Simple implementation - just call the synchronous version
-    // TODO: Implement worker thread support for large datasets
-    return csvToJson(csv, syncOptions);
+    const { useWorkers = false, workerCount, chunkSize: _chunkSize, onProgress: _onProgress, ...syncOptions } = options;
+    if (!useWorkers) {
+      return csvToJson(csv, syncOptions);
+    }
+    // Static import: rollup bundles parallelize into the CJS output. Costs
+    // ~3 KB gzipped even when `useWorkers: false`, but tree-shaking from
+    // subpath consumers (jtcsv/csv) still keeps it out unless they import
+    // csvToJsonAsync explicitly.
+    return parallelCsvToJson(
+      csv,
+      syncOptions as Record<string, unknown>,
+      { concurrency: workerCount ?? 0 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (input, opts) => csvToJson(input, opts as any),
+    );
   }, 'PARSING_ERROR', { function: 'csvToJsonAsync' });
 }
 

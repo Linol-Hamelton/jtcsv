@@ -20,6 +20,7 @@ import { JsonToCsvStreamOptions, AnyObject, AnyArray } from './src/types';
 
 // Import schema validator from utils
 import { createSchemaValidators } from './src/utils/schema-validator';
+import { parallelJsonToCsv } from './src/workers/parallelize';
 
 /**
  * Creates a transform stream that converts JSON objects to CSV rows
@@ -440,11 +441,17 @@ export async function streamJsonToCsvAsync(
   } = {}
 ): Promise<string> {
   return safeExecuteAsync(async () => {
-    const { useWorkers: _useWorkers = false, workerCount: _unusedWorkerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...streamOptions } = options;
-    
-    // For now, use the standard streaming version
-    // TODO: Implement worker thread support for large datasets
-    return streamJsonToCsv(data, streamOptions);
+    const { useWorkers = false, workerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...streamOptions } = options;
+    if (!useWorkers || !Array.isArray(data)) {
+      return streamJsonToCsv(data, streamOptions);
+    }
+    return parallelJsonToCsv(
+      data,
+      streamOptions as Record<string, unknown>,
+      { concurrency: workerCount ?? 0 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (input, opts) => streamJsonToCsv(input as any, opts as any),
+    );
   }, 'STREAM_PROCESSING_ERROR', { function: 'streamJsonToCsvAsync' });
 }
 

@@ -23,6 +23,7 @@ import { CsvToJsonStreamOptions, AnyObject, AnyArray } from './src/types';
 // Import schema validator from utils
 import { createSchemaValidators } from './src/utils/schema-validator';
 import { createBomStripStream } from './src/utils/bom-utils';
+import { parallelCsvToJson } from './src/workers/parallelize';
 
 /**
  * Creates a transform stream that converts CSV chunks to JSON objects
@@ -741,11 +742,21 @@ export async function streamCsvToJsonAsync(
   } = {}
 ): Promise<AnyArray> {
   return safeExecuteAsync(async () => {
-    const { useWorkers: _useWorkers = false, workerCount: _unusedWorkerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...streamOptions } = options;
-    
-    // For now, use the standard streaming version
-    // TODO: Implement worker thread support for large datasets
-    return streamCsvToJson(csv, streamOptions);
+    const { useWorkers = false, workerCount, chunkSize: _unusedChunkSize, onProgress: _unusedOnProgress, ...streamOptions } = options;
+    if (!useWorkers) {
+      return streamCsvToJson(csv, streamOptions);
+    }
+    // For batch (string-input) parallelization, route through parallelCsvToJson.
+    // True parallel streaming on a Node Readable is a different beast — one
+    // worker per chunk would defeat backpressure. That belongs to a future
+    // streaming worker pool design.
+    return parallelCsvToJson(
+      csv,
+      streamOptions as Record<string, unknown>,
+      { concurrency: workerCount ?? 0 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (input, opts) => streamCsvToJson(input, opts as any),
+    );
   }, 'STREAM_PROCESSING_ERROR', { function: 'streamCsvToJsonAsync' });
 }
 

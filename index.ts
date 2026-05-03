@@ -2,11 +2,11 @@
 // Exports both JSON→CSV and CSV→JSON functions
 
 // Re-export all functions from individual modules
-export { jsonToCsv, preprocessData, saveAsCsv, deepUnwrap, validateFilePath } from './json-to-csv';
-export { csvToJson, csvToJsonIterator, readCsvAsJson, readCsvAsJsonSync, autoDetectDelimiter } from './csv-to-json';
-export { saveAsJson, saveAsJsonSync } from './json-save';
-export { createJsonToCsvStream, streamJsonToCsv, saveJsonStreamAsCsv, createJsonReadableStream, createCsvCollectorStream } from './stream-json-to-csv';
-export { createCsvToJsonStream, streamCsvToJson, createCsvFileToJsonStream, createJsonCollectorStream } from './stream-csv-to-json';
+export { jsonToCsv, jsonToCsvAsync, saveAsCsvAsync, preprocessData, saveAsCsv, deepUnwrap, validateFilePath } from './json-to-csv';
+export { csvToJson, csvToJsonAsync, csvToJsonIterator, readCsvAsJson, readCsvAsJsonSync, autoDetectDelimiter } from './csv-to-json';
+export { saveAsJson, saveAsJsonAsync, saveAsJsonSync } from './json-save';
+export { createJsonToCsvStream, streamJsonToCsv, streamJsonToCsvAsync, saveJsonStreamAsCsv, createJsonReadableStream, createCsvCollectorStream } from './stream-json-to-csv';
+export { createCsvToJsonStream, streamCsvToJson, streamCsvToJsonAsync, createCsvFileToJsonStream, createJsonCollectorStream } from './stream-csv-to-json';
 
 // ============================================================================
 // DEPRECATED ALIASES - To be removed in jtcsv 5.0
