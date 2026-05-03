@@ -201,12 +201,12 @@ export function preprocessData(
  * Flattens a nested object into dot notation
  */
 function flattenObject(
-  obj,
+  obj: any,
   separator = '.',
   maxDepth = 3,
   currentDepth = 0,
   prefix = ''
-) {
+): Record<string, unknown> {
   if (currentDepth >= maxDepth) {
     return { [prefix || 'value']: obj };
   }
@@ -236,7 +236,7 @@ function flattenObject(
 /**
  * Processes arrays based on the arrayHandling option
  */
-function processArrays(obj, arrayHandling) {
+function processArrays(obj: any, arrayHandling: string): any {
   const processed = { ...obj };
   
   for (const [key, value] of Object.entries(obj)) {
@@ -289,12 +289,12 @@ export function deepUnwrap(
 }
 
 function unwrapRecursive(
-  value,
-  currentDepth,
-  maxDepth,
-  preserveArrays,
-  seen
-) {
+  value: any,
+  currentDepth: number,
+  maxDepth: number,
+  preserveArrays: boolean,
+  seen: WeakSet<object>
+): any {
   if (value === null || value === undefined) {
     return '';
   }

@@ -14,7 +14,7 @@ import { ValidationError, SecurityError, FileSystemError } from "../../errors";
 import { createJsonToCsvStream } from "../../stream-json-to-csv";
 import { createCsvToJsonStream } from "../../stream-csv-to-json";
 
-function validateTsvFilePath(filePath) {
+function validateTsvFilePath(filePath: string): string {
   if (typeof filePath !== 'string' || filePath.trim() === '') {
     throw new ValidationError('File path must be a non-empty string');
   }
@@ -46,7 +46,7 @@ class TsvParser {
    * const tsv = TsvParser.jsonToTsv(data);
    * // Результат: "id\tname\n1\tJohn\n2\tJane"
    */
-  static jsonToTsv(data, options = {}) {
+  static jsonToTsv(data: unknown[], options: Record<string, unknown> = {}) {
     const defaultOptions = {
       delimiter: '\t',
       includeHeaders: true,
@@ -67,7 +67,7 @@ class TsvParser {
    * const data = TsvParser.tsvToJson(tsv);
    * // Результат: [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]
    */
-  static tsvToJson(tsvString, options = {}) {
+  static tsvToJson(tsvString: string, options: Record<string, unknown> = {}) {
     const defaultOptions = {
       delimiter: '\t',
       autoDetect: false,
@@ -83,7 +83,7 @@ class TsvParser {
    * @param {string} sample - Образец данных
    * @returns {boolean} True если это TSV
    */
-  static isTsv(sample) {
+  static isTsv(sample: string): boolean {
     if (!sample || typeof sample !== 'string') {
       return false;
     }
@@ -139,7 +139,7 @@ class TsvParser {
    * @param {Object} options - Опции парсинга
    * @returns {Promise<Array>} Promise с массивом объектов
    */
-  static async readTsvAsJson(filePath, options = {}) {
+  static async readTsvAsJson(filePath: string, options: Record<string, unknown> = {}) {
     const safePath = validateTsvFilePath(filePath);
 
     try {
@@ -153,16 +153,17 @@ class TsvParser {
       if (error instanceof ValidationError || error instanceof SecurityError) {
         throw error;
       }
-      if (error.code === 'ENOENT') {
-        throw new FileSystemError(`File not found: ${safePath}`, error);
+      const e = error as NodeJS.ErrnoException;
+      if (e?.code === 'ENOENT') {
+        throw new FileSystemError(`File not found: ${safePath}`, e);
       }
-      if (error.code === 'EACCES') {
-        throw new FileSystemError(`Permission denied: ${safePath}`, error);
+      if (e?.code === 'EACCES') {
+        throw new FileSystemError(`Permission denied: ${safePath}`, e);
       }
-      if (error.code === 'EISDIR') {
-        throw new FileSystemError(`Path is a directory: ${safePath}`, error);
+      if (e?.code === 'EISDIR') {
+        throw new FileSystemError(`Path is a directory: ${safePath}`, e);
       }
-      throw new FileSystemError(`Failed to read TSV file: ${error.message}`, error);
+      throw new FileSystemError(`Failed to read TSV file: ${e?.message ?? String(error)}`, e);
     }
   }
 
@@ -172,7 +173,7 @@ class TsvParser {
    * @param {Object} options - Опции парсинга
    * @returns {Array} Массив объектов
    */
-  static readTsvAsJsonSync(filePath, options = {}) {
+  static readTsvAsJsonSync(filePath: string, options: Record<string, unknown> = {}) {
     const safePath = validateTsvFilePath(filePath);
 
     try {
@@ -186,16 +187,17 @@ class TsvParser {
       if (error instanceof ValidationError || error instanceof SecurityError) {
         throw error;
       }
-      if (error.code === 'ENOENT') {
-        throw new FileSystemError(`File not found: ${safePath}`, error);
+      const e = error as NodeJS.ErrnoException;
+      if (e?.code === 'ENOENT') {
+        throw new FileSystemError(`File not found: ${safePath}`, e);
       }
-      if (error.code === 'EACCES') {
-        throw new FileSystemError(`Permission denied: ${safePath}`, error);
+      if (e?.code === 'EACCES') {
+        throw new FileSystemError(`Permission denied: ${safePath}`, e);
       }
-      if (error.code === 'EISDIR') {
-        throw new FileSystemError(`Path is a directory: ${safePath}`, error);
+      if (e?.code === 'EISDIR') {
+        throw new FileSystemError(`Path is a directory: ${safePath}`, e);
       }
-      throw new FileSystemError(`Failed to read TSV file: ${error.message}`, error);
+      throw new FileSystemError(`Failed to read TSV file: ${e?.message ?? String(error)}`, e);
     }
   }
 
@@ -206,7 +208,7 @@ class TsvParser {
    * @param {Object} options - Опции сохранения
    * @returns {Promise<void>}
    */
-  static async saveAsTsv(data, filePath, options = {}) {
+  static async saveAsTsv(data: unknown[], filePath: string, options: Record<string, unknown> = {}) {
     const safePath = validateTsvFilePath(filePath);
     const tsvContent = this.jsonToTsv(data, options);
     const dir = path.dirname(safePath);
@@ -216,16 +218,17 @@ class TsvParser {
       await fs.promises.writeFile(safePath, tsvContent, 'utf8');
       return safePath;
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new FileSystemError(`Directory does not exist: ${dir}`, error);
+      const e = error as NodeJS.ErrnoException;
+      if (e?.code === 'ENOENT') {
+        throw new FileSystemError(`Directory does not exist: ${dir}`, e);
       }
-      if (error.code === 'EACCES') {
-        throw new FileSystemError(`Permission denied: ${safePath}`, error);
+      if (e?.code === 'EACCES') {
+        throw new FileSystemError(`Permission denied: ${safePath}`, e);
       }
-      if (error.code === 'ENOSPC') {
-        throw new FileSystemError(`No space left on device: ${safePath}`, error);
+      if (e?.code === 'ENOSPC') {
+        throw new FileSystemError(`No space left on device: ${safePath}`, e);
       }
-      throw new FileSystemError(`Failed to save TSV file: ${error.message}`, error);
+      throw new FileSystemError(`Failed to save TSV file: ${e?.message ?? String(error)}`, e);
     }
   }
 
@@ -234,8 +237,7 @@ class TsvParser {
    * @param {Array} data - Массив объектов
    * @param {string} filePath - Путь для сохранения
    * @param {Object} options - Опции сохранения
-   */
-  static saveAsTsvSync(data, filePath, options = {}) {
+   */  static saveAsTsvSync(data: unknown[], filePath: string, options: Record<string, unknown> = {}) {
     const safePath = validateTsvFilePath(filePath);
     const tsvContent = this.jsonToTsv(data, options);
 
@@ -249,7 +251,7 @@ class TsvParser {
    * @param {Object} options - Опции валидации
    * @returns {Object} Результат валидации
    */
-  static validateTsv(tsvString, options: any = {}) {
+  static validateTsv(tsvString: string, options: any = {}) {
     const { requireConsistentColumns = true } = options;
     
     if (!tsvString || typeof tsvString !== 'string') {

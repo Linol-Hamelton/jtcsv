@@ -75,7 +75,7 @@ class NdjsonParser {
             if (onError) {
               onError(error, line, lineNumber);
             } else {
-              console.error(`Ошибка парсинга NDJSON строки ${lineNumber}:`, error.message);
+              console.error(`Ошибка парсинга NDJSON строки ${lineNumber}:`, (error as Error)?.message ?? String(error));
             }
           }
         }
@@ -140,9 +140,9 @@ class NdjsonParser {
             } catch (error) {
               /* istanbul ignore next */
               if (onError) {
-                onError(error, line, lineNumber);
+                onError(error as Error, line, lineNumber);
               } else {
-                console.error(`Ошибка парсинга NDJSON строки ${lineNumber}:`, error.message);
+                console.error(`Ошибка парсинга NDJSON строки ${lineNumber}:`, (error as Error)?.message ?? String(error));
               }
             }
           }
@@ -225,7 +225,7 @@ class NdjsonParser {
           return null;
         }
       })
-      .filter(obj => obj !== null);
+      .filter((obj: unknown) => obj !== null);
   }
 
   /**
@@ -240,7 +240,7 @@ class NdjsonParser {
       ..._csvOptions
     } = options;
 
-    let headers = null;
+    let headers: string[] | null = null;
     let firstChunk = true;
 
     const TransformStreamCtor = getTransformStream();
@@ -252,17 +252,17 @@ class NdjsonParser {
       async transform(chunk: any, controller: any) {
         try {
           const obj = JSON.parse(chunk);
-          
+
           // Определяем заголовки при первом объекте
           if (firstChunk && includeHeaders) {
             headers = Object.keys(obj);
             controller.enqueue(headers.join(delimiter) + '\n');
             firstChunk = false;
           }
-          
+
           // Конвертируем объект в CSV строку
-          const row = headers 
-            ? headers.map(header => this._escapeCsvField(obj[header], delimiter))
+          const row = headers
+            ? headers.map((header: string) => this._escapeCsvField(obj[header], delimiter))
             : Object.values(obj).map(value => this._escapeCsvField(value, delimiter));
           
           controller.enqueue(row.join(delimiter) + '\n');
@@ -300,7 +300,7 @@ class NdjsonParser {
       ..._csvOptions
     } = options;
 
-    let headers = null;
+    let headers: string[] | null = null;
     let firstLine = true;
 
     const TransformStreamCtor = getTransformStream();
@@ -373,8 +373,15 @@ class NdjsonParser {
    * @param {string|ReadableStream} input - Входные данные
    * @returns {Promise<Object>} Статистика
    */
-  static async getStats(input) {
-    const stats = {
+  static async getStats(input: string | { getReader?: () => any }) {
+    const stats: {
+      totalLines: number;
+      validLines: number;
+      errorLines: number;
+      totalBytes: number;
+      errors: Array<{ line: number; error: string; content: string }>;
+      successRate: number;
+    } = {
       totalLines: 0,
       validLines: 0,
       errorLines: 0,
@@ -397,7 +404,7 @@ class NdjsonParser {
             stats.errorLines++;
             stats.errors.push({
               line: stats.totalLines,
-              error: error.message,
+              error: (error as Error)?.message ?? String(error),
               content: line.substring(0, 100)
             });
           }
@@ -448,7 +455,7 @@ class NdjsonParser {
                 stats.errorLines++;
                 stats.errors.push({
                   line: stats.totalLines,
-                  error: error.message,
+                  error: (error as Error)?.message ?? String(error),
                   content: line.substring(0, 100)
                 });
               }
