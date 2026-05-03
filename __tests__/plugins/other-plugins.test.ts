@@ -59,7 +59,7 @@ describe('Plugin smoke tests', () => {
 
   test('trpc plugin exports', () => {
     jest.isolateModules(() => {
-      const trpc = require('../../plugins/trpc');
+      const trpc = require('../../examples/frameworks/trpc');
       expect(typeof trpc.createCsvProcedure).toBe('function');
       expect(() => trpc.createCsvProcedure(null, {})).toThrow();
     });
@@ -67,7 +67,7 @@ describe('Plugin smoke tests', () => {
 
   test('remix plugin exports', () => {
     jest.isolateModules(() => {
-      const remix = require('../../plugins/remix');
+      const remix = require('../../examples/frameworks/remix');
       expect(typeof remix.parseFormData).toBe('function');
       expect(typeof remix.generateCsvResponse).toBe('function');
     });
@@ -75,7 +75,7 @@ describe('Plugin smoke tests', () => {
 
   test('sveltekit plugin exports', () => {
     jest.isolateModules(() => {
-      const sveltekit = require('../../plugins/sveltekit');
+      const sveltekit = require('../../examples/frameworks/sveltekit');
       expect(typeof sveltekit.parseCsv).toBe('function');
       expect(typeof sveltekit.generateCsv).toBe('function');
     });
@@ -83,7 +83,7 @@ describe('Plugin smoke tests', () => {
 
   test('nuxt module exports', () => {
     jest.isolateModules(() => {
-      const nuxt = require('../../plugins/nuxt');
+      const nuxt = require('../../examples/frameworks/nuxt');
       expect(nuxt).toHaveProperty('meta');
       expect(nuxt).toHaveProperty('setup');
       expect(typeof nuxt.setup).toBe('function');

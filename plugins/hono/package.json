@@ -23,9 +23,16 @@
     "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/hono#readme",
+  "scripts": {
+    "test": "jest"
+  },
   "peerDependencies": {
     "hono": "^4.0.0",
-    "jtcsv": "^2.1.3"
+    "jtcsv": "^3.2.0 || ^4.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "files": [
     "index.js",

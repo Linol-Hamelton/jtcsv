@@ -32,14 +32,12 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/plugins/express-middleware#readme",
   "peerDependencies": {
-    "express": "^4.18.0",
-    "jtcsv": "^2.1.0"
+    "express": "^4.18.0 || ^5.0.0",
+    "jtcsv": "^3.2.0 || ^4.0.0"
   },
-  "devDependencies": {
-    "express": "^4.18.0",
-    "jest": "^29.0.0",
-    "eslint": "^8.57.0",
-    "supertest": "^6.3.0"
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "files": [
     "index.js",
