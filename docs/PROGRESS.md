@@ -1,20 +1,24 @@
 # Прогресс реализации JTCSV
 
-**Текущая версия**: 3.1.0  
-**Дата обновления**: 25 февраля 2026  
-**Статус**: Активное развитие 🚀
+**Текущая версия**: 3.1.1 (готовится 3.2.0)
+**Дата обновления**: 4 мая 2026
+**Статус**: Активное развитие
 
 ---
 
-## 📊 Текущие метрики
+## Текущие метрики
 
-| Метрика | Значение | Статус |
-|---------|----------|--------|
-| **Тесты** | 697 тестов | ✅ 696 проходят |
-| **Покрытие кода** | >90% | ✅ Отлично |
-| **TypeScript** | Полная поддержка | ✅ Строгие типы |
-| **CI/CD** | GitHub Actions | ✅ Node.js 16/18/20 |
-| **Документация** | 40+ файлов | ✅ Полная |
+| Метрика | Значение | Источник |
+|---|---|---|
+| Тесты | **684** проходят | `jest` |
+| TypeScript strict errors | **65** (ratchet locked) | `npm run tsc:check-strict:count` |
+| Bundle `jtcsv/csv` | **18 KB gz** | `npm run size` |
+| Tarball | **359 KB gz / 2.2 MB unpacked / 88 файлов** | `npm pack --dry-run` |
+| Bench (1M rows, fastPath) | **836 ms** (papaparse: 1752, csv-parse: 2659) | `npm run benchmark:vs` |
+| CI workflows | **8** (ci, coverage, security, publish, release, benchmark, scorecard, docs) | `.github/workflows/` |
+| Subpath exports | **9** | `package.json#exports` |
+| weekly npm downloads | 14 | npm registry API |
+| GitHub stars / forks / issues | 0 / 0 / 0 | GitHub API |
 
 ---
 

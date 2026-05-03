@@ -8,210 +8,203 @@
 [![Provenance](https://img.shields.io/badge/npm-provenance%20signed-success.svg)](https://docs.npmjs.com/generating-provenance-statements)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Linol-Hamelton/jtcsv/badge)](https://scorecard.dev/viewer/?uri=github.com/Linol-Hamelton/jtcsv)
 
-Fast JSON ↔ CSV conversion with streaming helpers, NDJSON/TSV support, and optional integrations.
+**JSON ↔ CSV in Node and the browser. Streaming. Tree-shakable. 18 KB gz core. Zero deps.**
 
-## Performance
-
-CSV → JSON parsing on Node 22, median of 5 runs (lower is better):
-
-| Parser              | 100K rows (5.7 MB) | 1M rows (60 MB) |
-|---------------------|-------------------:|----------------:|
-| **jtcsv (fastPath)** | **83 ms**          | **836 ms**       |
-| papaparse           | 149 ms (1.8×)       | 1752 ms (2.1×)   |
-| jtcsv (default)     | 188 ms (2.3×)       | 1858 ms (2.2×)   |
-| csv-parse           | 260 ms (3.1×)       | 2659 ms (3.2×)   |
-| fast-csv            | 339 ms (4.1×)       | 3491 ms (4.2×)   |
-
-Reproduce: `npm run benchmark:vs`. CI publishes the latest numbers to
-[github.io/jtcsv/dev/bench](https://linol-hamelton.github.io/jtcsv/dev/bench/)
-on every merge to main and fails PRs that regress more than 25 %.
-
-**Try Live:** `playground.html` (local) - `npm run demo:web`
-[TRY LIVE](playground.html)
-
-## Features
-- JSON <-> CSV conversion with security defaults
-- Streaming helpers and async iterator API
-- NDJSON and TSV helpers
-- Browser bundle with Web Worker helpers
-- Optional plugin system and framework adapters
-- CLI and optional TUI
-- Fast‑path engine for 2–3× faster parsing of simple CSV patterns
-- Comprehensive security features: CSV injection prevention, path traversal protection, RFC 4180 compliance, automatic row shift repair, quote normalization
-- Performance-optimized - fast number parsing, single-pass BOM stripping, efficient delimiter detection
-- Built‑in benchmarks and performance monitoring (see `BENCHMARK-RESULTS.md`)
-
-## Documentation
-- docs/README.md (docs hub)
-- docs/GETTING_STARTED.md (5-minute quick start)
-- docs/API_DECISION_TREE.md (pick the right API)
-- docs/API_CANONICALIZATION.md (canonical names and aliases)
-- docs/ERRORS.md (error reference)
-- docs/TROUBLESHOOTING.md (common errors and fixes)
-- docs/recipes/index.md (practical recipes)
-- docs/SCHEMA_VALIDATOR.md (schema format)
-- docs/BROWSER.md (browser API)
-- docs/CLI.md (CLI usage)
-- docs/PLUGINS.md (plugin system)
-- docs/PLUGIN_AUTHORING.md (plugin authoring guide)
-- docs/BENCHMARKS.md (public benchmarks)
-- docs/PLUGIN_REGISTRY.md (community plugins)
-- docs/integrations/index.md (framework integrations)
-
-## Playground
-- Local HTML playground: `playground.html` (open in a browser)
-- Vite demo: `npm run demo:web` (runs on http://localhost:3000)
-
-<iframe
-  src="https://stackblitz.com/github/Linol-Hamelton/jtcsv?embed=1&file=playground.html&view=preview"
-  width="100%"
-  height="520"
-  style="border:0;border-radius:12px;overflow:hidden;"
-  title="JTCSV Playground (StackBlitz)"
-></iframe>
-
-
-## Integrations
-- docs/integrations/index.md (overview)
-- docs/integrations/express.md (Express upload API)
-- docs/integrations/fastify.md (Fastify upload API)
-- docs/integrations/react-hook-form.md (React Hook Form uploader)
-- docs/integrations/nextjs-app-router.md (Next.js App Router upload)
-- docs/integrations/drizzle-orm.md (Drizzle ORM import)
-- docs/integrations/graphql.md (GraphQL upload)
-
-## Entry points
-- `jtcsv` (main)
-- `jtcsv/browser` (browser build)
-- `jtcsv/plugins` (plugin manager)
-- `jtcsv/cli` (CLI runner)
-- `jtcsv/schema` (schema validator helpers)
-
-## Installation
 ```bash
 npm install jtcsv
 ```
 
-### Optional add-ons
-```bash
-npm install @jtcsv/tui
-npm install @jtcsv/excel exceljs
-npm install @jtcsv/validator
+```js
+import { csvToJson, jsonToCsv } from 'jtcsv';
+
+const csv  = jsonToCsv([{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]);
+const rows = csvToJson(csv, { parseNumbers: true });
+// rows: [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
 ```
 
-## Quick start (Node.js)
-```javascript
-const { jsonToCsv, csvToJson } = require('jtcsv');
+That's the whole API in 4 lines. Read on for streaming, NDJSON/TSV,
+worker threads, framework adapters, and the full subpath layout.
 
-const data = [
-  { id: 1, name: 'John', email: 'john@example.com' },
-  { id: 2, name: 'Jane', email: 'jane@example.com' }
-];
+## Why jtcsv
 
-const csv = jsonToCsv(data, { delimiter: ',', includeHeaders: true });
-const json = csvToJson(csv, { delimiter: ',', parseNumbers: true });
+| | jtcsv | papaparse | csv-parse | fast-csv |
+|---|:---:|:---:|:---:|:---:|
+| Speed (1M rows, fastPath) | **836 ms** | 1752 ms | 2659 ms | 3491 ms |
+| Bundle (gz, parser only)  | **~18 KB** | ~9 KB     | ~14 KB    | ~30 KB    |
+| TypeScript types          | ✅ first-class | DT only | ✅ | DT only |
+| CSV-injection guard by default | ✅ | — | — | — |
+| Web Workers (browser)     | ✅ subpath | — | — | — |
+| Worker threads (Node)     | ✅ opt-in  | — | — | — |
+| Streaming                 | ✅ Transform + iterator | ✅ step | ✅ Transform | ✅ Transform |
+| NDJSON / TSV first-class  | ✅ | — | — | — |
+| `--provenance` signed publish | ✅ | — | — | — |
+| Subpath imports           | ✅ 9 entries | — | — | — |
 
-console.log(csv);
-console.log(json);
+Reproduce the bench: `npm run benchmark:vs`. CI publishes the latest
+numbers to
+[github.io/jtcsv/dev/bench](https://linol-hamelton.github.io/jtcsv/dev/bench/)
+on every merge to main and fails PRs that regress more than 25 %.
+
+## Subpath imports (tree-shaking)
+
+Pay only for what you import. Each subpath has its own `package.json#exports`
+entry point, so bundlers ship just the code you use.
+
+| Import path           | Use case                              | Cost (gz, with deps) |
+|-----------------------|---------------------------------------|---------------------:|
+| `jtcsv/csv`           | CSV → JSON parse                      | **~18 KB**           |
+| `jtcsv/json`          | JSON → CSV serialize                  | ~8 KB                |
+| `jtcsv/streams`       | Node Transform stream helpers          | ~10 KB               |
+| `jtcsv/ndjson`        | NDJSON parse + emit                   | ~4 KB                |
+| `jtcsv/tsv`           | TSV parse + emit (uses CSV core)      | ~35 KB               |
+| `jtcsv/errors`        | error classes only (`instanceof` checks) | ~3 KB             |
+| `jtcsv` (full barrel) | everything                            | ~44 KB               |
+| `jtcsv/browser`       | browser-safe full bundle              | ~15 KB ESM / 16 KB UMD |
+| `jtcsv/plugins`       | plugin manager                        | — (Node-only)        |
+| `jtcsv/schema`        | schema validator                      | — (Node-only)        |
+
+```js
+// Smallest possible import — just what you need.
+import { csvToJson } from 'jtcsv/csv';
+import { jsonToCsv } from 'jtcsv/json';
+import { createCsvToJsonStream } from 'jtcsv/streams';
 ```
 
-### Naming aliases (CSV -> JSON)
-- `csvToJsonFile` / `csvToJsonFileSync` -> aliases of `readCsvAsJson` / `readCsvAsJsonSync`
-- `csvToJsonStream` / `csvFileToJsonStream` -> aliases of `createCsvToJsonStream` / `createCsvFileToJsonStream`
+## Quick recipes
 
-### Async iterator
-```javascript
-const { csvToJsonIterator } = require('jtcsv');
+### Parse a file (Node)
+```js
+import { readCsvAsJson } from 'jtcsv/csv';
+const rows = await readCsvAsJson('./data.csv', { parseNumbers: true });
+```
 
-const csv = 'id,name\n1,Jane\n2,John';
+### Stream a 1 GB file (Node)
+```js
+import { createReadStream } from 'fs';
+import { pipeline } from 'stream/promises';
+import { createCsvToJsonStream } from 'jtcsv/streams';
+
+await pipeline(
+  createReadStream('./big.csv'),
+  createCsvToJsonStream({ parseNumbers: true }),
+  async function* (rows) {
+    for await (const row of rows) yield row;  // your per-row logic
+  },
+);
+```
+
+### Async iterator (lazy parse)
+```js
+import { csvToJsonIterator } from 'jtcsv/csv';
 
 for await (const row of csvToJsonIterator(csv, { fastPathMode: 'compact' })) {
   console.log(row);
 }
 ```
 
-### Command Line Interface
+### Worker threads (opt-in, Node)
+```js
+import { csvToJsonAsync } from 'jtcsv';
 
-JTCSV includes a powerful CLI for batch conversion, file processing, and data transformation.
+// Parses across N worker threads when the input is large enough
+// to amortize spawn overhead (~1 MB / 5 K rows). Silent sync fallback
+// otherwise. workerCount: 0 = os.availableParallelism().
+const rows = await csvToJsonAsync(bigCsv, {
+  parseNumbers: true,
+  useWorkers: true,
+  workerCount: 4,
+});
+```
 
+### Browser
+```html
+<script src="https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.umd.js"></script>
+<script>
+  const csv = jtcsv.jsonToCsv([{ a: 1 }]);
+</script>
+```
+or as ESM module:
+```js
+import { csvToJson, parseCsvFile } from 'jtcsv/browser';
+```
+
+### CLI
 ```bash
-# Convert CSV file to JSON
 npx jtcsv csv-to-json data.csv --output data.json
-
-# Convert JSON to CSV with custom delimiter
 npx jtcsv json-to-csv data.json --delimiter ";" --output out.csv
-
-# Stream processing with NDJSON
 npx jtcsv csv-to-ndjson large.csv output.ndjson --stream
-
-# See all options
 npx jtcsv --help
 ```
 
-Full documentation: `docs/CLI.md`
+## Migrating to jtcsv
 
-## Browser usage
-- Bundler: `import { csvToJson, jsonToCsv } from 'jtcsv/browser';`
-- CDN UMD: `https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.umd.js`
-- CDN ESM: `https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.esm.js`
-
-See `docs/BROWSER.md` for full browser API and worker helpers.
-
-## CLI
 ```bash
-npx jtcsv csv-to-json input.csv output.json
-npx jtcsv json-to-csv input.json output.csv
-npx jtcsv stream csv-to-json big.csv output.json
-npx jtcsv batch json-to-csv "data/*.json" output/
-
-# optional TUI
-npx jtcsv tui
+# Automated codemod — rewrites imports + Papa.parse / Papa.unparse calls.
+npx @jtcsv/codemod papaparse "src/**/*.{js,ts,tsx}"
 ```
+See [`@jtcsv/codemod`](packages/jtcsv-codemod/) and the manual
+migration guides in `docs/MIGRATION_PAPAPARSE.md` and
+`docs/MIGRATION_CSVTOJSON.md`.
 
-See `docs/CLI.md` for full command list and options.
+## Framework adapters (published)
 
-## Demos
-Run these from the repo root:
-```bash
-# Express API demo
-npm run demo
+| Package          | Framework                                         |
+|------------------|---------------------------------------------------|
+| `@jtcsv/express` | Express ^4 \|\| ^5                                |
+| `@jtcsv/fastify` | Fastify ^4 \|\| ^5                                |
+| `@jtcsv/nextjs`  | Next.js ^13 \|\| ^14 \|\| ^15                     |
+| `@jtcsv/hono`    | Hono ^4                                           |
+| `@jtcsv/nestjs`  | NestJS ^9 \|\| ^10 \|\| ^11                       |
 
-# Web demo (Vite dev server on http://localhost:3000)
-npm run demo:web
+Client-side / meta-framework recipes (Vue, Angular, Svelte, SvelteKit,
+Nuxt, Remix, tRPC) live as copy-paste examples in
+[`examples/frameworks/`](examples/frameworks/) — open an issue if any
+deserves a published wrapper.
 
-# Preview built demo
-npm run demo:serve
-```
+## Documentation
 
-From inside `demo/` use:
-```bash
-npm run dev
-npm run preview
-npm run serve
-```
+| Topic                        | Doc                                |
+|------------------------------|------------------------------------|
+| 5-minute getting started     | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) |
+| Decision tree (which API?)   | [docs/API_DECISION_TREE.md](docs/API_DECISION_TREE.md) |
+| Canonical names + aliases    | [docs/API_CANONICALIZATION.md](docs/API_CANONICALIZATION.md) |
+| Errors reference             | [docs/ERRORS.md](docs/ERRORS.md)   |
+| Troubleshooting              | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
+| 10 practical recipes         | [docs/recipes/index.md](docs/recipes/index.md) |
+| Schema validator             | [docs/SCHEMA_VALIDATOR.md](docs/SCHEMA_VALIDATOR.md) |
+| Browser API + Web Workers    | [docs/BROWSER.md](docs/BROWSER.md), [docs/BROWSER_WORKERS.md](docs/BROWSER_WORKERS.md) |
+| CLI usage                    | [docs/CLI.md](docs/CLI.md)         |
+| Plugin system                | [docs/PLUGINS.md](docs/PLUGINS.md), [docs/PLUGIN_AUTHORING.md](docs/PLUGIN_AUTHORING.md) |
+| Public benchmarks            | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
+| Migration from papaparse     | [docs/MIGRATION_PAPAPARSE.md](docs/MIGRATION_PAPAPARSE.md) |
+| Framework integrations       | [docs/integrations/](docs/integrations/) |
 
-## Plugin system
-The plugin-enabled API is exported from `jtcsv/plugins`.
+## Status
 
-```javascript
-const { create } = require('jtcsv/plugins');
-
-const jtcsv = create();
-jtcsv.use('my-plugin', { name: 'My Plugin', version: '1.0.0' });
-```
-
-See `docs/PLUGINS.md` and `plugins/README.md` for integrations.
+This is a young package (created January 2026) actively pushing toward
+v4.0. Public roadmap is tracked in
+[`JTCSV_perfection_checklist.md`](JTCSV_perfection_checklist.md). Real
+adoption metrics live on the npm and Scorecard badges above — no
+aspirational numbers are quoted in this README.
 
 ## Development
-Run from the repo root:
+
 ```bash
-npm test
-npm run test:coverage
-npm run test:coverage:entry
-npm run test:coverage:ts
-npm run test:types
-npm run tsc:types
-npm run build
+npm install
+npm test                       # full suite
+npm run benchmark:vs:quick     # head-to-head bench (10 K only)
+npm run size                   # bundle-size gate
+npm run tsc:check              # typecheck (non-strict)
+npm run tsc:check-strict:count # strict ratchet (regression gate)
+npm run build                  # rollup + tsc declarations
+```
+
+Releases are managed via [changesets](https://github.com/changesets/changesets):
+
+```bash
+npx changeset            # record an intent
+git push                 # → CI opens "Version Packages" PR
+                         #   → merge → CI publishes with --provenance
 ```
 
 Linux validation (Docker):
@@ -220,4 +213,5 @@ docker run --rm -v /path/to/jtcsv:/work -w /work node:20 bash -lc "npm ci && npm
 ```
 
 ## License
-MIT. See `LICENSE`.
+
+MIT. See [`LICENSE`](LICENSE).
