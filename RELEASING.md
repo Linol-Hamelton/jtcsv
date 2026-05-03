@@ -19,41 +19,86 @@ to `.changeset/`. Commit that file along with the PR.
 ## Cutting 3.2.0 manually
 
 The first 3.2.0 release is tracked by `.changeset/3-2-0-release.md`.
-To cut it from your machine:
+
+> **Why minor on `jtcsv` but major on each `@jtcsv/*`?**
+> The sub-packages bump major because their `peerDependencies.jtcsv`
+> range changes from `^3.1.0 || ^4.0.0` to a tighter range — that's
+> breaking for any consumer pinned to an older jtcsv. The behavior of
+> the sub-package itself is unchanged. If you'd rather they stay 1.x,
+> edit `.changeset/3-2-0-release.md` to mark them `patch` instead.
+
+### Bash / sh / Linux / macOS
 
 ```bash
-# 1. Sanity check what changesets sees
+npx changeset status
+npm run release:version
+git diff
+git add -A && git commit -m "chore: version packages for 3.2.0"
+npm run build && npm test && npm run size && npm run tsc:check-strict:count
+npm run release:publish:signed     # cross-env NPM_CONFIG_PROVENANCE=true
+git tag jtcsv@3.2.0 && git push origin main --tags
+```
+
+### Windows PowerShell (5.1 or 7)
+
+PowerShell 5.1 doesn't have `&&`/`||` chain operators, and env vars are
+set with `$env:NAME = '…'` rather than the bash `NAME=… cmd` prefix:
+
+```powershell
+# 1. See what's pending
 npx changeset status
 
-# 2. Apply the version bumps + write CHANGELOG.md entries.
-#    This modifies every package.json that has a pending changeset
-#    AND consumes (deletes) the .changeset/*.md files.
+# 2. Apply bumps + write CHANGELOG.md (consumes .changeset/*.md).
+#    NOTE: needs `$env:GITHUB_TOKEN` ONLY if your config uses
+#    @changesets/changelog-github (it doesn't by default — see
+#    .changeset/config.json).
 npm run release:version
 
-# 3. Review the diff. Pay attention to the peer-dep ranges in the
-#    @jtcsv/* sub-packages: changesets will widen `^3.1.0 || ^4.0.0`
-#    to `^3.2.0 || ^4.0.0` automatically since the parent bumped.
+# 3. Review
 git diff
 
-# 4. Commit
+# 4. Commit (chain via ; — every step is independent on success)
 git add -A
 git commit -m "chore: version packages for 3.2.0"
 
-# 5. Build + run all gates one more time
+# 5. Run all gates one more time. Use ';' between steps; if any fails,
+#    later ones still run, so check exit codes / status afterwards.
 npm run build
 npm test
 npm run size
 npm run tsc:check-strict:count
 
-# 6. Publish. With NPM_CONFIG_PROVENANCE=true, every package gets a
-#    Sigstore attestation; consumers can verify with
-#    `npm audit signatures`.
-NPM_CONFIG_PROVENANCE=true npm run release:publish
+# 6. Publish with provenance. Use the cross-platform script that wraps
+#    NPM_CONFIG_PROVENANCE=true via `cross-env` (works the same on PS,
+#    cmd, bash):
+npm run release:publish:signed
 
 # 7. Tag and push
 git tag jtcsv@3.2.0
 git push origin main --tags
 ```
+
+### Pre-publish checklist
+
+Before step 6 (`npm run release:publish`), make sure:
+
+1. **You're logged in to npm with publish access:**
+   ```bash
+   npm whoami           # should print your username
+   npm login            # if not, log in first
+   ```
+2. **`NPM_TOKEN` is NOT in scope locally** (it's a CI-only thing).
+   `npm publish` from your machine uses your `~/.npmrc` auth.
+3. **2FA is enabled on your npm account** — npm will prompt for a code.
+4. The Git working tree is clean (commit step 4 is done) and you're on
+   `main` (or whatever branch you intend to tag).
+
+### What gets published
+
+`npm run release:publish` runs `changeset publish`, which iterates over
+every workspace package whose version was bumped in step 2 and runs
+`npm publish` against each. The order is deterministic (dependencies
+first), so `jtcsv` publishes before `@jtcsv/express-middleware` etc.
 
 ## Cutting from CI (the normal path)
 
