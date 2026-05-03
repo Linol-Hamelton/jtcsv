@@ -192,3 +192,6 @@ Dockerfile.test
 docker-compose.test.yml
 docker-test.md
 test-*.js
+
+# Local-only screenshots (not part of the project)
+/screenshot*.png

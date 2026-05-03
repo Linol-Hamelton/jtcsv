@@ -1,7 +1,7 @@
 {
   "name": "@jtcsv/nextjs",
   "version": "1.0.0",
-  "description": "Next.js интеграция для JTCSV - API routes, React hooks и компоненты",
+  "description": "Next.js \u0420\u0451\u0420\u0405\u0421\u201a\u0420\u00b5\u0420\u0456\u0421\u0402\u0420\u00b0\u0421\u2020\u0420\u0451\u0421\u040f \u0420\u0491\u0420\u00bb\u0421\u040f JTCSV - API routes, React hooks \u0420\u0451 \u0420\u0454\u0420\u0455\u0420\u0458\u0420\u0457\u0420\u0455\u0420\u0405\u0420\u00b5\u0420\u0405\u0421\u201a\u0421\u2039",
   "main": "index.js",
   "module": "index.esm.js",
   "types": "index.d.ts",
@@ -39,7 +39,7 @@
     "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "jtcsv": "^3.2.0 || ^4.0.0"
+    "jtcsv": "^3.1.0 || ^4.0.0"
   },
   "publishConfig": {
     "access": "public",
@@ -54,5 +54,3 @@
     "examples/"
   ]
 }
-
-

@@ -7,9 +7,28 @@
     "jtcsv-tui": "bin/jtcsv-tui.js"
   },
   "license": "MIT",
-  "dependencies": {
+  "author": "Ruslan Fomenko",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "packages/jtcsv-tui"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-tui#readme",
+  "peerDependencies": {
+    "jtcsv": "^3.1.0 || ^4.0.0",
     "blessed": "^0.1.81",
-    "blessed-contrib": "4.11.0",
-    "jtcsv": "^2.1.4"
-  }
+    "blessed-contrib": "^4.11.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "README.md"
+  ]
 }

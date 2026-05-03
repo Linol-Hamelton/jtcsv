@@ -143,7 +143,11 @@
     "build:ts": "npm run build",
     "build:ts:watch": "npm run tsc:watch & npm run build:watch",
     "lint:ts": "eslint --ext .ts,.tsx .",
-    "lint:ts:fix": "eslint --ext .ts,.tsx --fix ."
+    "lint:ts:fix": "eslint --ext .ts,.tsx --fix .",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "release:version": "changeset version",
+    "release:publish": "npm run build && changeset publish"
   },
   "keywords": [
     "json",
@@ -226,6 +230,8 @@
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
     "@babel/preset-react": "^7.26.0",
+    "@changesets/changelog-github": "0.6.0",
+    "@changesets/cli": "2.31.0",
     "@eslint/js": "^9.18.0",
     "@rollup/plugin-commonjs": "^28.0.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
@@ -258,6 +264,16 @@
   },
   "type": "commonjs",
   "sideEffects": false,
+  "workspaces": [
+    "packages/jtcsv-excel",
+    "packages/jtcsv-tui",
+    "packages/jtcsv-validator",
+    "plugins/express-middleware",
+    "plugins/fastify-plugin",
+    "plugins/nextjs-api",
+    "plugins/hono",
+    "plugins/nestjs"
+  ],
   "size-limit": [
     {
       "name": "jtcsv/csv (entry, gz)",

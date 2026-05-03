@@ -1,7 +1,7 @@
 {
   "name": "@jtcsv/validator",
   "version": "1.0.0",
-  "description": "Валидация CSV/JSON данных для JTCSV с Zod-подобным API",
+  "description": "\u0420\u2019\u0420\u00b0\u0420\u00bb\u0420\u0451\u0420\u0491\u0420\u00b0\u0421\u2020\u0420\u0451\u0421\u040f CSV/JSON \u0420\u0491\u0420\u00b0\u0420\u0405\u0420\u0405\u0421\u2039\u0421\u2026 \u0420\u0491\u0420\u00bb\u0421\u040f JTCSV \u0421\u0403 Zod-\u0420\u0457\u0420\u0455\u0420\u0491\u0420\u0455\u0420\u00b1\u0420\u0405\u0421\u2039\u0420\u0458 API",
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "scripts": {
@@ -35,11 +35,11 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-validator#readme",
   "peerDependencies": {
-    "jtcsv": "^2.1.0"
+    "jtcsv": "^3.1.0 || ^4.0.0"
   },
-  "devDependencies": {
-    "jest": "^29.0.0",
-    "eslint": "^8.57.0"
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "files": [
     "src/",
@@ -47,5 +47,3 @@
     "README.md"
   ]
 }
-
-
