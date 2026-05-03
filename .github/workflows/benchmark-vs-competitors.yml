@@ -1,0 +1,109 @@
+name: Benchmark vs competitors
+
+# Runs the head-to-head bench (jtcsv vs papaparse vs csv-parse vs fast-csv)
+# on every push to main and on PRs that touch the parsing core. Results are:
+#  - Posted to the run's summary as a markdown table.
+#  - Saved to gh-pages via benchmark-action/github-action-benchmark, which
+#    auto-renders a chart at https://<owner>.github.io/jtcsv/dev/bench/.
+#  - Used as a regression gate on PRs (alert if a parser slows down >25%).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'csv-to-json.ts'
+      - 'json-to-csv.ts'
+      - 'errors.ts'
+      - 'package.json'
+      - 'rollup.config.mjs'
+      - 'scripts/bench-vs-competitors.js'
+      - '.github/workflows/benchmark-vs-competitors.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'csv-to-json.ts'
+      - 'json-to-csv.ts'
+      - 'errors.ts'
+      - 'scripts/bench-vs-competitors.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write       # benchmark-action commits to gh-pages
+  pull-requests: write  # comment on PRs with regression alerts
+  deployments: write    # update the GH-Pages deployment status
+
+jobs:
+  benchmark:
+    name: jtcsv vs papaparse / csv-parse / fast-csv
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Run benchmarks
+        run: node --expose-gc scripts/bench-vs-competitors.js
+
+      - name: Render results to job summary
+        run: |
+          {
+            echo '## Benchmark results'
+            echo ''
+            echo '`jtcsv` vs `papaparse` vs `csv-parse` vs `fast-csv` — CSV→JSON parse, median of 5 runs.'
+            echo ''
+            node -e "
+              const r = require('./benchmarks/results.json');
+              const byWorkload = {};
+              for (const e of r) {
+                const m = e.name.match(/^(.+) — (.+)$/);
+                if (!m) continue;
+                const [, parser, workload] = m;
+                (byWorkload[workload] ||= []).push({ parser, ms: e.value });
+              }
+              for (const [w, rows] of Object.entries(byWorkload)) {
+                rows.sort((a,b)=>a.ms-b.ms);
+                const fastest = rows[0].ms;
+                console.log('### ' + w);
+                console.log();
+                console.log('| Parser | Median (ms) | Ratio |');
+                console.log('|---|---:|---:|');
+                for (const r of rows) {
+                  console.log('| ' + r.parser + ' | ' + r.ms.toFixed(1) + ' | ' + (r.ms/fastest).toFixed(2) + 'x |');
+                }
+                console.log();
+              }
+            "
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish to gh-pages chart
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.event_name == 'push'
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: benchmarks/results.json
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '125%'
+          comment-on-alert: true
+          fail-on-alert: false
+          alert-comment-cc-users: '@RuslanFomenko'
+
+      - name: Upload raw JSON as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results-${{ github.sha }}
+          path: benchmarks/results.json
+          retention-days: 30

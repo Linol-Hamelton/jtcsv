@@ -1,12 +1,29 @@
-# jtcsv - JSON <-> CSV toolkit for Node.js and browser
-Current version: 3.1.0
-
+# jtcsv — JSON ↔ CSV toolkit for Node.js and browser
 
 [![npm version](https://img.shields.io/npm/v/jtcsv)](https://www.npmjs.com/package/jtcsv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Zero-Deps Core](https://img.shields.io/badge/core-zero%20deps-brightgreen.svg)](https://www.npmjs.com/package/jtcsv)
+[![Bundle Size](https://img.shields.io/badge/jtcsv%2Fcsv-18.1%20KB%20gz-blue.svg)](#bundle-size)
+[![Bench](https://img.shields.io/badge/bench-fastest%20vs%20papaparse%20%E2%80%A2%20csv--parse%20%E2%80%A2%20fast--csv-success.svg)](#performance)
+[![Provenance](https://img.shields.io/badge/npm-provenance%20signed-success.svg)](https://docs.npmjs.com/generating-provenance-statements)
 
-Fast JSON <-> CSV conversion with streaming helpers, NDJSON/TSV support, and optional integrations.
+Fast JSON ↔ CSV conversion with streaming helpers, NDJSON/TSV support, and optional integrations.
+
+## Performance
+
+CSV → JSON parsing on Node 22, median of 5 runs (lower is better):
+
+| Parser              | 100K rows (5.7 MB) | 1M rows (60 MB) |
+|---------------------|-------------------:|----------------:|
+| **jtcsv (fastPath)** | **83 ms**          | **836 ms**       |
+| papaparse           | 149 ms (1.8×)       | 1752 ms (2.1×)   |
+| jtcsv (default)     | 188 ms (2.3×)       | 1858 ms (2.2×)   |
+| csv-parse           | 260 ms (3.1×)       | 2659 ms (3.2×)   |
+| fast-csv            | 339 ms (4.1×)       | 3491 ms (4.2×)   |
+
+Reproduce: `npm run benchmark:vs`. CI publishes the latest numbers to
+[github.io/jtcsv/dev/bench](https://linol-hamelton.github.io/jtcsv/dev/bench/)
+on every merge to main and fails PRs that regress more than 25 %.
 
 **Try Live:** `playground.html` (local) - `npm run demo:web`
 [TRY LIVE](playground.html)

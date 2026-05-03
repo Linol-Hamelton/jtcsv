@@ -1,0 +1,107 @@
+[
+  {
+    "name": "jtcsv (fastPath) — small (10K)",
+    "unit": "ms",
+    "value": 14.47,
+    "range": "± 4.3 ms",
+    "extra": "rows=10000, csv=0.5MB, samples=5"
+  },
+  {
+    "name": "papaparse — small (10K)",
+    "unit": "ms",
+    "value": 17.49,
+    "range": "± 2.9 ms",
+    "extra": "rows=10000, csv=0.5MB, samples=5"
+  },
+  {
+    "name": "jtcsv — small (10K)",
+    "unit": "ms",
+    "value": 25.66,
+    "range": "± 11.0 ms",
+    "extra": "rows=10000, csv=0.5MB, samples=5"
+  },
+  {
+    "name": "fast-csv — small (10K)",
+    "unit": "ms",
+    "value": 42.03,
+    "range": "± 5.7 ms",
+    "extra": "rows=10000, csv=0.5MB, samples=5"
+  },
+  {
+    "name": "csv-parse — small (10K)",
+    "unit": "ms",
+    "value": 46.12,
+    "range": "± 9.6 ms",
+    "extra": "rows=10000, csv=0.5MB, samples=5"
+  },
+  {
+    "name": "jtcsv (fastPath) — medium (100K)",
+    "unit": "ms",
+    "value": 82.58,
+    "range": "± 6.6 ms",
+    "extra": "rows=100000, csv=5.6MB, samples=5"
+  },
+  {
+    "name": "papaparse — medium (100K)",
+    "unit": "ms",
+    "value": 148.7,
+    "range": "± 14.1 ms",
+    "extra": "rows=100000, csv=5.6MB, samples=5"
+  },
+  {
+    "name": "jtcsv — medium (100K)",
+    "unit": "ms",
+    "value": 188.46,
+    "range": "± 16.9 ms",
+    "extra": "rows=100000, csv=5.6MB, samples=5"
+  },
+  {
+    "name": "csv-parse — medium (100K)",
+    "unit": "ms",
+    "value": 259.63,
+    "range": "± 24.9 ms",
+    "extra": "rows=100000, csv=5.6MB, samples=5"
+  },
+  {
+    "name": "fast-csv — medium (100K)",
+    "unit": "ms",
+    "value": 339.22,
+    "range": "± 56.7 ms",
+    "extra": "rows=100000, csv=5.6MB, samples=5"
+  },
+  {
+    "name": "jtcsv (fastPath) — large (1M)",
+    "unit": "ms",
+    "value": 835.64,
+    "range": "± 45.6 ms",
+    "extra": "rows=1000000, csv=60.3MB, samples=5"
+  },
+  {
+    "name": "papaparse — large (1M)",
+    "unit": "ms",
+    "value": 1751.52,
+    "range": "± 76.9 ms",
+    "extra": "rows=1000000, csv=60.3MB, samples=5"
+  },
+  {
+    "name": "jtcsv — large (1M)",
+    "unit": "ms",
+    "value": 1857.85,
+    "range": "± 151.2 ms",
+    "extra": "rows=1000000, csv=60.3MB, samples=5"
+  },
+  {
+    "name": "csv-parse — large (1M)",
+    "unit": "ms",
+    "value": 2658.5,
+    "range": "± 476.7 ms",
+    "extra": "rows=1000000, csv=60.3MB, samples=5"
+  },
+  {
+    "name": "fast-csv — large (1M)",
+    "unit": "ms",
+    "value": 3490.65,
+    "range": "± 327.8 ms",
+    "extra": "rows=1000000, csv=60.3MB, samples=5"
+  }
+]
