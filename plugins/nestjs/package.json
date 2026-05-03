@@ -1,6 +1,6 @@
 {
   "name": "@jtcsv/nestjs",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "NestJS module for jtcsv - CSV/JSON conversion in NestJS applications",
   "main": "index.js",
   "types": "index.d.ts",
@@ -35,7 +35,7 @@
     "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0",
     "@nestjs/core": "^9.0.0 || ^10.0.0 || ^11.0.0",
     "rxjs": "^7.0.0",
-    "jtcsv": "^3.1.0 || ^4.0.0"
+    "jtcsv": "^3.2.0"
   },
   "publishConfig": {
     "access": "public",

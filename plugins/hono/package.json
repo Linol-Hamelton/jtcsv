@@ -1,6 +1,6 @@
 {
   "name": "@jtcsv/hono",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Hono middleware for JTCSV",
   "main": "index.js",
   "types": "index.d.ts",
@@ -28,7 +28,7 @@
   },
   "peerDependencies": {
     "hono": "^4.0.0",
-    "jtcsv": "^3.1.0 || ^4.0.0"
+    "jtcsv": "^3.2.0"
   },
   "publishConfig": {
     "access": "public",

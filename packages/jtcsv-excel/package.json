@@ -1,6 +1,6 @@
 {
   "name": "@jtcsv/excel",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Excel integration for JTCSV - Convert between JSON, CSV and Excel formats",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-excel#readme",
   "peerDependencies": {
-    "jtcsv": "^3.1.0 || ^4.0.0",
+    "jtcsv": "^3.2.0",
     "exceljs": "^4.4.0"
   },
   "peerDependenciesMeta": {

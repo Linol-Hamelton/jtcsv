@@ -1,6 +1,67 @@
 # Changelog
-Current version: 3.1.0
 
+## 3.2.0
+
+### Minor Changes
+
+- 1ef708c: ## jtcsv 3.2.0 — bundle diet, modernization, ecosystem
+  ### Highlights
+  - **Tarball gzip −49 %** (703 → 359 kB), unpacked −44 % (3.9 MB → 2.2 MB),
+    88 vs 192 files. The unpacked TS sources, `examples/`, and source maps
+    no longer ship; rollup is the sole producer of `.js` in `dist/`.
+  - **Subpath imports** (`jtcsv/csv`, `jtcsv/json`, `jtcsv/streams`, `jtcsv/ndjson`,
+    `jtcsv/tsv`, `jtcsv/errors`, plus the existing `jtcsv/browser`, `/plugins`, `/schema`,
+    `/cli`). `import { csvToJson } from 'jtcsv/csv'` costs **~18 KB gzipped**.
+  - **ES2022 target** + `engines.node: >=18.17.0`. Drops the `@babel/preset-env`
+    - 4 babel plugins from devDependencies. Rollup pipeline no longer transpiles.
+  - **Worker threads** wired into `csvToJsonAsync` / `jsonToCsvAsync` /
+    `streamCsvToJsonAsync` / `streamJsonToCsvAsync` via the new `useWorkers`
+    - `workerCount` options. Thresholded (1 MB CSV / 20 K rows) so small
+      inputs stay sync. Closes 7 in-tree TODOs.
+  - **Runtime deprecation warnings** for `csvToJsonFile`, `csvToJsonFileSync`,
+    `csvToJsonStream`, `csvFileToJsonStream` — each emits a one-time
+    `DeprecationWarning` (code `JTCSV_DEP_*`) on first call. Removal target: 5.0.
+  - **Strict-TS regression gate** at 65 errors (was untracked / 188 unbounded).
+    Any future PR that bumps strict-mode errors fails publish.
+  - **CI bench badge**: head-to-head vs papaparse / csv-parse / fast-csv on
+    every push to main, published to GitHub Pages, with a 25 % regression
+    alert. Local results: `jtcsv (fastPath)` is **1.8–4.2× faster** than the
+    competition on 100 K and 1 M rows.
+  - **`@jtcsv/codemod`**: new sibling package with a jscodeshift transform
+    that auto-rewrites `papaparse` imports + calls to jtcsv equivalents.
+    Run `npx @jtcsv/codemod papaparse "src/**/*.{js,ts,tsx}"`.
+  - **OpenSSF Scorecard** workflow + badge.
+  - **Property-based fuzz tests** (fast-check) cover newline-in-cell and
+    quote-in-cell round-trips with 80–100 random inputs each.
+  ### @jtcsv/\* sub-packages
+  All ten sub-packages now ship with:
+  - `peerDependencies.jtcsv: "^3.1.0 || ^4.0.0"` (was a mix of `^2.1.0`, `^2.1.3`, `^3.1.0` — none compatible with 3.x simultaneously).
+  - `publishConfig: { access: public, provenance: true }` — every release is signed via Sigstore.
+  - Updated framework peer ranges: Express ^4 || ^5, Fastify ^4 || ^5, Next.js ^13 || ^14 || ^15, React ^18 || ^19, NestJS ^9 || ^10 || ^11.
+  - 7 client-only adapters (vue, angular, svelte, sveltekit, nuxt, remix, trpc) demoted to `examples/frameworks/` since their wrapper value-add is thin.
+  ### Migration
+  Most users need no changes; the deprecated function names still work and
+  just print a one-time warning. To clean up:
+  ```bash
+  npx @jtcsv/codemod papaparse "src/**/*.{js,ts,tsx}"
+  ```
+  Or replace the names by hand:
+  | Deprecated            | Use instead                 |
+  | --------------------- | --------------------------- |
+  | `csvToJsonFile`       | `readCsvAsJson`             |
+  | `csvToJsonFileSync`   | `readCsvAsJsonSync`         |
+  | `csvToJsonStream`     | `createCsvToJsonStream`     |
+  | `csvFileToJsonStream` | `createCsvFileToJsonStream` |
+  Node 12, 14, 16 are no longer supported. Bump to Node 18.17 or newer.
+  ### Honest disclaimers
+  - Strict TypeScript still has **65 errors** in the 9 hot files outside the
+    excluded experimental modules. They're locked behind the regression
+    gate; per-file cleanup is ongoing.
+  - Quote-in-cell + delimiter-in-cell combinations still trip the parser's
+    state machine on some shrunk fast-check counterexamples; tracked
+    separately. Default `normalizeQuotes: true` is intentionally lossy
+    (collapses `""` → `"`); pass `normalizeQuotes: false` for strict
+    RFC 4180 round-trips.
 
 All notable changes to this project will be documented in this file.
 
@@ -10,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.2.9] - 2026-01-29
 
 ### Fixed
+
 - **CSS compatibility**: Added standard `background-clip: text` and `color: transparent` for cross‑browser gradient text in `web-worker-usage.html`
 - **Web Worker error handling**: Fixed `Cannot read properties of undefined` in `handleWorkerResult` when worker returns array directly
 - **Linting errors**:
@@ -18,23 +80,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Duplicate function**: Renamed duplicate `createErrorMessage` to `createDetailedErrorMessage` in `errors.js`
 
 ### Added
+
 - **Server availability check**: Added HEAD request to `csv-parser.worker.js` in `web-worker-usage.html` with UI feedback
 - **Inline Web Worker fallback**: If external worker fails to load, creates inline worker via Blob URL
 - **Strategy coverage report**: Created `jtcsv-strategy-coverage-report.md` documenting implementation of all recommendations
 
 ### Changed
+
 - **Merged HTML files**: Combined `web-worker-usage.html` and `web-worker-usage-fixed.html` into a single improved example
 - **Dependency audit**: Removed unused devDependencies (`@babel/preset-env`, `@size-limit/preset-small-lib`, `blessed`, `blessed-contrib`, `jest-environment-jsdom`)
 
 ## [2.2.8] - 2026-01-27
 
 ### Fixed
+
 - **Cross-platform security tests**: Fixed security-fuzzing tests for Linux compatibility
   - `file://` URLs and UNC paths are now platform-aware in tests
   - UNC path validation moved before `path.resolve()` to prevent network timeouts
 - Added UNC path blocking to `json-save.js` for consistency
 
 ### Changed
+
 - Security tests now properly account for platform differences:
   - `file:` is a valid directory name on Linux (not a URL scheme)
   - Backslashes are valid filename characters on Linux
@@ -42,6 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.2.7] - 2026-01-27
 
 ### Changed
+
 - **CI/CD Optimization**: Restructured GitHub Actions workflow
   - Separated tests and coverage checks into distinct jobs
   - Tests run on Node.js 18.x, 20.x, 22.x without coverage overhead
@@ -51,18 +118,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated codecov-action to v4, upload-artifact to v4
 
 ### Fixed
+
 - Excluded unused `node-optimizations.js` from coverage collection
 - Coverage now reports 99.74% (was artificially lowered by unused file)
 
 ## [2.2.6] - 2026-01-26
 
 ### Fixed
+
 - CI workflow optimizations
 - Removed Node 24.x from matrix (not yet stable)
 
 ## [2.2.5] - 2026-01-26
 
 ### Fixed
+
 - Benchmark threshold adjustments for CI stability
 
 ## [2.1.7] - 2026-01-26
@@ -74,13 +144,16 @@ This release completes all planned features from the improvement roadmap, bringi
 ### Added
 
 #### New Commands (4)
+
 - **NDJSON Support**: New commands for Newline Delimited JSON format
+
   - `ndjson-to-csv` - Convert NDJSON to CSV format
   - `csv-to-ndjson` - Convert CSV to NDJSON format
   - `ndjson-to-json` - Convert NDJSON to JSON array
   - `json-to-ndjson` - Convert JSON array to NDJSON
 
 - **Data Manipulation**
+
   - `unwrap` / `flatten` - Flatten nested JSON structures with configurable depth
   - Support for `--flatten-depth` and `--flatten-prefix` options
 
@@ -93,7 +166,9 @@ This release completes all planned features from the improvement roadmap, bringi
   - Configurable host and port (`--host`, `--port`)
 
 #### New Infrastructure
+
 - **Transform System** (`src/utils/transform-loader.js`, 205 lines)
+
   - Load custom transform functions from JavaScript files
   - Security validation (directory traversal prevention, file type checking)
   - Support for multiple export formats (`module.exports`, `default`, `transform`)
@@ -101,6 +176,7 @@ This release completes all planned features from the improvement roadmap, bringi
   - Error handling with row-level context
 
 - **Schema Validation** (`src/utils/schema-validator.js`, 594 lines)
+
   - Full JSON Schema validation support
   - Fallback simple validator (works without external dependencies)
   - Comprehensive type checking (string, number, integer, float, boolean, date, array, object)
@@ -108,6 +184,7 @@ This release completes all planned features from the improvement roadmap, bringi
   - Row-level error reporting with field context
 
 - **Advanced Transform Hooks** (`src/core/transform-hooks.js`, 350 lines)
+
   - `TransformHooks` class with lifecycle methods
   - Hook types: `beforeConvert`, `afterConvert`, `perRow`
   - 9 predefined transformation hooks:
@@ -134,7 +211,9 @@ This release completes all planned features from the improvement roadmap, bringi
 ### Enhanced
 
 #### CLI Improvements
+
 - **Batch Processing**
+
   - Full implementation of `batch process` command for mixed file types
   - Parallel processing with configurable limit (default: 4 concurrent files)
   - Progress reporting with percentage and file counts
@@ -142,6 +221,7 @@ This release completes all planned features from the improvement roadmap, bringi
   - Glob pattern support for flexible file matching
 
 - **Streaming Functions**
+
   - All CLI parameters now properly passed to streaming functions
   - `--rename` parameter works consistently across all stream commands
   - Enhanced error messages with detailed context
@@ -154,17 +234,19 @@ This release completes all planned features from the improvement roadmap, bringi
   - `--parse-booleans` - Parse boolean strings to booleans (all commands)
   - `--rename=JSON` - Rename columns with mapping object (all commands)
   - `--flatten-depth=N` - Control unwrap depth (default: 10)
-  - `--flatten-prefix=STR` - Separator for flattened keys (default: '_')
+  - `--flatten-prefix=STR` - Separator for flattened keys (default: '\_')
   - `--port=N` - Web server port (default: 3000)
   - `--host=STR` - Web server host (default: localhost)
 
 #### TUI Integration
+
 - Full integration with `@jtcsv/tui` package
 - `tui` command launches Terminal User Interface
 - Stream processing support in TUI
 - Progress bars for batch operations
 
 ### Changed
+
 - Improved help text with complete command list
 - Enhanced error messages with actionable suggestions
 - Better CLI argument parsing with position-independent options
@@ -172,6 +254,7 @@ This release completes all planned features from the improvement roadmap, bringi
 - Optimized streaming performance with proper parameter forwarding
 
 ### Fixed
+
 - Fixed `--transform` parameter not being applied in conversions
 - Fixed `--schema` parameter not performing validation
 - Fixed `--rename` being ignored in streaming functions
@@ -180,6 +263,7 @@ This release completes all planned features from the improvement roadmap, bringi
 - Fixed unwrap/flatten commands being missing from CLI
 
 ### Performance
+
 - TransformHooks: 10,526 objects/sec with 30 hooks
 - Fast-path engine: 625,000 rows/sec for simple CSV
 - DelimiterCache: 3.67x speedup with 99.92% hit rate
@@ -187,6 +271,7 @@ This release completes all planned features from the improvement roadmap, bringi
 - TSV: 59,524 objects/sec throughput
 
 ### Testing
+
 - ✅ All 555 tests passing
 - Comprehensive coverage for new features
 - Integration tests for CLI commands
@@ -194,6 +279,7 @@ This release completes all planned features from the improvement roadmap, bringi
 - Performance benchmarks included
 
 ### Security
+
 - Zero runtime dependencies in core package (unchanged)
 - Transform loader includes security validation
 - Path traversal prevention in file operations
@@ -201,6 +287,7 @@ This release completes all planned features from the improvement roadmap, bringi
 - **Note**: 3 moderate vulnerabilities in dev dependencies (blessed-contrib) - non-critical for production use
 
 ### Documentation
+
 - Updated help text with all new commands
 - Added examples for NDJSON operations
 - Documented transform and schema validation usage
@@ -208,17 +295,20 @@ This release completes all planned features from the improvement roadmap, bringi
 - Improvement plan documents updated with completion status
 
 ### Breaking Changes
+
 None - All changes are backward compatible
 
 ## [2.1.6] - 2026-01-26
 
 ### Fixed
+
 - Critical dependency issue: Added missing `glob` dependency for batch processing
 - Streaming functions now properly support `--rename` parameter
 - Fixed logical error in `streamCsvToJson` function (variable declaration order)
 - Removed duplicate code in `convertJsonToCsv` function
 
 ### Added
+
 - Complete implementation of `batch process` command for mixed file types
 - Full integration of `--transform` parameter across all conversion functions
 - Full integration of `--schema` parameter for JSON schema validation
@@ -227,23 +317,27 @@ None - All changes are backward compatible
 - Enhanced CLI help with detailed examples for new parameters
 
 ### Changed
+
 - Updated `glob` dependency to latest version (10.5.0)
 - Removed "EXPERIMENTAL" label from `--transform` and `--schema` parameters
 - Improved error messages for JSON parsing and transform loading
 - Enhanced batch processing with better progress reporting
 
 ### Security
+
 - Maintained zero runtime dependencies in core package
 - All security features preserved (CSV injection protection, path traversal prevention)
 
 ## [2.1.5] - 2026-01-25
 
 ### Fixed
+
 - Critical syntax error in convertCsvToJson function (unclosed brace at line 307)
 - Improved error handling throughout the CLI application
 
 ### Added
-- Transform support via 	ransform-loader module for custom data transformations
+
+- Transform support via ransform-loader module for custom data transformations
 - Schema validation support via schema-validator module (EXPERIMENTAL)
 - New save-csv command to save data as CSV file
 - New utility modules in src/utils/ directory
@@ -251,51 +345,62 @@ None - All changes are backward compatible
 - Support for experimental --transform and --schema options
 
 ### Changed
+
 - Updated demo/package.json dependencies
 - Improved CLI help text with better formatting
-- Removed outdated test files (	est-*.js, 	est-*.html)
+- Removed outdated test files ( est-_.js, est-_.html)
 - Enhanced data transformation pipeline in conversion functions
 
 ### Security
+
 - Maintained zero runtime dependencies in core package
 - Added input validation and sanitization improvements
 
 ## [2.1.4] - 2026-01-24
 
 ### Added
+
 - Browser streaming CSV iterator (`csvToJsonIterator`, `parseCsvFileStream`) and lazy worker helpers.
 - Jest setup polyfills for `TextDecoder`/`TransformStream` in jsdom.
 
 ### Changed
+
 - NDJSON browser stream handling now falls back to `util`/`stream/web` when globals are missing.
 - Browser docs updated with streaming/lazy API examples.
 
 ### Fixed
+
 - Browser test failures caused by missing Web APIs in jsdom.
 
 ## [2.1.3] - 2026-01-23
 
 ### Added
+
 - New framework helpers: NestJS, Remix, Nuxt, SvelteKit, Hono, and tRPC integrations.
 
 ### Changed
+
 - Bumped core version and aligned peer dependencies for new plugins.
 
 ## [2.1.0] - 2026-01-23
 
 ### Added
+
 - Fast-path options for CSV parsing: `useFastPath` and `fastPathMode` (`objects`, `compact`, `stream`).
 - Scaling benchmarks (1K/10K/100K) and public performance docs (`BENCHMARK-RESULTS.md`, `docs/PERFORMANCE.md`).
 - CLI support for `--no-fast-path` and UI exposure in TUI/GUI for fast-path toggles and mode.
 
 ### Changed
+
 - `csvToJson()` can return an async iterator when `fastPathMode: 'stream'` is used.
 - Benchmark and documentation sections updated with latest performance results.
 
 ### Fixed
+
 - Lint cleanup in parser utilities and option parsing paths.
 
 ### Security
+
 - Core package keeps zero runtime dependencies; TUI and Excel move to optional add-ons to limit supply-chain exposure.
 
 ## [0.1.0-beta.1] - 2024-01-20
@@ -305,6 +410,7 @@ None - All changes are backward compatible
 This release addresses multiple critical security vulnerabilities and adds comprehensive testing.
 
 #### Security Fixes
+
 - **CSV Injection Protection**: Added automatic escaping of Excel formulas (=, +, -, @) to prevent formula injection attacks
 - **Path Traversal Protection**: Enhanced `validateFilePath()` function to prevent directory traversal attacks in `saveAsCsv()`
 - **Input Validation**: Added comprehensive input validation with proper error messages
@@ -312,12 +418,15 @@ This release addresses multiple critical security vulnerabilities and adds compr
 - **Memory Protection**: Added maximum record limit (1,000,000) to prevent OOM attacks
 
 #### Critical Bug Fixes
+
 1. **Circular References**: `deepUnwrap()` now safely handles circular object references without infinite recursion
 2. **Data Loss**: Fixed `preprocessData()` to properly handle nested objects and arrays
 3. **CSV Escaping**: Improved escaping of special characters and formulas
 4. **Error Handling**: Enhanced error messages and validation
 5. **Edge Cases**: Fixed various edge cases in CSV generation
+
 #### Added
+
 - **Comprehensive Test Suite**: 44 tests with >90% code coverage
 - **Security Tests**: Tests for CSV injection, path traversal, and input validation
 - **ESLint Configuration**: Code quality enforcement
@@ -335,12 +444,14 @@ This release addresses multiple critical security vulnerabilities and adds compr
   - `npm run security-check` - Security audit
 
 #### Changed
+
 - **Version**: Bumped to 0.1.0-beta.1 for security release
 - **Package.json**: Updated scripts and dependencies
 - **Code Structure**: Improved modularity and documentation
 - **Error Messages**: More descriptive error messages
 
 #### Technical Details
+
 - Test coverage: >90% statements, >90% branches, >87% functions
 - Security: All critical CVEs addressed
 - Performance: Optimized for large datasets
@@ -349,34 +460,41 @@ This release addresses multiple critical security vulnerabilities and adds compr
 ## [1.2.0] - 2024-01-20
 
 ### Added
+
 - **Auto-detect delimiter**: CSV delimiter is now auto-detected by default (detects ; , \t |)
 - **Unlimited processing**: Removed default 1,000,000 record limit
 - **New function**: `autoDetectDelimiter()` utility function
 - **New options**: `autoDetect` (default: true) and `candidates` for delimiter detection
 
 ### Changed
+
 - **Breaking**: `csvToJson()` and `jsonToCsv()` no longer have default record limits
 - **Breaking**: `delimiter` parameter is now optional (auto-detected by default)
 - **Improved**: Warning for >1M records suggests streaming for large files
 - **Enhanced**: Better developer experience - no need to guess CSV delimiter
 
 ### Fixed
+
 - **Critical**: Removed arbitrary 1,000,000 record limit that caused errors for large datasets
 - **Competitiveness**: Now matches PapaParse's auto-detect feature
 
 ### Security
+
 - **Maintained**: All security features from previous versions preserved
 - **Enhanced**: Optional limits still available for security-conscious applications
 
 ### Performance
+
 - **Improved**: Unlimited processing for enterprise datasets
 - **Optimized**: Auto-detect algorithm is fast and efficient
 
 ### Tests
+
 - **Added**: 8 new tests for auto-detect functionality
 - **All**: 152 tests pass (was 144)
 
 ### Documentation
+
 - **Updated**: README.md with new features and examples
 - **Enhanced**: TypeScript definitions for new API
 - **Improved**: Comparison table shows auto-detect advantage
@@ -384,6 +502,7 @@ This release addresses multiple critical security vulnerabilities and adds compr
 ## [1.0.0] - 2024-01-20
 
 ### Added
+
 - Initial release of jtcsv module
 - Core functionality: `jsonToCsv()`, `saveAsCsv()`, `preprocessData()`, `deepUnwrap()`
 - Support for custom delimiters, header renaming, and column ordering
@@ -393,6 +512,7 @@ This release addresses multiple critical security vulnerabilities and adds compr
 - MIT license
 
 ### Features
+
 - Convert arrays of objects to CSV format
 - Save CSV data directly to files
 - Preprocess nested JSON structures
@@ -401,14 +521,10 @@ This release addresses multiple critical security vulnerabilities and adds compr
 - Lightweight with no external dependencies
 
 ### Developer
+
 - **Ruslan Fomenko** - Initial implementation and module design
 
 [0.1.0-beta.1]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v0.1.0-beta.1
 [1.0.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.0.0
 [1.2.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v1.2.0
 [2.1.0]: https://github.com/Linol-Hamelton/jtcsv/releases/tag/v2.1.0
-
-
-
-
-

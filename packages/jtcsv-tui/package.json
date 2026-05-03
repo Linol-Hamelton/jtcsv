@@ -1,6 +1,6 @@
 {
   "name": "@jtcsv/tui",
-  "version": "2.1.4",
+  "version": "3.0.0",
   "description": "JTCSV Terminal UI (optional add-on)",
   "main": "src/index.js",
   "bin": {
@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-tui#readme",
   "peerDependencies": {
-    "jtcsv": "^3.1.0 || ^4.0.0",
+    "jtcsv": "^3.2.0",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0"
   },
