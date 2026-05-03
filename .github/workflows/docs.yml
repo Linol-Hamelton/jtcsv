@@ -1,0 +1,61 @@
+name: Deploy docs to GitHub Pages
+
+# Builds the typedoc API reference and deploys to GitHub Pages on every
+# push to main. Combines with benchmark-vs-competitors.yml's gh-pages
+# output (under /dev/bench/) into a single Pages site.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'index.ts'
+      - 'csv-to-json.ts'
+      - 'json-to-csv.ts'
+      - 'errors.ts'
+      - 'stream-csv-to-json.ts'
+      - 'stream-json-to-csv.ts'
+      - 'json-save.ts'
+      - 'index.d.ts'
+      - 'docs/**'
+      - 'typedoc.json'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build typedoc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run docs
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs/api
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

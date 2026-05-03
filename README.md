@@ -6,6 +6,7 @@
 [![Bundle Size](https://img.shields.io/badge/jtcsv%2Fcsv-18.1%20KB%20gz-blue.svg)](#bundle-size)
 [![Bench](https://img.shields.io/badge/bench-fastest%20vs%20papaparse%20%E2%80%A2%20csv--parse%20%E2%80%A2%20fast--csv-success.svg)](#performance)
 [![Provenance](https://img.shields.io/badge/npm-provenance%20signed-success.svg)](https://docs.npmjs.com/generating-provenance-statements)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Linol-Hamelton/jtcsv/badge)](https://scorecard.dev/viewer/?uri=github.com/Linol-Hamelton/jtcsv)
 
 Fast JSON ↔ CSV conversion with streaming helpers, NDJSON/TSV support, and optional integrations.
 

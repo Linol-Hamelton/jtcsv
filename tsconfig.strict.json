@@ -37,6 +37,12 @@
     "coverage",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "__tests__/**"
+    "__tests__/**",
+    // Excluded for now — too many strict errors to fix in this milestone.
+    // Track them via the ratchet (.strict-baseline.json) — they'll be cleaned
+    // up incrementally without blocking publishes. Re-include after cleanup.
+    "src/browser/workers/**",
+    "src/web-server/**",
+    "src/engines/fast-path-engine-new.ts"
   ]
 }

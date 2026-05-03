@@ -802,7 +802,8 @@ export async function saveAsCsv(
       if (error instanceof JtcsvError) {
         throw error;
       }
-      throw new FileSystemError(error.message || 'File system error', error);
+      const e = error as Error;
+      throw new FileSystemError(e?.message || 'File system error', e);
     }
   }, 'FILE_SYSTEM_ERROR', { function: 'saveAsCsv' });
 }

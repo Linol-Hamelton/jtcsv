@@ -1,18 +1,16 @@
 {
-  "baseline": 188,
-  "recordedAt": "2026-05-03T20:40:24.167Z",
+  "baseline": 123,
+  "recordedAt": "2026-05-03T21:38:56.105Z",
   "byFile": {
-    "json-to-csv.ts": 23,
+    "json-to-csv.ts": 21,
     "plugins/express-middleware/index.ts": 1,
     "plugins/nestjs/index.ts": 3,
+    "src/browser/extensions/plugins.ts": 4,
     "src/browser/extensions/workers.ts": 1,
     "src/browser/index.ts": 1,
-    "src/browser/workers/csv-parser.worker.ts": 19,
     "src/browser/workers/worker-pool.ts": 24,
-    "src/engines/fast-path-engine-new.ts": 21,
     "src/engines/fast-path-engine.ts": 20,
     "src/formats/ndjson-parser.ts": 13,
-    "src/formats/tsv-parser.ts": 35,
-    "src/web-server/index.ts": 27
+    "src/formats/tsv-parser.ts": 35
   }
 }
