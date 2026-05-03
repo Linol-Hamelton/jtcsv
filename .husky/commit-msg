@@ -1,0 +1,2 @@
+# Validate conventional-commit format via commitlint.
+npx --no-install commitlint --edit "$1"

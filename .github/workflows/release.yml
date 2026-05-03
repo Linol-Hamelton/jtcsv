@@ -1,0 +1,68 @@
+name: Release
+
+# Changesets-driven release.
+#
+#  - On every push to main: open / update a "Version Packages" PR that
+#    consumes pending .changeset/*.md files and bumps versions.
+#  - On merge of that PR: publish each updated workspace package to npm
+#    with --provenance (Sigstore attestation, free in GitHub Actions).
+#
+# Required repo secrets:
+#   NPM_TOKEN   — automation token for npmjs (publish access).
+# Built-in token GITHUB_TOKEN is provided automatically.
+
+on:
+  push:
+    branches: [main]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write       # write CHANGELOG, push the Version Packages PR
+  pull-requests: write  # open the Version Packages PR
+  id-token: write       # required for npm provenance via OIDC
+
+jobs:
+  release:
+    name: Version & publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Test (skip benchmarks/load/memory)
+        run: npx jest --testPathIgnorePatterns="(__tests__/benchmark-suite\.test|__tests__/load-tests\.test|__tests__/soak-memory\.test|__tests__/memory-profiling\.test)"
+
+      - name: Bundle size gate
+        run: npm run size
+
+      - name: Strict TS regression gate
+        run: npm run tsc:check-strict:count
+
+      - name: Create release PR or publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: npm run release:version
+          publish: npm run release:publish
+          commit: 'chore: version packages'
+          title: 'chore: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'

@@ -1,0 +1,3 @@
+# Pre-commit: keep cheap. Heavier checks (full tests, size, strict baseline)
+# live in prepublishOnly and CI. We run a fast typecheck only.
+npm run tsc:check
