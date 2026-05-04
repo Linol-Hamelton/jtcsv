@@ -53,5 +53,6 @@
     "src/",
     "examples/",
     "README.md"
-  ]
+  ],
+  "private": true
 }

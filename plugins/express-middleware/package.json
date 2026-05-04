@@ -44,5 +44,6 @@
     "index.d.ts",
     "README.md",
     "example.js"
-  ]
+  ],
+  "private": true
 }

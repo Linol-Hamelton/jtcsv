@@ -7,5 +7,15 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "@jtcsv/codemod",
+    "@jtcsv/excel",
+    "@jtcsv/tui",
+    "@jtcsv/validator",
+    "@jtcsv/express-middleware",
+    "@jtcsv/fastify",
+    "@jtcsv/nextjs",
+    "@jtcsv/hono",
+    "@jtcsv/nestjs"
+  ]
 }

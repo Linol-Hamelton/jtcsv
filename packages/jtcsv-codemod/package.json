@@ -40,5 +40,6 @@
     "bin/",
     "transforms/",
     "README.md"
-  ]
+  ],
+  "private": true
 }

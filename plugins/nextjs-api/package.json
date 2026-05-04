@@ -52,5 +52,6 @@
     "route.js",
     "README.md",
     "examples/"
-  ]
+  ],
+  "private": true
 }
