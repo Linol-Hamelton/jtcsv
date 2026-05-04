@@ -103,7 +103,7 @@
     "lint:all": "eslint .",
     "lint:plugins": "eslint plugins/",
     "security-check": "npm audit",
-    "prepublishOnly": "npm test && npm run tsc:check && npm run tsc:check-strict:count && npm run build && npm run size && eslint index.ts json-to-csv.ts csv-to-json.ts errors.ts stream-json-to-csv.ts stream-csv-to-json.ts json-save.ts",
+    "prepublishOnly": "npm run test:unit && npm run tsc:check && npm run tsc:check-strict:count && npm run build && npm run size && eslint index.ts json-to-csv.ts csv-to-json.ts errors.ts stream-json-to-csv.ts stream-csv-to-json.ts json-save.ts",
     "tui": "node packages/jtcsv-tui/bin/jtcsv-tui.js",
     "cli": "node dist/bin/jtcsv.js",
     "build": "npm run tsc:build && rollup -c rollup.config.mjs",

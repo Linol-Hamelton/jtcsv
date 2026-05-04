@@ -237,12 +237,14 @@ describe('FastPathEngine', () => {
       console.log(`  CSV с кавычками: ${quotedTime}ms`);
       console.log(`  Разница: ${((quotedTime - simpleTime) / simpleTime * 100).toFixed(1)}%`);
       
-      // Quote-aware парсер должен быть медленнее, но не намного
-      // В CI пропускаем строгую проверку из-за переменной производительности
-      if (!IS_CI) {
+      // Quote-aware parser should be slower, but not by much.
+      // Guard against the local-dev case where simpleTime rounded to
+      // 0 ms — `0 * 10 === 0`, so any positive quotedTime fails the
+      // ratio. Skip the ratio check whenever the baseline is too
+      // small to be meaningful (< 1 ms or in CI).
+      if (!IS_CI && simpleTime >= 1) {
         expect(quotedTime).toBeLessThan(simpleTime * 10);
       } else {
-        // В CI просто проверяем, что оба времени положительные
         expect(simpleTime).toBeGreaterThanOrEqual(0);
         expect(quotedTime).toBeGreaterThanOrEqual(0);
       }
