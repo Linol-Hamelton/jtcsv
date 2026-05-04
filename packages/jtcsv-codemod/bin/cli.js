@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 /**
- * @jtcsv/codemod CLI — convenience wrapper around jscodeshift.
+ * jtcsv-codemod CLI — convenience wrapper around jscodeshift.
  *
  * Usage:
- *   npx @jtcsv/codemod papaparse src/
- *   npx @jtcsv/codemod papaparse "src/**\/*.{js,ts,tsx}" --dry
+ *   npx jtcsv-codemod papaparse src/
+ *   npx jtcsv-codemod papaparse "src/**\/*.{js,ts,tsx}" --dry
  */
 
 const path = require('path');
@@ -17,7 +17,7 @@ const TRANSFORMS = {
 
 const args = process.argv.slice(2);
 if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-  console.log(`@jtcsv/codemod
+  console.log(`jtcsv-codemod
 Apply jscodeshift transforms to migrate to jtcsv.
 
 Usage:

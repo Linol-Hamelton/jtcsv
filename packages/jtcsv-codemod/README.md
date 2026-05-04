@@ -1,10 +1,10 @@
-# @jtcsv/codemod
+# jtcsv-codemod
 
 [jscodeshift](https://github.com/facebook/jscodeshift) transforms that
 migrate existing CSV-handling code to [jtcsv](https://www.npmjs.com/package/jtcsv).
 
 ```bash
-npx @jtcsv/codemod papaparse "src/**/*.{js,ts,tsx}"
+npx jtcsv-codemod papaparse "src/**/*.{js,ts,tsx}"
 ```
 
 ## Available transforms
@@ -84,10 +84,10 @@ is passed straight through:
 
 ```bash
 # dry-run (no writes, prints diff)
-npx @jtcsv/codemod papaparse src/ -- --dry --print
+npx jtcsv-codemod papaparse src/ -- --dry --print
 
 # only .ts and .tsx files
-npx @jtcsv/codemod papaparse src/ -- --extensions=ts,tsx
+npx jtcsv-codemod papaparse src/ -- --extensions=ts,tsx
 ```
 
 ## Limitations

@@ -738,7 +738,7 @@ export async function streamCsvToJsonAsync(
     useWorkers?: boolean;
     workerCount?: number;
     chunkSize?: number;
-    onProgress?: (progress: { processed: number; total: number; percentage: number }) => void;
+    onProgress?: (_progress: { processed: number; total: number; percentage: number }) => void;
   } = {}
 ): Promise<AnyArray> {
   return safeExecuteAsync(async () => {

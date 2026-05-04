@@ -1,6 +1,6 @@
 {
-  "name": "@jtcsv/codemod",
-  "version": "0.1.0",
+  "name": "jtcsv-codemod",
+  "version": "0.1.1",
   "description": "jscodeshift transforms for migrating to jtcsv from papaparse, csvtojson, csv-parser, and similar libraries",
   "bin": {
     "jtcsv-codemod": "bin/cli.js"
@@ -33,13 +33,11 @@
     "jscodeshift": "^0.15.2"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "files": [
     "bin/",
     "transforms/",
     "README.md"
-  ],
-  "private": true
+  ]
 }

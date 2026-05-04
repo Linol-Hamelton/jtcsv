@@ -22,7 +22,7 @@
  *     `// TODO(jtcsv-codemod): switch to async readCsvAsJson + await`.
  *
  * Run:
- *   npx jscodeshift -t node_modules/@jtcsv/codemod/transforms/papaparse-to-jtcsv.js src/
+ *   npx jscodeshift -t node_modules/jtcsv-codemod/transforms/papaparse-to-jtcsv.js src/
  */
 
 const PAPA_OPTIONS_MAP = {

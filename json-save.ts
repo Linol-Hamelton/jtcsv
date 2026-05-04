@@ -254,7 +254,7 @@ export async function saveAsJsonAsync(
     useWorkers?: boolean;
     workerCount?: number;
     chunkSize?: number;
-    onProgress?: (progress: { processed: number; total: number; percentage: number }) => void;
+    onProgress?: (_progress: { processed: number; total: number; percentage: number }) => void;
   } = {}
 ): Promise<void> {
   return safeExecuteAsync(async () => {
