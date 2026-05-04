@@ -151,6 +151,7 @@
     "release:version": "changeset version",
     "release:publish": "npm run build && changeset publish",
     "release:publish:signed": "cross-env NPM_CONFIG_PROVENANCE=true npm run release:publish",
+    "release:publish:local": "cross-env NPM_CONFIG_PROVENANCE=false npm run release:publish",
     "prepare": "husky"
   },
   "keywords": [
