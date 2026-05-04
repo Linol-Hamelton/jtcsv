@@ -1,11 +1,8 @@
 {
-  "baseline": 65,
-  "recordedAt": "2026-05-03T21:55:45.988Z",
+  "baseline": 57,
+  "recordedAt": "2026-05-04T00:20:09.188Z",
   "byFile": {
     "json-to-csv.ts": 9,
-    "plugins/express-middleware/index.ts": 1,
-    "plugins/nestjs/index.ts": 3,
-    "src/browser/extensions/plugins.ts": 4,
     "src/browser/extensions/workers.ts": 1,
     "src/browser/index.ts": 1,
     "src/browser/workers/worker-pool.ts": 24,

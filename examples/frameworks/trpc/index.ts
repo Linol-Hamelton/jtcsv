@@ -4,8 +4,8 @@
  * @module plugins/trpc
  */
 
-import { csvToJson, jsonToCsv } from '../../index-core';
-import type { CsvToJsonOptions, JsonToCsvOptions } from '../../src/types';
+import { csvToJson, jsonToCsv } from '../../../index-core';
+import type { CsvToJsonOptions, JsonToCsvOptions } from '../../../src/types';
 
 /**
  * tRPC context type (simplified)

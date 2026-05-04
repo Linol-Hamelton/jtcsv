@@ -1,82 +1,53 @@
-// Расширение плагинов для jtcsv
-// Подключает все плагины (express, fastify, nextjs и т.д.)
+/**
+ * Browser-side plugin loader stub.
+ *
+ * Earlier versions of this module exposed `loadExpressPlugin` /
+ * `loadNestJsPlugin` / etc. as dynamic imports — but every one of those
+ * adapters depends on Node-only modules (express, fastify, @nestjs/*),
+ * so they could never actually run in a browser. Pulling them in via
+ * dynamic import only succeeded in dragging stale type declarations
+ * into the rollup graph.
+ *
+ * In 3.2.0 we keep the public shape (`window.jtcsv.plugins` + named
+ * exports) but each loader now throws a clear error explaining that
+ * the package belongs in a Node import. Use the published @jtcsv/*
+ * packages directly from your server code instead.
+ */
 
-const jtcsvPlugins = {
-  // Плагины будут добавлены динамически при импорте
-  // Это placeholder для будущей реализации
+const browserUnsupported = (name: string) => async () => {
+  throw new Error(
+    `${name} is a Node-only adapter; install @jtcsv/${name.toLowerCase()} from your server bundle.`,
+  );
 };
 
-// Динамический импорт плагинов (ленивая загрузка)
-// Пути относительно корня проекта (плагины находятся в plugins/)
-async function loadExpressPlugin() {
-  const mod = await import('../../../plugins/express-middleware/index.js');
-  return mod.default || mod;
-}
+const loadExpressPlugin = browserUnsupported('express');
+const loadFastifyPlugin = browserUnsupported('fastify');
+const loadNextJsPlugin = browserUnsupported('nextjs');
+const loadNestJsPlugin = browserUnsupported('nestjs');
+const loadHonoPlugin = browserUnsupported('hono');
 
-async function loadFastifyPlugin() {
-  const mod = await import('../../../plugins/fastify-plugin/index.js');
-  return mod.default || mod;
-}
+// Demoted to examples/frameworks/* in 3.2.0; no published packages.
+const loadRemixPlugin = browserUnsupported('remix');
+const loadNuxtPlugin = browserUnsupported('nuxt');
+const loadSvelteKitPlugin = browserUnsupported('sveltekit');
+const loadTrpcPlugin = browserUnsupported('trpc');
 
-async function loadNextJsPlugin() {
-  // @ts-ignore - the TS source lives in .tsx, use runtime JS
-  const mod = await import('../../../plugins/nextjs-api/index.js');
-  return mod.default || mod;
-}
-
-async function loadNestJsPlugin() {
-  const mod = await import('../../../plugins/nestjs/index.js');
-  return mod.default || mod;
-}
-
-async function loadRemixPlugin() {
-  const mod = await import('../../../plugins/remix/index.js');
-  return mod.default || mod;
-}
-
-async function loadNuxtPlugin() {
-  const mod = await import('../../../plugins/nuxt/index.js');
-  return mod.default || mod;
-}
-
-async function loadSvelteKitPlugin() {
-  const mod = await import('../../../plugins/sveltekit/index.js');
-  return mod.default || mod;
-}
-
-async function loadHonoPlugin() {
-  const mod = await import('../../../plugins/hono/index.js');
-  return mod.default || mod;
-}
-
-async function loadTrpcPlugin() {
-  const mod = await import('../../../plugins/trpc/index.js');
-  return mod.default || mod;
-}
-
-Object.assign(jtcsvPlugins, {
+const jtcsvPlugins = {
   loadExpressPlugin,
   loadFastifyPlugin,
   loadNextJsPlugin,
   loadNestJsPlugin,
+  loadHonoPlugin,
   loadRemixPlugin,
   loadNuxtPlugin,
   loadSvelteKitPlugin,
-  loadHonoPlugin,
-  loadTrpcPlugin
-});
+  loadTrpcPlugin,
+};
 
-// Экспорт
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = jtcsvPlugins;
-} else if (typeof define === 'function' && define.amd) {
-  define([], () => jtcsvPlugins);
-} else if (typeof window !== 'undefined' && window.jtcsv) {
-  // Расширяем глобальный jtcsv, если он существует
-  if (!window.jtcsv.plugins) {
-    window.jtcsv.plugins = {};
-  }
-  Object.assign(window.jtcsv.plugins, jtcsvPlugins);
+if (typeof window !== 'undefined' && (window as { jtcsv?: { plugins?: object } }).jtcsv) {
+  const w = window as { jtcsv: { plugins?: object } };
+  if (!w.jtcsv.plugins) w.jtcsv.plugins = {};
+  Object.assign(w.jtcsv.plugins, jtcsvPlugins);
 }
 
 export default jtcsvPlugins;
@@ -89,5 +60,5 @@ export {
   loadNuxtPlugin,
   loadSvelteKitPlugin,
   loadHonoPlugin,
-  loadTrpcPlugin
+  loadTrpcPlugin,
 };

@@ -88,8 +88,12 @@ describe('csvToJson(jsonToCsv(x)) round-trip — quote-in-cell (raw, no normaliz
   // `""` (two literal double-quote chars) as "excessive quoting" and
   // collapse to one — that's intentional and lossy. Real RFC 4180
   // round-trip requires opting out via `normalizeQuotes: false`.
+  //
+  // Also `preventCsvInjection: false` — the default guard prepends `'`
+  // to cells starting with `-`, `+`, `=`, `@` so Excel doesn't evaluate
+  // them as formulas; that's a security feature, not parser symmetry.
   const quoteAlphabet = ['"'];
-  const opts = { normalizeQuotes: false };
+  const opts = { normalizeQuotes: false, preventCsvInjection: false };
 
   test('comma delimiter survives quote-in-cell', () => {
     fc.assert(buildRoundTripProperty(quoteAlphabet, ',', opts));

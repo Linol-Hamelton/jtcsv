@@ -6,21 +6,20 @@
 
 import {
   Injectable,
-  PipeTransform,
-  Pipe,
+  type PipeTransform,
   Module,
-  NestInterceptor,
+  type NestInterceptor,
   Inject,
-  DynamicModule
+  type DynamicModule,
 } from '@nestjs/common';
 import { switchMap } from 'rxjs/operators';
-import { 
-  csvToJson, 
-  jsonToCsv, 
-  csvToJsonAsync, 
+import {
+  csvToJson,
+  jsonToCsv,
+  csvToJsonAsync,
   jsonToCsvAsync,
-  type CsvToJsonOptions, 
-  type JsonToCsvOptions 
+  type CsvToJsonOptions,
+  type JsonToCsvOptions,
 } from 'jtcsv';
 
 /**

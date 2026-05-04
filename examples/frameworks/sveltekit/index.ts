@@ -4,8 +4,8 @@
  * @module plugins/sveltekit
  */
 
-import { csvToJson, jsonToCsv } from '../../index-core';
-import type { CsvToJsonOptions, JsonToCsvOptions } from '../../src/types';
+import { csvToJson, jsonToCsv } from '../../../index-core';
+import type { CsvToJsonOptions, JsonToCsvOptions } from '../../../src/types';
 
 /**
  * SvelteKit Request type (simplified)

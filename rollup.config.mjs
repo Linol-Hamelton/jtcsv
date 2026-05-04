@@ -23,7 +23,11 @@ const basePlugins = (target = 'browser') => [
     tsconfig: './tsconfig.rollup.json',
     compilerOptions: {
       sourceMap: !isProduction
-    }
+    },
+    // Don't typecheck sub-packages and example-only sources during the
+    // main bundle build — they're built (or not) by their own
+    // toolchains and pull peer-deps that aren't in the root install.
+    exclude: ['plugins/**', 'examples/**', 'packages/**', '**/__tests__/**'],
   }),
   isProduction && terser({
     compress: {

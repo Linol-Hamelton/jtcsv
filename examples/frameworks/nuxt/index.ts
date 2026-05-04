@@ -4,7 +4,7 @@
  * @module plugins/nuxt
  */
 
-import type { CsvToJsonOptions, JsonToCsvOptions } from '../../src/types';
+import type { CsvToJsonOptions, JsonToCsvOptions } from '../../../src/types';
 
 /**
  * Nuxt plugin options
