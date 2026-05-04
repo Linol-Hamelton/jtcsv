@@ -766,8 +766,8 @@ export async function jsonToCsvAsync(
       data,
       syncOptions as Record<string, unknown>,
       { concurrency: workerCount ?? 0 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (input, opts) => jsonToCsv(input as any, opts as any),
+       
+      (input, opts) => jsonToCsv(input as any, opts as any)
     );
   }, 'PARSING_ERROR', { function: 'jsonToCsvAsync' });
 }

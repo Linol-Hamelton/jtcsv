@@ -20,7 +20,7 @@ export { createCsvToJsonStream, streamCsvToJson, streamCsvToJsonAsync, createCsv
 import { readCsvAsJson as _readCsvAsJson, readCsvAsJsonSync as _readCsvAsJsonSync } from './csv-to-json';
 import {
   createCsvToJsonStream as _createCsvToJsonStream,
-  createCsvFileToJsonStream as _createCsvFileToJsonStream,
+  createCsvFileToJsonStream as _createCsvFileToJsonStream
 } from './stream-csv-to-json';
 import { deprecate } from './src/utils/deprecate';
 
@@ -37,7 +37,7 @@ export const csvToJsonStream = deprecate(_createCsvToJsonStream, 'csvToJsonStrea
 export const csvFileToJsonStream = deprecate(
   _createCsvFileToJsonStream,
   'csvFileToJsonStream',
-  'createCsvFileToJsonStream',
+  'createCsvFileToJsonStream'
 );
 
 // Re-export from submodules

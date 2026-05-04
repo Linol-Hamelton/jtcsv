@@ -1134,8 +1134,8 @@ export async function csvToJsonAsync(
       csv,
       syncOptions as Record<string, unknown>,
       { concurrency: workerCount ?? 0 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (input, opts) => csvToJson(input, opts as any),
+       
+      (input, opts) => csvToJson(input, opts as any)
     );
   }, 'PARSING_ERROR', { function: 'csvToJsonAsync' });
 }

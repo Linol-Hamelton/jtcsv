@@ -754,8 +754,8 @@ export async function streamCsvToJsonAsync(
       csv,
       streamOptions as Record<string, unknown>,
       { concurrency: workerCount ?? 0 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (input, opts) => streamCsvToJson(input, opts as any),
+       
+      (input, opts) => streamCsvToJson(input, opts as any)
     );
   }, 'STREAM_PROCESSING_ERROR', { function: 'streamCsvToJsonAsync' });
 }

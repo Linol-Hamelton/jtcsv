@@ -449,8 +449,8 @@ export async function streamJsonToCsvAsync(
       data,
       streamOptions as Record<string, unknown>,
       { concurrency: workerCount ?? 0 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (input, opts) => streamJsonToCsv(input as any, opts as any),
+       
+      (input, opts) => streamJsonToCsv(input as any, opts as any)
     );
   }, 'STREAM_PROCESSING_ERROR', { function: 'streamJsonToCsvAsync' });
 }
