@@ -8,6 +8,10 @@ yarn-error.log*
 dist/
 dist-types/
 
+# VitePress build artifacts (DOCS M1)
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
 # Benchmark results
 benchmark-results.json
 

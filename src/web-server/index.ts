@@ -14,18 +14,70 @@ import * as jtcsv from "../../index";
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
 
+// Body-size cap — defends against unbounded-concat DoS via /api/* POST.
+// Defaults to 10 MB; override with JTCSV_MAX_BODY_BYTES (positive int).
+const MAX_BODY_BYTES = (() => {
+  const env = process.env.JTCSV_MAX_BODY_BYTES;
+  if (!env) return 10 * 1024 * 1024;
+  const n = Number.parseInt(env, 10);
+  return Number.isFinite(n) && n > 0 ? n : 10 * 1024 * 1024;
+})();
+
+// CORS allowlist. Empty/unset → same-origin localhost only (the safe default).
+// Comma-separated list of allowed origins. Use `*` to opt back into the old
+// permissive behavior — but ONLY if you understand the server is dev-only and
+// must never be exposed to the public internet. See docs/THREAT_MODEL.md ADR-002.
+const CORS_ALLOW = (() => {
+  const raw = (process.env.JTCSV_CORS_ALLOW || '').trim();
+  if (!raw) return null;                          // null sentinel → use default localhost matcher
+  if (raw === '*') return '*' as const;
+  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+})();
+
+function isLocalhostOrigin(origin: string): boolean {
+  // Allow http(s)://localhost(:PORT) and http(s)://127.0.0.1(:PORT)
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+}
+
+function resolveCorsOrigin(reqOrigin: string | undefined): string | null {
+  if (CORS_ALLOW === '*') return '*';
+  if (Array.isArray(CORS_ALLOW)) {
+    if (!reqOrigin) return null;
+    return CORS_ALLOW.includes(reqOrigin) ? reqOrigin : null;
+  }
+  // Default policy: localhost-only.
+  if (!reqOrigin) return null;
+  return isLocalhostOrigin(reqOrigin) ? reqOrigin : null;
+}
+
 /**
- * Parse JSON body from request
+ * Parse JSON body from request. Caps body at MAX_BODY_BYTES.
  */
 function parseBody(req): Promise<any> {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
+    const chunks: Buffer[] = [];
+    let total = 0;
+    let aborted = false;
+    req.on('data', (chunk: Buffer) => {
+      if (aborted) return;
+      total += chunk.length;
+      if (total > MAX_BODY_BYTES) {
+        aborted = true;
+        const err: Error & { statusCode?: number } = new Error(
+          `Request body too large (>${MAX_BODY_BYTES} bytes). Set JTCSV_MAX_BODY_BYTES to raise the limit.`,
+        );
+        err.statusCode = 413;
+        // Stop accepting more data; respond 413.
+        try { req.destroy(); } catch { /* ignore */ }
+        reject(err);
+        return;
+      }
+      chunks.push(chunk);
     });
     req.on('end', () => {
+      if (aborted) return;
       try {
-        resolve(JSON.parse(body));
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
       } catch (error) {
         reject(new Error('Invalid JSON'));
       }
@@ -35,12 +87,16 @@ function parseBody(req): Promise<any> {
 }
 
 /**
- * Send JSON response
+ * Send JSON response. CORS headers reflect the resolved allowlist.
  */
-function sendJson(res, statusCode, data) {
+function sendJson(res, statusCode, data, reqOrigin?: string) {
   res.statusCode = statusCode;
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowed = resolveCorsOrigin(reqOrigin);
+  if (allowed) {
+    res.setHeader('Access-Control-Allow-Origin', allowed);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.end(JSON.stringify(data));
@@ -49,23 +105,31 @@ function sendJson(res, statusCode, data) {
 /**
  * Send error response
  */
-function sendError(res, statusCode, message) {
+function sendError(res, statusCode, message, reqOrigin?: string) {
   sendJson(res, statusCode, {
     success: false,
     error: message
-  });
+  }, reqOrigin);
+}
+
+/**
+ * Map a parseBody() rejection to a status code. 413 for over-limit, 400 otherwise.
+ */
+function statusFromBodyError(err: unknown): number {
+  const code = (err as { statusCode?: number } | null)?.statusCode;
+  return typeof code === 'number' ? code : 400;
 }
 
 /**
  * API Handler: Convert JSON to CSV
  */
-async function handleJsonToCsv(req, res) {
+async function handleJsonToCsv(req, res, reqOrigin?: string) {
   try {
     const body = await parseBody(req);
     const { data, options = {} } = body;
 
     if (!Array.isArray(data)) {
-      return sendError(res, 400, 'Data must be an array of objects');
+      return sendError(res, 400, 'Data must be an array of objects', reqOrigin);
     }
 
     const csv = jtcsv.jsonToCsv(data, {
@@ -80,22 +144,22 @@ async function handleJsonToCsv(req, res) {
       result: csv,
       records: data.length,
       bytes: csv.length
-    });
+    }, reqOrigin);
   } catch (error) {
-    sendError(res, 500, error.message);
+    sendError(res, statusFromBodyError(error), error.message, reqOrigin);
   }
 }
 
 /**
  * API Handler: Convert CSV to JSON
  */
-async function handleCsvToJson(req, res) {
+async function handleCsvToJson(req, res, reqOrigin?: string) {
   try {
     const body = await parseBody(req);
     const { data, options = {} } = body;
 
     if (typeof data !== 'string') {
-      return sendError(res, 400, 'Data must be a CSV string');
+      return sendError(res, 400, 'Data must be a CSV string', reqOrigin);
     }
 
     const json = jtcsv.csvToJson(data, {
@@ -111,16 +175,16 @@ async function handleCsvToJson(req, res) {
       success: true,
       result: json,
       rows: json.length
-    });
+    }, reqOrigin);
   } catch (error) {
-    sendError(res, 500, error.message);
+    sendError(res, statusFromBodyError(error), error.message, reqOrigin);
   }
 }
 
 /**
  * API Handler: Validate data
  */
-async function handleValidate(req, res) {
+async function handleValidate(req, res, reqOrigin?: string) {
   try {
     const body = await parseBody(req);
     const { data, format } = body;
@@ -156,22 +220,22 @@ async function handleValidate(req, res) {
       success: true,
       valid: isValid,
       errors: errors
-    });
+    }, reqOrigin);
   } catch (error) {
-    sendError(res, 500, error.message);
+    sendError(res, statusFromBodyError(error), error.message, reqOrigin);
   }
 }
 
 /**
  * API Handler: Convert NDJSON to CSV
  */
-async function handleNdjsonToCsv(req, res) {
+async function handleNdjsonToCsv(req, res, reqOrigin?: string) {
   try {
     const body = await parseBody(req);
     const { data, options = {} } = body;
 
     if (typeof data !== 'string') {
-      return sendError(res, 400, 'Data must be an NDJSON string');
+      return sendError(res, 400, 'Data must be an NDJSON string', reqOrigin);
     }
 
     const json = jtcsv.ndjsonToJson(data);
@@ -184,22 +248,22 @@ async function handleNdjsonToCsv(req, res) {
       success: true,
       result: csv,
       records: json.length
-    });
+    }, reqOrigin);
   } catch (error) {
-    sendError(res, 500, error.message);
+    sendError(res, statusFromBodyError(error), error.message, reqOrigin);
   }
 }
 
 /**
  * API Handler: Convert CSV to NDJSON
  */
-async function handleCsvToNdjson(req, res) {
+async function handleCsvToNdjson(req, res, reqOrigin?: string) {
   try {
     const body = await parseBody(req);
     const { data, options = {} } = body;
 
     if (typeof data !== 'string') {
-      return sendError(res, 400, 'Data must be a CSV string');
+      return sendError(res, 400, 'Data must be a CSV string', reqOrigin);
     }
 
     const json = jtcsv.csvToJson(data, {
@@ -214,9 +278,9 @@ async function handleCsvToNdjson(req, res) {
       success: true,
       result: ndjson,
       records: json.length
-    });
+    }, reqOrigin);
   } catch (error) {
-    sendError(res, 500, error.message);
+    sendError(res, statusFromBodyError(error), error.message, reqOrigin);
   }
 }
 
@@ -602,11 +666,22 @@ function serveHomePage(res) {
 function handleRequest(req, res) {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
-  
-  // Handle CORS preflight
+  const reqOrigin: string | undefined = req.headers?.origin;
+
+  // Handle CORS preflight against the resolved allowlist.
   if (req.method === 'OPTIONS') {
+    const allowed = resolveCorsOrigin(reqOrigin);
+    if (!allowed) {
+      // No allowlist match — refuse the preflight rather than silently
+      // sending no CORS headers (the browser would block anyway, but a
+      // 403 is clearer to operators reading logs).
+      res.statusCode = 403;
+      res.end();
+      return;
+    }
     res.statusCode = 204;
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', allowed);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.end();
@@ -621,24 +696,24 @@ function handleRequest(req, res) {
   // API endpoints
   if (req.method === 'POST') {
     if (pathname === '/api/json-to-csv') {
-      return handleJsonToCsv(req, res);
+      return handleJsonToCsv(req, res, reqOrigin);
     }
     if (pathname === '/api/csv-to-json') {
-      return handleCsvToJson(req, res);
+      return handleCsvToJson(req, res, reqOrigin);
     }
     if (pathname === '/api/validate') {
-      return handleValidate(req, res);
+      return handleValidate(req, res, reqOrigin);
     }
     if (pathname === '/api/ndjson-to-csv') {
-      return handleNdjsonToCsv(req, res);
+      return handleNdjsonToCsv(req, res, reqOrigin);
     }
     if (pathname === '/api/csv-to-ndjson') {
-      return handleCsvToNdjson(req, res);
+      return handleCsvToNdjson(req, res, reqOrigin);
     }
   }
-  
+
   // 404
-  sendError(res, 404, 'Not found');
+  sendError(res, 404, 'Not found', reqOrigin);
 }
 
 /**

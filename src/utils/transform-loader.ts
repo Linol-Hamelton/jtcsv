@@ -16,8 +16,13 @@ import {
 
 /**
  * Validates transform function
+ *
+ * Exported for test harness use — not part of the documented public API.
+ * The shape may change between minor versions; callers outside the
+ * package should rely on loadTransform / createTransformHook, which use
+ * this internally.
  */
-function validateTransformFunction(fn: Function): boolean {
+export function validateTransformFunction(fn: Function): boolean {
   if (typeof fn !== 'function') {
     throw new ValidationError('Transform must export a function');
   }

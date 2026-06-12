@@ -136,6 +136,9 @@
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
     "docs:serve": "typedoc && npx serve docs/api",
+    "site:dev": "vitepress dev docs",
+    "site:build": "vitepress build docs",
+    "site:preview": "vitepress preview docs",
     "tsc": "tsc",
     "tsc:dev": "tsc --project tsconfig.dev.json",
     "tsc:build": "tsc --project tsconfig.build.json",
@@ -280,7 +283,8 @@
     "tslib": "^2.8.1",
     "typedoc": "^0.27.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "8.56.1"
+    "typescript-eslint": "8.56.1",
+    "vitepress": "1.6.4"
   },
   "type": "commonjs",
   "sideEffects": false,

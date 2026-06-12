@@ -106,8 +106,9 @@ Out of scope:
   signatures` and lockfile-lint);
 - timing or side-channel attacks against your application.
 
-See `docs/THREAT_MODEL.md` (forthcoming) for the full STRIDE-style
-breakdown.
+See [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for the full STRIDE-style
+breakdown, including ADR-001 on the transform-loader and ADR-002 on the
+dev web-server.
 
 ## Hardening checklist for consumers
 
