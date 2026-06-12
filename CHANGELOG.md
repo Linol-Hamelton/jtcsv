@@ -1,5 +1,50 @@
 # Changelog
 
+## 3.2.2
+
+### Patch Changes
+
+- ## jtcsv 3.2.2 — hardening pass
+
+  Edge-case lock-in, ReDoS audit, and supply-chain checks land as a single
+  patch. No public API changes — every existing call site keeps the same
+  behaviour. This release is the Phase 2 Week 4 verification cut for the
+  ratchet-down roadmap.
+
+  What's new under the hood
+
+  - **Edge-case test suite** (`__tests__/edge-cases-hardening.test.ts`,
+    +23 tests): documents the parser's behaviour on UTF-8 / UTF-16 LE /
+    UTF-16 BE BOM variants, CRLF inside quoted fields, empty/whitespace/
+    BOM-only inputs, and the `repairRowShifts: false` opt-out. Future
+    refactors that change any of these behaviours now fail loudly.
+  - **ReDoS audit gate** (`scripts/audit-regex.js`, wired into
+    `prepublishOnly`): 34 regex literals in the hot parser files all
+    pass `safe-regex2`. One dynamic `new RegExp(<var>)` call site
+    (json-to-csv.ts:692) is documented as accepting only a 5-char
+    Unicode bidi whitelist — no metacharacters, no user input.
+  - **Strict-TS baseline at 0**: the regression gate now requires every
+    PR to keep the strict-mode error count at zero across hot files.
+    (Phase 1 Week 3 landed the cleanup; 3.2.2 is the first release
+    shipped with the ratchet locked at zero.)
+  - **Workflow supply chain**: all third-party GitHub Actions are pinned
+    to commit SHAs with inline version comments. The legacy
+    `snyk/actions/node@master` job (sliding-tag anti-pattern) was
+    removed; CodeQL provides the SAST coverage. `continue-on-error` is
+    removed from the npm-audit step so moderate+ CVEs fail the build.
+  - **Dependabot** is now active for `npm` and `github-actions`
+    ecosystems, weekly batches grouped by toolchain (babel / jest /
+    rollup / typescript / eslint) to keep PR noise down.
+
+  Verification
+
+  This release tests the GitHub-Actions release pipeline end-to-end:
+  `release.yml` opens a "Version Packages" PR; merging it triggers
+  `changeset publish` with `--provenance` (Sigstore signature). Consumers
+  can verify with `npm audit signatures jtcsv@3.2.2`.
+
+  No breaking changes. Drop-in upgrade from 3.2.1.
+
 ## 3.2.1
 
 ### Patch Changes
