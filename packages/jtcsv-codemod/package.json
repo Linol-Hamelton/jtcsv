@@ -30,7 +30,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "jscodeshift": "^0.15.2"
+    "jscodeshift": "^17.3.0"
   },
   "publishConfig": {
     "access": "public"
