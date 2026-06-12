@@ -412,6 +412,9 @@ class NdjsonParser {
       }
     } else {
       // Для потоков
+      if (typeof input.getReader !== 'function') {
+        throw new Error('Input must be a string or a stream with a getReader() method');
+      }
       const reader = input.getReader();
       const decoder = createTextDecoder();
       if (!decoder) {

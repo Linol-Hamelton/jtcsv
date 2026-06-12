@@ -6,7 +6,7 @@ import { ValidationError, ConfigurationError } from '../errors-browser';
 // Проверка поддержки Web Workers
 const WORKERS_SUPPORTED = typeof Worker !== 'undefined';
 
-function isTransferableBuffer(value) {
+function isTransferableBuffer(value: unknown): value is ArrayBuffer {
   if (!(value instanceof ArrayBuffer)) {
     return false;
   }
@@ -16,10 +16,10 @@ function isTransferableBuffer(value) {
   return true;
 }
 
-function collectTransferables(args) {
-  const transferables = [];
+function collectTransferables(args: unknown[]): ArrayBuffer[] | null {
+  const transferables: ArrayBuffer[] = [];
 
-  const collectFromValue = (value) => {
+  const collectFromValue = (value: unknown): void => {
     if (!value) {
       return;
     }
@@ -40,9 +40,14 @@ function collectTransferables(args) {
   return transferables.length ? transferables : null;
 }
 
+// Worker lifecycle states. 'active' is a synonym for 'busy' used in
+// some restart branches; both are accepted to avoid silently corrupting
+// the stats counters if older call sites still write 'active'.
+type WorkerStatus = 'idle' | 'busy' | 'active' | 'error';
+
 type WorkerWithMeta = Worker & {
   id: string;
-  status: 'idle' | 'busy' | 'error';
+  status: WorkerStatus;
   lastUsed: number;
   taskId: string | null;
 };
@@ -91,7 +96,7 @@ export class WorkerPool {
    * @param {string} workerScript - URL скрипта worker
    * @param {WorkerPoolOptions} [options] - Опции pool
    */
-  constructor(workerScript, options = {}) {
+  constructor(workerScript: string, options: Record<string, unknown> = {}) {
     if (!WORKERS_SUPPORTED) {
       throw new ValidationError('Web Workers не поддерживаются в этом браузере');
     }
@@ -158,17 +163,19 @@ export class WorkerPool {
       
       return worker;
     } catch (error) {
-      throw new ConfigurationError(`Не удалось создать worker: ${error.message}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new ConfigurationError(`Не удалось создать worker: ${msg}`);
     }
   }
-  
+
   /**
    * Обработка сообщений от worker
    * @private
    */
-  handleWorkerMessage(worker, event) {
-    const { data } = event;
-    
+  handleWorkerMessage(worker: WorkerWithMeta, event: MessageEvent): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = event.data as { type: string } & Record<string, any>;
+
     if (data.type === 'PROGRESS') {
       this.handleProgress(worker, data);
     } else if (data.type === 'RESULT') {
@@ -177,12 +184,13 @@ export class WorkerPool {
       this.handleWorkerTaskError(worker, data);
     }
   }
-  
+
   /**
    * Обработка прогресса задачи
    * @private
    */
-  handleProgress(worker, progressData) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handleProgress(worker: WorkerWithMeta, progressData: any): void {
     const taskId = worker.taskId;
     if (taskId && this.activeTasks.has(taskId)) {
       const task = this.activeTasks.get(taskId);
@@ -201,7 +209,8 @@ export class WorkerPool {
    * Обработка результата задачи
    * @private
    */
-  handleResult(worker, resultData) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handleResult(worker: WorkerWithMeta, resultData: any): void {
     const taskId = worker.taskId;
     if (taskId && this.activeTasks.has(taskId)) {
       const task = this.activeTasks.get(taskId);
@@ -228,7 +237,8 @@ export class WorkerPool {
    * Обработка ошибки задачи
    * @private
    */
-  handleWorkerTaskError(worker, errorData) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handleWorkerTaskError(worker: WorkerWithMeta, errorData: any): void {
     const taskId = worker.taskId;
     if (taskId && this.activeTasks.has(taskId)) {
       const task = this.activeTasks.get(taskId);
@@ -262,7 +272,7 @@ export class WorkerPool {
    * Обработка ошибок worker
    * @private
    */
-  handleWorkerError(worker, error) {
+  handleWorkerError(worker: WorkerWithMeta, error: ErrorEvent): void {
     console.error(`Worker ${worker.id} error:`, error);
     
     // Перезапуск worker
@@ -273,7 +283,7 @@ export class WorkerPool {
    * Обработка ошибок сообщений
    * @private
    */
-  handleWorkerMessageError(worker, error) {
+  handleWorkerMessageError(worker: WorkerWithMeta, error: MessageEvent): void {
     console.error(`Worker ${worker.id} message error:`, error);
   }
   
@@ -281,7 +291,7 @@ export class WorkerPool {
    * Перезапуск worker
    * @private
    */
-  restartWorker(worker) {
+  restartWorker(worker: WorkerWithMeta): void {
     const index = this.workers.indexOf(worker);
     if (index !== -1) {
       // Завершение старого worker
@@ -311,7 +321,8 @@ export class WorkerPool {
    * Выполнение задачи на worker
    * @private
    */
-  executeTask(worker, task) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  executeTask(worker: WorkerWithMeta, task: any): void {
     worker.status = 'active';
     worker.lastUsed = Date.now();
     worker.taskId = task.id;
@@ -378,7 +389,8 @@ export class WorkerPool {
    * @param {Function} [onProgress] - Callback прогресса
    * @returns {Promise<unknown>} Результат выполнения
    */
-  async exec(method, args = [], options: any = {}, onProgress = null) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async exec(method: string, args: any[] = [], options: any = {}, onProgress: ((_p: unknown) => void) | null = null): Promise<unknown> {
     return new Promise((resolve, reject) => {
       // Проверка размера очереди
       if (this.taskQueue.length >= this.options.maxQueueSize) {
@@ -489,7 +501,12 @@ export function createWorkerPool(options: any = {}): any {
  * @param {Function} [onProgress] - Callback прогресса
  * @returns {Promise<Array<Object>>} JSON данные
  */
-export async function parseCSVWithWorker(csvInput, options: any = {}, onProgress = null) {
+export async function parseCSVWithWorker(
+  csvInput: string | File | ArrayBuffer | ArrayBufferView,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  options: any = {},
+  onProgress: ((_p: unknown) => void) | null = null,
+): Promise<unknown> {
   // Создание pool если нужно
   const poolHolder = parseCSVWithWorker as any;
   if (!poolHolder.pool) {
@@ -498,10 +515,11 @@ export async function parseCSVWithWorker(csvInput, options: any = {}, onProgress
   
   const pool = poolHolder.pool;
   
-  // Подготовка CSV строки
-  // ?????????? CSV ??????
-  let csvPayload = csvInput;
-  let transfer = null;
+  // Подготовка CSV строки — payload may be a string, a typed-array
+  // view, or a raw ArrayBuffer; we transfer the underlying buffer to
+  // the worker where possible to avoid the structured-clone copy.
+  let csvPayload: string | File | ArrayBuffer | ArrayBufferView = csvInput;
+  let transfer: ArrayBuffer[] | null = null;
 
   if (csvInput instanceof File) {
     const buffer = await readFileAsArrayBuffer(csvInput);
@@ -510,10 +528,11 @@ export async function parseCSVWithWorker(csvInput, options: any = {}, onProgress
   } else if (csvInput instanceof ArrayBuffer) {
     csvPayload = csvInput;
     transfer = [csvInput];
-  } else if (ArrayBuffer.isView(csvInput)) {
-    csvPayload = csvInput;
-    if (csvInput.buffer instanceof ArrayBuffer) {
-      transfer = [csvInput.buffer];
+  } else if (ArrayBuffer.isView(csvInput as ArrayBufferView)) {
+    const view = csvInput as ArrayBufferView;
+    csvPayload = view;
+    if (view.buffer instanceof ArrayBuffer) {
+      transfer = [view.buffer];
     }
   } else if (typeof csvInput !== 'string') {
     throw new ValidationError('Input must be a CSV string, File, or ArrayBuffer');

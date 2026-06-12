@@ -38,10 +38,14 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "__tests__/**",
-    // Excluded for now — too many strict errors to fix in this milestone.
-    // Track them via the ratchet (.strict-baseline.json) — they'll be cleaned
-    // up incrementally without blocking publishes. Re-include after cleanup.
-    "src/browser/workers/**",
+    // src/browser/workers/worker-pool.ts was cleaned in Phase 1 Week 3
+    // (24 strict errors → 0). csv-parser.worker.ts in the same directory
+    // still has ~19 strict errors and will be cleaned alongside the
+    // worker-side tests in Phase 2 Week 6.
+    "src/browser/workers/csv-parser.worker.ts",
+    // src/web-server/** still has ~27 strict errors but is a separate
+    // standalone feature (CLI `web` command). Will be cleaned in Phase 2
+    // when documentation lifts it into the public surface area.
     "src/web-server/**"
   ]
 }

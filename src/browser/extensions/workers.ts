@@ -8,7 +8,12 @@ async function createWorkerPoolLazy(options = {}) {
   return mod.createWorkerPool(options);
 }
 
-async function parseCSVWithWorkerLazy(csvInput, options = {}, onProgress = null) {
+async function parseCSVWithWorkerLazy(
+  csvInput: string | File | ArrayBuffer | ArrayBufferView,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  options: any = {},
+  onProgress: ((_p: unknown) => void) | null = null,
+): Promise<unknown> {
   const mod = await import('../workers/worker-pool');
   return mod.parseCSVWithWorker(csvInput, options, onProgress);
 }

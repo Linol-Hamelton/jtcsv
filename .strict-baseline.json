@@ -1,11 +1,5 @@
 {
-  "baseline": 48,
-  "recordedAt": "2026-06-12T14:11:09.751Z",
-  "byFile": {
-    "src/browser/extensions/workers.ts": 1,
-    "src/browser/index.ts": 1,
-    "src/browser/workers/worker-pool.ts": 24,
-    "src/engines/fast-path-engine.ts": 20,
-    "src/formats/ndjson-parser.ts": 2
-  }
+  "baseline": 0,
+  "recordedAt": "2026-06-12T16:04:13.224Z",
+  "byFile": {}
 }

@@ -1,10 +1,31 @@
 /**
  * Fast-Path Engine для оптимизации CSV парсинга
  * Автоматически выбирает оптимальный парсер на основе структуры CSV
- * 
+ *
  * @version 1.0.0
  * @date 2026-01-22
  */
+
+/**
+ * Structural analysis of a CSV sample. Returned from analyzeStructure()
+ * and consumed by every parser/emitter factory in this file. The shape
+ * is intentionally local — promote to src/types/ when a non-engine
+ * caller needs it.
+ */
+export interface FastPathStructure {
+  delimiter: string;
+  hasQuotes: boolean;
+  hasEscapedQuotes: boolean;
+  /** Filled by _getStructureForParse; analyzeStructure leaves this undefined. */
+  hasBackslashes?: boolean;
+  hasNewlinesInFields: boolean;
+  /** 'SIMPLE' = split-based; 'QUOTE_AWARE' = state machine; 'STANDARD' = same as QUOTE_AWARE (fallback). */
+  recommendedEngine: 'SIMPLE' | 'QUOTE_AWARE' | 'STANDARD';
+  maxFields: number;
+  fieldConsistency: boolean;
+  /** Diagnostic only — not used by any parser branch. */
+  avgFieldsPerLine?: number;
+}
 
 class FastPathEngine {
   compilers: Map<any, any>;
@@ -29,15 +50,15 @@ class FastPathEngine {
     };
   }
 
-  _hasQuotes(csv) {
+  _hasQuotes(csv: string): boolean {
     return csv.indexOf('"') !== -1;
   }
 
-  _hasEscapedQuotes(csv) {
+  _hasEscapedQuotes(csv: string): boolean {
     return csv.indexOf('""') !== -1;
   }
 
-  _hasBackslashes(csv) {
+  _hasBackslashes(csv: string): boolean {
     return csv.indexOf('\\') !== -1;
   }
 
@@ -79,7 +100,7 @@ class FastPathEngine {
   /**
    * Анализирует структуру CSV и определяет оптимальный парсер
    */
-  analyzeStructure(sample: any, options: any = {}) {
+  analyzeStructure(sample: string, options: { delimiter?: string } = {}): FastPathStructure {
     const delimiter = options.delimiter || this._detectDelimiter(sample);
     const lines = sample.split('\n').slice(0, 10);
     
@@ -127,24 +148,24 @@ class FastPathEngine {
   /**
    * Автоматически определяет разделитель
    */
-  _detectDelimiter(sample) {
+  _detectDelimiter(sample: string): string {
     const candidates = [',', ';', '\t', '|'];
     const firstLine = sample.split('\n')[0];
-    
+
     let bestDelimiter = ',';
     let bestScore = 0;
 
     for (const delimiter of candidates) {
       const fields = firstLine.split(delimiter);
       const score = fields.length;
-      
+
       // Если разделитель не найден в строке, пропускаем его
       if (score === 1 && !firstLine.includes(delimiter)) {
         continue;
       }
-      
-      const avgLength = fields.reduce((sum, field) => sum + field.length, 0) / fields.length;
-      const variance = fields.reduce((sum, field) => sum + Math.pow(field.length - avgLength, 2), 0) / fields.length;
+
+      const avgLength = fields.reduce((sum: number, field: string) => sum + field.length, 0) / fields.length;
+      const variance = fields.reduce((sum: number, field: string) => sum + Math.pow(field.length - avgLength, 2), 0) / fields.length;
       
       const finalScore = score / (variance + 1);
       
@@ -161,7 +182,7 @@ class FastPathEngine {
   /**
    * Выбирает оптимальный движок парсинга
    */
-  _selectEngine(hasQuotes: any, hasNewlinesInFields: any, _fieldConsistency: any) {
+  _selectEngine(hasQuotes: boolean, hasNewlinesInFields: boolean, _fieldConsistency: boolean): FastPathStructure['recommendedEngine'] {
     if (!hasQuotes && !hasNewlinesInFields) {
       return 'SIMPLE';
     }
@@ -176,15 +197,15 @@ class FastPathEngine {
   /**
    * Создает простой парсер (разделитель без кавычек)
    */
-  _createSimpleParser(structure) {
+  _createSimpleParser(structure: FastPathStructure): (_csv: string) => string[][] {
     const { delimiter, hasBackslashes } = structure;
-    
-    return (csv) => {
-      const rows = [];
+
+    return (csv: string): string[][] => {
+      const rows: string[][] = [];
       if (hasBackslashes) {
-        this._emitSimpleRowsEscaped(csv, delimiter, (row) => rows.push(row));
+        this._emitSimpleRowsEscaped(csv, delimiter, (row: string[]) => rows.push(row));
       } else {
-        this._emitSimpleRows(csv, delimiter, (row) => rows.push(row));
+        this._emitSimpleRows(csv, delimiter, (row: string[]) => rows.push(row));
       }
 
       return rows;
@@ -408,10 +429,10 @@ class FastPathEngine {
   /**
    * Simple row emitter that avoids storing all rows in memory.
    */
-  _createSimpleRowEmitter(structure) {
+  _createSimpleRowEmitter(structure: FastPathStructure): (_csv: string, _onRow: (_row: string[]) => void) => void {
     const { delimiter, hasBackslashes } = structure;
 
-    return (csv: any, onRow: any) => {
+    return (csv: string, onRow: (_row: string[]) => void): void => {
       if (hasBackslashes) {
         this._emitSimpleRowsEscaped(csv, delimiter, onRow);
       } else {
@@ -423,11 +444,11 @@ class FastPathEngine {
   /**
    * State machine парсер для CSV с кавычками (RFC 4180)
    */
-  _createQuoteAwareParser(structure) {
+  _createQuoteAwareParser(structure: FastPathStructure): (_csv: string) => string[][] {
     const { delimiter, hasEscapedQuotes, hasBackslashes } = structure;
 
-    return (csv) => {
-      const rows = [];
+    return (csv: string): string[][] => {
+      const rows: string[][] = [];
       /* istanbul ignore next */
       const iterator = hasBackslashes
         ? this._quoteAwareEscapedRowsGenerator(csv, delimiter, hasEscapedQuotes)
@@ -444,10 +465,10 @@ class FastPathEngine {
   /**
    * Quote-aware row emitter that avoids storing all rows in memory.
    */
-  _createQuoteAwareRowEmitter(structure) {
+  _createQuoteAwareRowEmitter(structure: FastPathStructure): (_csv: string, _onRow: (_row: string[]) => void) => void {
     const { delimiter, hasEscapedQuotes, hasBackslashes } = structure;
 
-    return (csv: any, onRow: any) => {
+    return (csv: string, onRow: (_row: string[]) => void): void => {
       const iterator = hasBackslashes
         ? this._quoteAwareEscapedRowsGenerator(csv, delimiter, hasEscapedQuotes)
         : this._quoteAwareRowsGenerator(csv, delimiter, hasEscapedQuotes);
@@ -717,7 +738,7 @@ class FastPathEngine {
     }
   }
 
-  compileParser(structure) {
+  compileParser(structure: FastPathStructure): (_csv: string) => string[][] {
     const cacheKey = JSON.stringify(structure);
     
     // Проверяем кеш
@@ -756,7 +777,7 @@ class FastPathEngine {
   /**
    * Compiles a row-emitter parser for streaming conversion.
    */
-  compileRowEmitter(structure) {
+  compileRowEmitter(structure: FastPathStructure): (_csv: string, _onRow: (_row: string[]) => void) => void {
     const cacheKey = JSON.stringify(structure);
 
     if (this.rowCompilers.has(cacheKey)) {

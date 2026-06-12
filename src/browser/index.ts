@@ -50,10 +50,19 @@ async function createWorkerPoolLazy(options: any = {}): Promise<any> {
 async function parseCSVWithWorkerLazy(
   csvInput: string | File,
   options: CsvToJsonOptions = {},
-  onProgress?: (progress: number) => void
+  onProgress?: (_progress: number) => void
 ): Promise<any[]> {
   const mod = await import('./workers/worker-pool');
-  return mod.parseCSVWithWorker(csvInput, options, onProgress);
+  // Adapt the typed progress(number) signature to the worker pool's
+  // generic onProgress(unknown) — the worker pool exposes the full
+  // progress envelope; we only forward the percentage.
+  const adaptedProgress = onProgress
+    ? (p: unknown) => {
+        const pct = (p as { percentage?: number } | null)?.percentage;
+        if (typeof pct === 'number') onProgress(pct);
+      }
+    : null;
+  return (await mod.parseCSVWithWorker(csvInput, options, adaptedProgress)) as any[];
 }
 
 /**
