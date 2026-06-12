@@ -1,5 +1,14 @@
 name: Security Scanning
 
+# All third-party actions are pinned to a commit SHA (with a comment
+# showing the version that SHA corresponded to at pin time). Renew via
+# scripts/refresh-action-shas.sh or manually with the GH API.
+#
+# The `snyk/actions/node@master` job was removed in Phase 1 Week 2:
+#   - it was pinned to a sliding `master` branch (supply-chain risk);
+#   - it required a SNYK_TOKEN secret we don't configure;
+#   - CodeQL provides equivalent SAST coverage for this codebase.
+
 on:
   push:
     branches: [ main, develop ]
@@ -9,54 +18,34 @@ on:
     # Weekly security scan
     - cron: '0 2 * * 1'
 
+permissions:
+  contents: read
+
 jobs:
   npm-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with:
           node-version: '20'
           cache: 'npm'
       - name: Install dependencies
         run: npm ci --audit=false
-      - name: Run npm audit
+      - name: Run npm audit (fail on moderate+)
+        # No `continue-on-error` — security-fix CVEs at moderate+ severity
+        # must fail the build. Soft-mode (continue-on-error) was masking
+        # real advisories. To suppress a false-positive, use a real npm
+        # override in package.json, not a blanket workflow flag.
         run: npm audit --audit-level=moderate
-        continue-on-error: true
       - name: Upload audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: npm-audit-report
           path: |
             npm-audit.json
-          retention-days: 7
-
-  snyk:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-        continue-on-error: true
-      - name: Upload Snyk report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: snyk-report
-          path: snyk-report.json
           retention-days: 7
 
   codeql:
@@ -66,12 +55,12 @@ jobs:
       actions: read
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@dd903d2e4f5405488e5ef1422510ee31c8b32357  # v3
         with:
           languages: javascript
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@dd903d2e4f5405488e5ef1422510ee31c8b32357  # v3
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@dd903d2e4f5405488e5ef1422510ee31c8b32357  # v3

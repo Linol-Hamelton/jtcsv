@@ -1,0 +1,78 @@
+version: 2
+
+# Dependabot for jtcsv.
+#
+# Two ecosystems:
+#   - npm: dev/runtime dependencies; minor/patch updates batched into a
+#     small number of grouped PRs to reduce review fatigue. Major
+#     updates land as individual PRs so each gets explicit attention.
+#   - github-actions: third-party action pins. SHA-pinned actions get
+#     their SHAs auto-bumped here while the version comment stays
+#     readable.
+#
+# Mondays 06:00 UTC — a fresh batch hits the inbox at the start of the
+# week. Update times can be tightened (interval: daily) later if we want
+# faster security-patch turnaround once Scorecard requires it.
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+      include: scope
+    groups:
+      babel:
+        patterns:
+          - '@babel/*'
+          - 'babel-*'
+          - 'babel-jest'
+      jest:
+        patterns:
+          - 'jest'
+          - 'ts-jest'
+          - '@types/jest'
+          - 'jest-*'
+      rollup:
+        patterns:
+          - 'rollup'
+          - '@rollup/*'
+      typescript:
+        patterns:
+          - 'typescript'
+          - '@typescript-eslint/*'
+          - 'typescript-eslint'
+      eslint:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'globals'
+    ignore:
+      # We pin engines.node >= 18.17. @types/node majors track the latest
+      # Node major, which we don't bump silently — let that be a manual
+      # PR when we move to Node 22 LTS as the baseline.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: chore(ci)

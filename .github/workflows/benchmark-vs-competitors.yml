@@ -39,9 +39,9 @@ jobs:
     name: jtcsv vs papaparse / csv-parse / fast-csv
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with:
           node-version: 20
           cache: npm
@@ -87,7 +87,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to gh-pages chart
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba  # v1.22.1
         if: github.event_name == 'push'
         with:
           tool: 'customSmallerIsBetter'
@@ -102,7 +102,7 @@ jobs:
           alert-comment-cc-users: '@RuslanFomenko'
 
       - name: Upload raw JSON as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: bench-results-${{ github.sha }}
           path: benchmarks/results.json

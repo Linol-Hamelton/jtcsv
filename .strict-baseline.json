@@ -1,8 +1,7 @@
 {
-  "baseline": 57,
-  "recordedAt": "2026-05-04T00:20:09.188Z",
+  "baseline": 48,
+  "recordedAt": "2026-06-12T14:11:09.751Z",
   "byFile": {
-    "json-to-csv.ts": 9,
     "src/browser/extensions/workers.ts": 1,
     "src/browser/index.ts": 1,
     "src/browser/workers/worker-pool.ts": 24,

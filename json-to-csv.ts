@@ -153,12 +153,12 @@ export function preprocessData(
         continue;
       }
 
-      const processedItem = {};
+      const processedItem: Record<string, unknown> = {};
       for (const key in item) {
         if (!Object.prototype.hasOwnProperty.call(item, key)) {
           continue;
         }
-        const value = item[key];
+        const value = (item as Record<string, unknown>)[key];
         if (value === null || value === undefined) {
           processedItem[key] = '';
         } else if (typeof value === 'object') {
@@ -170,7 +170,7 @@ export function preprocessData(
       processed.push(processedItem);
       continue;
     }
-    let processedItem = { ...item };
+    let processedItem: Record<string, unknown> = { ...item };
       
     // Handle flattening if enabled
     if (flatten) {
@@ -211,8 +211,8 @@ function flattenObject(
     return { [prefix || 'value']: obj };
   }
   
-  const flattened = {};
-  
+  const flattened: Record<string, unknown> = {};
+
   for (const [key, value] of Object.entries(obj)) {
     const newKey = prefix ? `${prefix}${separator}${key}` : key;
     
@@ -347,7 +347,7 @@ function unwrapRecursive(
     try {
       return JSON.stringify(value);
     } catch (error) {
-      const message = error?.message ? String(error.message) : '';
+      const message = (error instanceof Error && error.message) ? error.message : String(error ?? '');
       if (message.toLowerCase().includes('circular')) {
         return '[Circular Reference]';
       }
@@ -558,7 +558,7 @@ export function jsonToCsv(
     
     // Apply rename map to create header names.
     let headers = originalKeys;
-    let reverseRenameMap = null;
+    let reverseRenameMap: Record<string, string> | null = null;
     if (hasRenameMap) {
       headers = new Array(originalKeys.length);
       reverseRenameMap = {};
@@ -644,7 +644,7 @@ export function jsonToCsv(
      */
     const quoteRegex = /"/g;
     const delimiterCode = delimiter.charCodeAt(0);
-    const isPotentialFormula = (value) => {
+    const isPotentialFormula = (value: string): boolean => {
       let idx = 0;
       while (idx < value.length) {
         const code = value.charCodeAt(idx);
@@ -672,15 +672,12 @@ export function jsonToCsv(
       return char === '=' || char === '+' || char === '-' || char === '@';
     };
     
-    const escapeValue = (value) => {
+    const escapeValue = (value: unknown): string => {
       if (value === null || value === undefined || value === '') {
         return '';
       }
-      
-      let stringValue = value;
-      if (typeof stringValue !== 'string') {
-        stringValue = String(stringValue);
-      }
+
+      let stringValue: string = typeof value === 'string' ? value : String(value);
       
       // CSV Injection protection - escape formulas if enabled
       let escapedValue = stringValue;
