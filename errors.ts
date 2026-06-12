@@ -71,7 +71,19 @@ export class FileSystemError extends JtcsvError {
 }
 
 /**
- * Error for parsing/formatting issues
+ * Error for parsing/formatting issues.
+ *
+ * Actionable shape: every parser-thrown ParsingError should carry as much
+ * locational context as is cheaply available — line, column, the offending
+ * cell value (truncated), and a human-readable hint that points at the
+ * most likely cause. The detailedMessage string built here is what users
+ * see in their console, in this layout:
+ *
+ *   <category>: <core message> at line N, column M
+ *   Context: <row snippet>
+ *   Expected: <X> / Actual: <Y>     (if applicable)
+ *   Value: "<offending cell>"        (if applicable)
+ *   Hint: <what to try>              (if applicable)
  */
 export class ParsingError extends JtcsvError {
   lineNumber: number | null;
@@ -79,8 +91,12 @@ export class ParsingError extends JtcsvError {
   declare context: ErrorContextValue;
   expected: string | null;
   actual: string | null;
+  /** The exact cell value that triggered the error, truncated to 200 chars. */
+  value: string | null;
+  /** Actionable next-step suggestion — usually a config flag or a fix pattern. */
+  declare hint: string | undefined;
   originalMessage: string;
-  
+
   constructor(
     message: string,
     lineNumber: number | null = null,
@@ -88,66 +104,89 @@ export class ParsingError extends JtcsvError {
     context: string | null = null,
     expected: string | null = null,
     actual: string | null = null,
-    meta: ErrorMeta = {}
+    meta: ErrorMeta & { value?: string | null; hint?: string } = {}
   ) {
     const resolvedContext = context ?? (typeof meta.context === 'string' ? meta.context : null);
+    const rawValue = meta.value ?? null;
+    const value = rawValue !== null && rawValue.length > 200
+      ? rawValue.slice(0, 200) + '…'
+      : rawValue;
+    const hint = meta.hint;
+
     // Build detailed message
     let detailedMessage = message;
-    
+
     if (lineNumber !== null) {
       detailedMessage += ` at line ${lineNumber}`;
       if (column !== null) {
         detailedMessage += `, column ${column}`;
       }
     }
-    
+
     if (resolvedContext !== null) {
       detailedMessage += `\nContext: ${resolvedContext}`;
     }
-    
+
     if (expected !== null && actual !== null) {
-      detailedMessage += `\nExpected: ${expected}`;
-      detailedMessage += `\nActual: ${actual}`;
+      detailedMessage += `\nExpected: ${expected}\nActual: ${actual}`;
     } else if (expected !== null) {
       detailedMessage += `\nExpected: ${expected}`;
     } else if (actual !== null) {
       detailedMessage += `\nActual: ${actual}`;
     }
-    
-    super(detailedMessage, 'PARSING_ERROR', { ...meta, context: resolvedContext ?? meta.context ?? null });
+
+    if (value !== null) {
+      detailedMessage += `\nValue: ${JSON.stringify(value)}`;
+    }
+
+    if (hint) {
+      detailedMessage += `\nHint: ${hint}`;
+    }
+
+    super(detailedMessage, 'PARSING_ERROR', {
+      ...meta,
+      context: resolvedContext ?? meta.context ?? null,
+      hint,
+    });
     this.name = 'ParsingError';
     this.lineNumber = lineNumber;
     this.column = column;
     this.context = resolvedContext ?? meta.context ?? null;
     this.expected = expected;
     this.actual = actual;
+    this.value = value;
     this.originalMessage = message;
   }
   
   /**
-   * Create a ParsingError for CSV format issues
+   * Create a ParsingError for CSV format issues.
    */
   static csvFormat(
     message: string,
     lineNumber: number | null = null,
     column: number | null = null,
-    rowContent: string | null = null
+    rowContent: string | null = null,
+    hint?: string
   ): ParsingError {
     let context: string | null = null;
     if (rowContent !== null) {
       context = `Row content: "${rowContent.substring(0, 100)}${rowContent.length > 100 ? '...' : ''}"`;
     }
-    
     return new ParsingError(
       `CSV format error: ${message}`,
       lineNumber,
       column,
-      context
+      context,
+      null,
+      null,
+      { hint },
     );
   }
-  
+
   /**
-   * Create a ParsingError for field count mismatch
+   * Create a ParsingError for field count mismatch.
+   * The most common cause: an unquoted comma inside a cell. The hint
+   * surfaces both the `repairRowShifts` opt-out and the quoting fix.
    */
   static fieldCountMismatch(
     expectedCount: number,
@@ -155,18 +194,22 @@ export class ParsingError extends JtcsvError {
     lineNumber: number | null = null,
     rowContent: string | null = null
   ): ParsingError {
+    const hint = actualCount < expectedCount
+      ? `try \`repairRowShifts: true\` to auto-fill missing trailing cells, or quote any cell value that contains the delimiter`
+      : `the row has more fields than the header — check for an unquoted delimiter inside a cell value`;
     return new ParsingError(
       'Field count mismatch',
       lineNumber,
       null,
       rowContent ? `Row: "${rowContent.substring(0, 100)}${rowContent.length > 100 ? '...' : ''}"` : null,
       `${expectedCount} fields`,
-      `${actualCount} fields`
+      `${actualCount} fields`,
+      { hint },
     );
   }
-  
+
   /**
-   * Create a ParsingError for unclosed quotes
+   * Create a ParsingError for unclosed quotes.
    */
   static unclosedQuotes(
     lineNumber: number | null = null,
@@ -177,12 +220,20 @@ export class ParsingError extends JtcsvError {
       'Unclosed quotes in CSV',
       lineNumber,
       column,
-      content ? `Content: "${content}"` : null
+      content ? `Content: "${content}"` : null,
+      null,
+      null,
+      {
+        hint:
+          'the parser scanned to end-of-input still inside a quoted field — '
+          + 'a closing `"` may be missing, or a literal `"` in cell content '
+          + 'was not escaped as `""`',
+      },
     );
   }
-  
+
   /**
-   * Create a ParsingError for invalid delimiter
+   * Create a ParsingError for invalid delimiter.
    */
   static invalidDelimiter(
     delimiter: string,
@@ -193,7 +244,57 @@ export class ParsingError extends JtcsvError {
       `Invalid delimiter '${delimiter}'`,
       lineNumber,
       null,
-      context
+      context,
+      null,
+      null,
+      {
+        hint:
+          'delimiter must be a single character. Common choices: `,` `;` `\\t` `|`. '
+          + 'For auto-detection, omit the option or set `autoDetect: true`.',
+      },
+    );
+  }
+
+  /**
+   * Create a ParsingError for a cell value that the parser couldn't process
+   * (e.g. fast-path engine bailout). Surfaces both the offending value and
+   * a hint pointing at the most likely fallback config.
+   */
+  static cellValue(
+    message: string,
+    value: string,
+    lineNumber: number | null = null,
+    column: number | null = null,
+    hint?: string
+  ): ParsingError {
+    return new ParsingError(
+      message,
+      lineNumber,
+      column,
+      null,
+      null,
+      null,
+      { value, hint },
+    );
+  }
+
+  /**
+   * Create a ParsingError for fast-path engine bailout.
+   */
+  static fastPathBailout(reason: string, content: string | null = null): ParsingError {
+    return new ParsingError(
+      `Fast-path parser bailout: ${reason}`,
+      null,
+      null,
+      content ? `Content snippet: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"` : null,
+      null,
+      null,
+      {
+        hint:
+          'try `useFastPath: false` to fall back to the standard quote-aware parser. '
+          + 'The standard parser handles edge cases (CRLF in quotes, escaped quotes, '
+          + 'mismatched columns) more robustly at a small perf cost.',
+      },
     );
   }
 }

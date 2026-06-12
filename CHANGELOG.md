@@ -1,5 +1,75 @@
 # Changelog
 
+## 3.2.3
+
+### Patch Changes
+
+- ## jtcsv 3.2.3 — actionable errors + browser test coverage
+
+  Every `ParsingError` thrown by the parser now carries the offending cell
+  value (when known) and a `Hint:` string pointing at the most likely fix.
+  The error class gains two fields — `value: string | null` and
+  `hint: string | undefined` — surfaced both as message lines and as
+  own-enumerable properties for structured logging.
+
+  What changes for users
+
+  Before:
+
+  ```
+  ParsingError: Field count mismatch at line 5
+  Context: Row: "id,name"
+  Expected: 3 fields
+  Actual: 2 fields
+  ```
+
+  After:
+
+  ```
+  ParsingError: Field count mismatch at line 5
+  Context: Row: "id,name"
+  Expected: 3 fields
+  Actual: 2 fields
+  Hint: try `repairRowShifts: true` to auto-fill missing trailing cells,
+  or quote any cell value that contains the delimiter
+  ```
+
+  The factory methods got the corresponding hints:
+
+  - `ParsingError.fieldCountMismatch(...)` — different hints for too-few
+    vs too-many fields (`repairRowShifts: true` vs unquoted-delimiter
+    check).
+  - `ParsingError.unclosedQuotes(...)` — names both common causes
+    (missing closing `"`, unescaped literal `"`).
+  - `ParsingError.invalidDelimiter(...)` — directs to single-char
+    delimiters or `autoDetect: true`.
+  - New: `ParsingError.cellValue(message, value, line, column, hint)` —
+    generic actionable error for any cell-specific parser failure.
+  - New: `ParsingError.fastPathBailout(reason, content)` — direct
+    hint to `useFastPath: false`.
+
+  The previously-generic throw in `csv-to-json.ts:604` ("Fast-path
+  parser failed to split headers") now uses `ParsingError.fastPathBailout`
+  and includes the header content plus the `useFastPath: false` hint.
+
+  Test coverage
+
+  - New `__tests__/actionable-errors.test.ts` (+17 tests) locks the
+    message format and the hints per factory method.
+  - New `__tests__/browser-jsdom.test.ts` (+31 tests) covers the
+    browser path through jsdom: `csvToJson`, `jsonToCsv`,
+    `autoDetectDelimiter`, `downloadAsCsv`, `parseCsvFile`,
+    `parseCsvFileStream`, `csvToJsonStream`, `jsonToCsvStream`,
+    `csvToJsonIterator`, and the browser error classes. Two known
+    browser-parser limitations are documented inline (hasHeaders:false
+    treats first row as headers; parseNumbers:false still coerces) —
+    Phase 3 follow-up.
+
+  README hero now carries a "TypeScript strict: clean" badge linking
+  to `.strict-baseline.json` — strict-mode error count locked at 0.
+
+  No breaking changes. Drop-in upgrade from 3.2.2.
+
 ## 3.2.2
 
 ### Patch Changes

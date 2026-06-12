@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-excel#readme",
   "peerDependencies": {
-    "jtcsv": "^3.2.2",
+    "jtcsv": "^3.2.3",
     "exceljs": "^4.4.0"
   },
   "peerDependenciesMeta": {

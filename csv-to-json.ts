@@ -601,7 +601,10 @@ export function csvToJson(
           const hasCandidateDelimiter = (candidates || [';', ',', '\t', '|'])
             .some((candidate) => headerText.includes(candidate));
           if (hasCandidateDelimiter) {
-            throw new ParsingError('Fast-path parser failed to split headers');
+            throw ParsingError.fastPathBailout(
+              'header row contained a candidate delimiter but was not split correctly',
+              headerText,
+            );
           }
         }
 

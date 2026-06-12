@@ -7,6 +7,7 @@
 [![Bench](https://img.shields.io/badge/bench-fastest%20vs%20papaparse%20%E2%80%A2%20csv--parse%20%E2%80%A2%20fast--csv-success.svg)](#performance)
 [![Provenance](https://img.shields.io/badge/npm-provenance%20signed-success.svg)](https://docs.npmjs.com/generating-provenance-statements)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Linol-Hamelton/jtcsv/badge)](https://scorecard.dev/viewer/?uri=github.com/Linol-Hamelton/jtcsv)
+[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict%20clean-3178c6.svg)](https://github.com/Linol-Hamelton/jtcsv/blob/main/.strict-baseline.json)
 
 **JSON ↔ CSV in Node and the browser. Streaming. Tree-shakable. 18 KB gz core. Zero deps.**
 
