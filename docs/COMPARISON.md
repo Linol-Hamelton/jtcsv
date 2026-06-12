@@ -1,3 +1,8 @@
+---
+title: Comparison
+description: jtcsv vs papaparse, csv-parse, fast-csv — 13-row feature matrix.
+---
+
 # JTCSV vs Competitors: Feature Comparison
 
 **Последнее обновление**: Февраль 2026
@@ -272,7 +277,7 @@ const data = csvToJson(csv, { hasHeaders: true });
 
 - [Getting Started](./GETTING_STARTED.md)
 - [Performance Guide](./PERFORMANCE.md)
-- [Security Guide](./SECURITY.md)
+- [Security Guide](https://github.com/Linol-Hamelton/jtcsv/blob/main/SECURITY.md)
 - [Migration from Papa Parse](./MIGRATION_PAPAPARSE.md)
 - [Migration from csvtojson](./MIGRATION_CSVTOJSON.md)
 

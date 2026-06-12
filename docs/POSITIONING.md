@@ -1,3 +1,8 @@
+---
+title: Positioning
+description: Where jtcsv fits — the 18 KB tree-shakable wedge vs papaparse / csv-parse / fast-csv.
+---
+
 # Positioning — jtcsv
 
 > One source of truth for every public-facing claim made by jtcsv:

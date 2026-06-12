@@ -196,7 +196,7 @@ csvFileToJsonStream( → createCsvFileToJsonStream(
 
 - [API Decision Tree](./API_DECISION_TREE.md) - выбор правильной функции
 - [API Reference](./api/) - полная документация API
-- [Examples](../examples/) - примеры использования
+- [Examples](https://github.com/Linol-Hamelton/jtcsv/tree/main/examples) - примеры использования
 
 ---
 

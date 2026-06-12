@@ -513,4 +513,4 @@ await saveJsonStreamAsCsv(input, 'output.csv', { addBOM: true });
 
 - [GitHub Issues](https://github.com/Linol-Hamelton/jtcsv/issues)
 - [API Documentation](./api/index.html)
-- [Examples](../examples/)
+- [Examples](https://github.com/Linol-Hamelton/jtcsv/tree/main/examples)

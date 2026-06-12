@@ -1,3 +1,8 @@
+---
+title: Threat Model
+description: STRIDE breakdown, trust boundaries, and ADRs for jtcsv.
+---
+
 # jtcsv Threat Model
 
 > Last updated: Phase 2 Week 6 — Linked from SECURITY.md.
@@ -61,14 +66,14 @@ explicitly so callers can see what's deliberately out of scope.
 
 | # | Threat | Mitigation | Verified by |
 |---|--------|------------|-------------|
-| S1 | Tampered package published under our name | npm provenance (`--provenance`) signed publish; verified post-publish in [`scripts/verify-release.js`](../scripts/verify-release.js) | CI: `release.yml`; manual: `npm audit signatures` |
+| S1 | Tampered package published under our name | npm provenance (`--provenance`) signed publish; verified post-publish in [`scripts/verify-release.js`](https://github.com/Linol-Hamelton/jtcsv/blob/main/scripts/verify-release.js) | CI: `release.yml`; manual: `npm audit signatures` |
 | S2 | Counterfeit lookalike package (e.g. `jtcs`, `jtcsv-pro`) | Out of npm's control; documented in `SECURITY.md` so users know to verify the publisher | n/a — process-only |
 
 ### T — Tampering
 
 | # | Threat | Mitigation | Verified by |
 |---|--------|------------|-------------|
-| T1 | A row-shift / off-by-one parse silently emits cross-field data | `repairRowShifts` is opt-in; default `strictRowLengths: true` throws `ParsingError.fieldCountMismatch` with line + Hint | [`__tests__/edge-cases-hardening.test.ts`](../__tests__/edge-cases-hardening.test.ts) |
+| T1 | A row-shift / off-by-one parse silently emits cross-field data | `repairRowShifts` is opt-in; default `strictRowLengths: true` throws `ParsingError.fieldCountMismatch` with line + Hint | [`__tests__/edge-cases-hardening.test.ts`](https://github.com/Linol-Hamelton/jtcsv/blob/main/__tests__/edge-cases-hardening.test.ts) |
 | T2 | An injected formula cell (`=cmd|'/c calc'!A0`) opens in Excel/Numbers | `csvInjectionGuard` is **on by default**; cells starting with `= + - @ \t \r` are quoted with a leading `'` | tests in `__tests__/` (injection suite) |
 | T3 | Supply-chain compromise via transitive dep | Core is **zero deps**; lock file pinned; `Dependabot` weekly; `OpenSSF Scorecard` runs nightly | `dependabot.yml`, `scorecard.yml` |
 | T4 | Compromised GitHub Action — silent build poisoning | All Actions SHA-pinned (16 actions); strict review of any SHA bumps | `.github/workflows/*` |
@@ -84,7 +89,7 @@ explicitly so callers can see what's deliberately out of scope.
 
 | # | Threat | Mitigation | Verified by |
 |---|--------|------------|-------------|
-| I1 | Parser leaks input fragments into error messages, helping an attacker probe the schema | `ParsingError` truncates `value` to 200 chars + ellipsis; no full input is ever embedded | [`__tests__/actionable-errors.test.ts`](../__tests__/actionable-errors.test.ts) |
+| I1 | Parser leaks input fragments into error messages, helping an attacker probe the schema | `ParsingError` truncates `value` to 200 chars + ellipsis; no full input is ever embedded | [`__tests__/actionable-errors.test.ts`](https://github.com/Linol-Hamelton/jtcsv/blob/main/__tests__/actionable-errors.test.ts) |
 | I2 | Dev web-server returns `Access-Control-Allow-Origin: *` and is reachable from the internet | Default bind is `127.0.0.1`; CORS is **allowlist-only** since Week 6 (`JTCSV_CORS_ALLOW`); README marks the server "dev-only" | `src/web-server/index.ts` |
 | I3 | Stack traces in transform-loader expose host paths | Path is included intentionally for debuggability; product policy: web-server returns generic 500, library throws `ParsingError` with `value` truncated. Apps that surface library errors to end users must scrub the stack themselves. | — |
 
@@ -92,8 +97,8 @@ explicitly so callers can see what's deliberately out of scope.
 
 | # | Threat | Mitigation | Verified by |
 |---|--------|------------|-------------|
-| D1 | Catastrophic regex / ReDoS on malicious input | All regexes audited via [`scripts/audit-regex.js`](../scripts/audit-regex.js) with `safe-regex2`; 34 patterns curated; CI gate on every release | `prepublishOnly` runs `npm run audit:regex` |
-| D2 | Unbounded memory blow-up on a single huge cell or row | Fast-path bailout when row exceeds bounds; standard parser is streaming-friendly via `createCsvToJsonStream` | [`__tests__/edge-cases-hardening.test.ts`](../__tests__/edge-cases-hardening.test.ts) |
+| D1 | Catastrophic regex / ReDoS on malicious input | All regexes audited via [`scripts/audit-regex.js`](https://github.com/Linol-Hamelton/jtcsv/blob/main/scripts/audit-regex.js) with `safe-regex2`; 34 patterns curated; CI gate on every release | `prepublishOnly` runs `npm run audit:regex` |
+| D2 | Unbounded memory blow-up on a single huge cell or row | Fast-path bailout when row exceeds bounds; standard parser is streaming-friendly via `createCsvToJsonStream` | [`__tests__/edge-cases-hardening.test.ts`](https://github.com/Linol-Hamelton/jtcsv/blob/main/__tests__/edge-cases-hardening.test.ts) |
 | D3 | Dev web-server accepts unbounded request body | Body size cap (default 10 MB, env `JTCSV_MAX_BODY_BYTES`) added Week 6 | `src/web-server/index.ts` |
 | D4 | DoS via repeated parse of attacker-controlled input | Out of scope for a library — rate limiting belongs in the caller (reverse proxy, framework middleware, etc.) | n/a — documented |
 | D5 | Worker-thread spawn storm on tiny inputs | `useWorkers: true` opt-in; threshold (~1 MB / 5 K rows) before workers spin up; silent sync fallback otherwise | docs/BROWSER_WORKERS.md, `src/parallel/csv-parser-orchestrator.ts` |
@@ -102,7 +107,7 @@ explicitly so callers can see what's deliberately out of scope.
 
 | # | Threat | Mitigation | Verified by |
 |---|--------|------------|-------------|
-| E1 | A user-supplied JS **transform file** executes arbitrary code with the host's privileges | **Not mitigated by sandboxing** — see [ADR-001](#adr-001-transform-loader-is-not-a-security-boundary). The loader is a developer-ergonomics convenience, NOT an isolation primitive. Operators must not pass attacker-controlled transform paths. | [`__tests__/transform-loader-security.test.ts`](../__tests__/transform-loader-security.test.ts) |
+| E1 | A user-supplied JS **transform file** executes arbitrary code with the host's privileges | **Not mitigated by sandboxing** — see [ADR-001](#adr-001-transform-loader-is-not-a-security-boundary). The loader is a developer-ergonomics convenience, NOT an isolation primitive. Operators must not pass attacker-controlled transform paths. | [`__tests__/transform-loader-security.test.ts`](https://github.com/Linol-Hamelton/jtcsv/blob/main/__tests__/transform-loader-security.test.ts) |
 | E2 | Path traversal to load a non-transform file as JS | Rejected with `SecurityError`; `..` and `..\\` in path blocked at the entry function | same test file |
 | E3 | A malicious cell value gets interpreted as a formula at the spreadsheet boundary | `csvInjectionGuard` (default on) prefixes with `'` | injection test suite |
 
@@ -187,7 +192,7 @@ users can `npx jtcsv serve` and use the package in a browser via
 ## 6. Reporting
 
 Anything that contradicts the above is a security issue. Use the
-disclosure path in [`SECURITY.md`](../SECURITY.md):
+disclosure path in [`SECURITY.md`](https://github.com/Linol-Hamelton/jtcsv/blob/main/SECURITY.md):
 1. GitHub Private Vulnerability Reporting (preferred), or
 2. `feldhausthorsen@gmail.com` (secondary).
 

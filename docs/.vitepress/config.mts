@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress';
 
-// VitePress site config — Phase 2 Week 6 scaffold (DOCS M1).
-// Lift-and-shift of existing /docs MD files happens in W7 (DOCS M2).
+// VitePress site config — Phase 2 Week 7 (DOCS M2) lift-and-shift.
+// All human-readable Markdown in /docs is now part of the published site.
 // Public deploy URL is decided in Phase 4 W11 (DOCS M7); for now this
 // builds locally and into the gh-pages preview slot.
 export default defineConfig({
@@ -26,6 +26,23 @@ export default defineConfig({
   srcDir: '.',
   outDir: '.vitepress/dist',
 
+  // Exclude Russian-internal working docs, generated TypeDoc HTML under /api/,
+  // and code-embed fragments under /embeds/ from the published site.
+  srcExclude: [
+    '**/FINAL_REPORT.md',
+    '**/FINAL_SUMMARY.md',
+    '**/PROGRESS.md',
+    '**/TZ_JTCSV_BROWSER_SUPPORT.md',
+    '**/BUILD_INSTRUCTIONS.md',
+    '**/TESTING.md',
+    '**/QUICK_START.md',
+    '**/POSITIONING_DRAFT.md',
+    '**/README_ALL_DOCS.md',
+    '**/BEST_PRACTICES_AND_INSIGHTS.md',
+    '**/api/**',
+    '**/embeds/**',
+  ],
+
   themeConfig: {
     nav: [
       { text: 'Getting Started', link: '/GETTING_STARTED' },
@@ -44,56 +61,70 @@ export default defineConfig({
     ],
 
     // Sidebar groups by topic — matches the README's "Documentation" table.
-    // Adding/removing pages here is the only edit needed when DOCS M2 lifts
-    // the rest of /docs/ into the published site.
     sidebar: [
-      {
-        text: 'Start here',
-        items: [
-          { text: 'README', link: '/README' },
-          { text: 'Getting Started', link: '/GETTING_STARTED' },
-          { text: 'Quick Start', link: '/QUICK_START' },
-          { text: 'Positioning', link: '/POSITIONING' },
-        ],
-      },
-      {
-        text: 'API',
-        items: [
-          { text: 'Decision Tree', link: '/API_DECISION_TREE' },
-          { text: 'Canonicalization', link: '/API_CANONICALIZATION' },
-          { text: 'Errors', link: '/ERRORS' },
-          { text: 'Schema Validator', link: '/SCHEMA_VALIDATOR' },
-        ],
-      },
-      {
-        text: 'Guides',
-        items: [
-          { text: 'Streaming', link: '/STREAMING_GUIDE' },
-          { text: 'Browser', link: '/BROWSER' },
-          { text: 'Browser Workers', link: '/BROWSER_WORKERS' },
-          { text: 'CLI', link: '/CLI' },
-          { text: 'Plugins', link: '/PLUGINS' },
-          { text: 'Plugin Authoring', link: '/PLUGIN_AUTHORING' },
-          { text: 'Best Practices', link: '/BEST_PRACTICES_AND_INSIGHTS' },
-          { text: 'Troubleshooting', link: '/TROUBLESHOOTING' },
-          { text: 'Performance', link: '/PERFORMANCE' },
-          { text: 'Benchmarks', link: '/BENCHMARKS' },
-        ],
-      },
-      {
-        text: 'Migration',
-        items: [
-          { text: 'From papaparse', link: '/MIGRATION_PAPAPARSE' },
-          { text: 'From csvtojson', link: '/MIGRATION_CSVTOJSON' },
-          { text: 'Comparison matrix', link: '/COMPARISON' },
-        ],
-      },
-      {
-        text: 'Security',
-        items: [
-          { text: 'Threat Model', link: '/THREAT_MODEL' },
-        ],
-      },
+      { text: 'Start', items: [
+        { text: 'README', link: '/README' },
+        { text: 'Getting Started', link: '/GETTING_STARTED' },
+        { text: 'Positioning', link: '/POSITIONING' },
+        { text: 'FAQ', link: '/FAQ' },
+        { text: 'How-to', link: '/HOWTO' },
+      ]},
+      { text: 'API', items: [
+        { text: 'Intro', link: '/API_INTRO' },
+        { text: 'Decision Tree', link: '/API_DECISION_TREE' },
+        { text: 'Canonicalization', link: '/API_CANONICALIZATION' },
+        { text: 'Migration (internal API)', link: '/API_MIGRATION' },
+        { text: 'Errors', link: '/ERRORS' },
+        { text: 'Schema Validator', link: '/SCHEMA_VALIDATOR' },
+      ]},
+      { text: 'Recipes', collapsed: true, items: [
+        { text: 'Index', link: '/recipes/' },
+        { text: 'Upload & parse', link: '/recipes/01-upload-parse-table' },
+        { text: 'Validation errors', link: '/recipes/02-csv-validation-errors' },
+        { text: 'Transform / rename / filter', link: '/recipes/03-transform-rename-filter' },
+        { text: 'Convert formats', link: '/recipes/04-convert-formats' },
+        { text: 'Performance — large files', link: '/recipes/05-performance-large-files' },
+        { text: 'Type coercion', link: '/recipes/06-type-coercion-custom-parsing' },
+        { text: 'Encoding', link: '/recipes/07-special-characters-encoding' },
+        { text: 'react-hook-form', link: '/recipes/08-react-hook-form' },
+        { text: 'Database import (Prisma)', link: '/recipes/09-database-import-prisma' },
+        { text: 'CLI automation', link: '/recipes/10-cli-automation' },
+      ]},
+      { text: 'Guides', items: [
+        { text: 'Streaming', link: '/STREAMING_GUIDE' },
+        { text: 'Browser', link: '/BROWSER' },
+        { text: 'Browser Workers', link: '/BROWSER_WORKERS' },
+        { text: 'CLI', link: '/CLI' },
+        { text: 'TUI', link: '/TUI-README' },
+        { text: 'Troubleshooting', link: '/TROUBLESHOOTING' },
+      ]},
+      { text: 'Plugins', items: [
+        { text: 'Overview', link: '/PLUGINS' },
+        { text: 'Plugin Authoring', link: '/PLUGIN_AUTHORING' },
+        { text: 'Plugin Registry', link: '/PLUGIN_REGISTRY' },
+      ]},
+      { text: 'Migration', items: [
+        { text: 'From papaparse', link: '/MIGRATION_PAPAPARSE' },
+        { text: 'From csvtojson', link: '/MIGRATION_CSVTOJSON' },
+        { text: 'Comparison matrix', link: '/COMPARISON' },
+      ]},
+      { text: 'Performance', items: [
+        { text: 'Performance', link: '/PERFORMANCE' },
+        { text: 'Benchmarks', link: '/BENCHMARKS' },
+        { text: 'Testing Guide', link: '/TESTING_GUIDE' },
+      ]},
+      { text: 'Security', items: [
+        { text: 'Threat Model', link: '/THREAT_MODEL' },
+      ]},
+      { text: 'Integrations', collapsed: true, items: [
+        { text: 'Index', link: '/integrations/' },
+        { text: 'Express', link: '/integrations/express' },
+        { text: 'Fastify', link: '/integrations/fastify' },
+        { text: 'Next.js (App Router)', link: '/integrations/nextjs-app-router' },
+        { text: 'react-hook-form', link: '/integrations/react-hook-form' },
+        { text: 'Drizzle ORM', link: '/integrations/drizzle-orm' },
+        { text: 'GraphQL', link: '/integrations/graphql' },
+      ]},
     ],
 
     socialLinks: [
@@ -116,7 +147,14 @@ export default defineConfig({
     },
   },
 
-  // Don't fail the build on dead links to files we haven't lifted yet —
-  // DOCS M2 will complete the migration in Phase 2 Week 7.
-  ignoreDeadLinks: true,
+  // DOCS M2: fail the build on dead links — link-fixer has patched all known
+  // dead links across the lifted Markdown set. Two narrow exceptions:
+  //   - localhost links (TESTING_GUIDE uses http://localhost:3000 as an example)
+  //   - /api/ TypeDoc bundle: the directory is published as static HTML alongside
+  //     VitePress output, so the pages exist at runtime but aren't VitePress routes.
+  ignoreDeadLinks: [
+    /^https?:\/\/localhost/,
+    /^\.\.?\/api\//,
+    /^\/api\//,
+  ],
 });
