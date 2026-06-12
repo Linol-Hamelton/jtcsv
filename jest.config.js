@@ -1,8 +1,19 @@
+// Coverage gate strategy:
+//   - default thresholds (mild) stay at the historical values so existing
+//     CI doesn't regress
+//   - when JTCSV_COVERAGE_STRICT=1, hardcoded 85/85/85/85 — this is the
+//     numeric COMMITMENT for the 12-week roadmap to 90+ on test coverage
+//   - JTCSV_FUZZ_SEED (recommended: 4242) is wired via setup-fc-seed.js
+//     to make property-based tests reproducible in CI
 const IS_COVERAGE_RUN = process.env.npm_lifecycle_event === 'test:coverage' ||
   process.argv.includes('--coverage');
 const ENFORCE_COVERAGE = process.env.JTCSV_COVERAGE_STRICT === '1';
 const COVERAGE_TARGET = process.env.JTCSV_COVERAGE_TARGET || 'ts';
 const COVERAGE_SCOPE = process.env.JTCSV_COVERAGE_SCOPE || 'full';
+
+const STRICT_THRESHOLDS = { branches: 85, functions: 85, lines: 85, statements: 85 };
+const SOFT_THRESHOLDS   = { branches: 65, functions: 70, lines: 70, statements: 70 };
+const ACTIVE_THRESHOLDS = ENFORCE_COVERAGE ? STRICT_THRESHOLDS : SOFT_THRESHOLDS;
 
 const COVERAGE_JS_FULL = [
   'index.js',
@@ -13,7 +24,6 @@ const COVERAGE_JS_FULL = [
   'json-save.js',
   'errors.js',
   'src/**/*.js',
-  '!src/engines/fast-path-engine-new.js',
   '!src/core/node-optimizations.js',
   '!src/index-with-plugins.js',
   '!src/browser/**',
@@ -116,19 +126,18 @@ module.exports = {
   collectCoverageFrom: COVERAGE_TARGET === 'ts'
     ? (COVERAGE_SCOPE === 'entry' ? COVERAGE_TS_ENTRY : COVERAGE_TS_FULL)
     : (COVERAGE_SCOPE === 'entry' ? COVERAGE_JS_ENTRY : COVERAGE_JS_FULL),
-  setupFilesAfterEnv: ['<rootDir>/__tests__/setup-jest.js'],
+  setupFilesAfterEnv: [
+    '<rootDir>/__tests__/setup-jest.js',
+    '<rootDir>/__tests__/setup-fc-seed.js',
+  ],
+  // Coverage threshold:
+  //   - default (soft) preserved so existing CI doesn't regress today
+  //   - JTCSV_COVERAGE_STRICT=1 -> hardcoded 85/85/85/85, the numeric
+  //     commitment for Phase 2/3 of the 12-week roadmap to test coverage 90+
+  // Active gate is bound to ACTIVE_THRESHOLDS defined at top of file.
   ...(IS_COVERAGE_RUN && !ENFORCE_COVERAGE
     ? {}
-    : {
-        coverageThreshold: {
-          global: {
-            branches: 65,
-            functions: 70,
-            lines: 70,
-            statements: 70
-          }
-        }
-      }),
+    : { coverageThreshold: { global: ACTIVE_THRESHOLDS } }),
   // Performance optimizations
   maxWorkers: process.platform === 'win32' ? 1 : '80%',
   workerIdleMemoryLimit: '1GB',

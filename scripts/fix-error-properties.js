@@ -12,7 +12,6 @@ const filesToFix = [
   '__tests__/csv-to-json-edge-cases.test.ts',
   '__tests__/critical-bugs.test.ts',
   'src/engines/fast-path-engine.ts',
-  'src/engines/fast-path-engine-new.ts',
   'src/web-server/index.ts',
   'src/browser/workers/worker-pool.ts'
 ];
