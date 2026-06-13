@@ -1,33 +1,18 @@
 /**
  * JTCSV Excel Integration
  * Конвертация между JSON, CSV и Excel форматами
- * 
- * @version 1.0.0
- * @date 2026-01-23
+ *
+ * @version 2.1.0
+ * @date 2026-06-13
  */
 
 const ExcelJS = require('exceljs');
 
+// As of 2.1.0: jtcsv-excel resolves the public 'jtcsv' package only.
+// Previous monorepo-relative require('../../../dist/...') / require('../../../index.ts')
+// fallbacks have been removed — they broke once the package was installed from npm.
 const loadJtcsv = () => {
-  try {
-    return require('jtcsv');
-  } catch (error) {
-    const message = String(error && error.message ? error.message : '');
-    if (error && error.code !== 'MODULE_NOT_FOUND' || !message.includes("'jtcsv'")) {
-      throw error;
-    }
-
-    try {
-      return require('../../../dist/index.js');
-    } catch (localError) {
-      try {
-        require('ts-node/register');
-        return require('../../../index.ts');
-      } catch (tsError) {
-        throw localError;
-      }
-    }
-  }
+  return require('jtcsv');
 };
 
 class JtcsvExcel {

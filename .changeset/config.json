@@ -8,7 +8,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@jtcsv/excel",
     "@jtcsv/tui",
     "@jtcsv/validator",
     "@jtcsv/express-middleware",

@@ -1,34 +1,19 @@
 /**
  * JTCSV Excel Integration
  * Конвертация между JSON, CSV и Excel форматами
- * 
- * @version 1.0.0
- * @date 2026-01-23
+ *
+ * @version 2.1.0
+ * @date 2026-06-13
  */
 
 // Используем require для совместимости с существующим кодом
 const ExcelJS = require('exceljs');
 
+// As of 2.1.0: jtcsv-excel resolves the public 'jtcsv' package only.
+// Previous monorepo-relative require('../../../dist/...') / require('../../../index.ts')
+// fallbacks have been removed — they broke once the package was installed from npm.
 const loadJtcsv = () => {
-  try {
-    return require('jtcsv');
-  } catch (error: any) {
-    const message = String(error?.message || '');
-    if (error?.code !== 'MODULE_NOT_FOUND' || !message.includes("'jtcsv'")) {
-      throw error;
-    }
-
-    try {
-      return require('../../../dist/index.js');
-    } catch (localError) {
-      try {
-        require('ts-node/register');
-        return require('../../../index.ts');
-      } catch (tsError) {
-        throw localError;
-      }
-    }
-  }
+  return require('jtcsv');
 };
 
 export interface ExcelToJsonOptions {
@@ -483,77 +468,40 @@ export class JtcsvExcel {
   }
 
   /**
-   * Async version of fromExcel that uses worker threads for large files
-   * 
+   * Async version of fromExcel.
+   *
+   * TODO 2.2.0: worker-thread offload was dropped in 2.1.0 because the
+   * previous implementation required monorepo-relative paths that broke once
+   * the package was installed from npm. A bundled worker script will be
+   * reintroduced in 2.2.0; for now this is a thin alias over fromExcel.
+   *
    * @param input - Path to file or Buffer
    * @param options - Conversion options
    * @returns JSON data
    */
   static async fromExcelAsync(input: string | Buffer, options: ExcelToJsonOptions = {}): Promise<any[]> {
-    // For large files, use worker pool
-    if (Buffer.isBuffer(input) && input.length > 10 * 1024 * 1024) { // > 10MB
-      const { createWorkerPool } = require('../../../src/workers/worker-pool');
-      const pool = createWorkerPool({
-        workerCount: Math.min(4, require('os').cpus().length),
-        workerScript: require.resolve('../../../src/workers/excel-worker.js')
-      });
-      
-      try {
-        const result = await pool.execute({ 
-          input: input.toString('base64'), 
-          options,
-          operation: 'excelToJson'
-        });
-        return result.data;
-      } finally {
-        await pool.terminate();
-      }
-    }
-    
-    // For small files, use regular method
+    // TODO 2.2.0: re-enable worker-pool offload for large inputs.
     return this.fromExcel(input, options);
   }
 
   /**
-   * Async version of toExcel that uses worker threads for large datasets
-   * 
+   * Async version of toExcel.
+   *
+   * TODO 2.2.0: see fromExcelAsync — worker-thread offload was dropped in
+   * 2.1.0 and will return in 2.2.0 with a bundled worker. For now this is a
+   * thin alias over toExcel.
+   *
    * @param data - JSON data
    * @param output - Output path or Buffer
    * @param options - Conversion options
    * @returns Path or Buffer
    */
   static async toExcelAsync(
-    data: any[], 
-    output: string | null = 'output.xlsx', 
+    data: any[],
+    output: string | null = 'output.xlsx',
     options: JsonToExcelOptions = {}
   ): Promise<string | Buffer> {
-    // For large datasets, use worker pool
-    if (data.length > 10000) {
-      const { createWorkerPool } = require('../../../src/workers/worker-pool');
-      const pool = createWorkerPool({
-        workerCount: Math.min(4, require('os').cpus().length),
-        workerScript: require.resolve('../../../src/workers/excel-worker.js')
-      });
-      
-      try {
-        const result = await pool.execute({ 
-          data, 
-          output,
-          options,
-          operation: 'jsonToExcel'
-        });
-        
-        if (options.returnBuffer || output === null) {
-          return Buffer.from(result.buffer, 'base64');
-        } else {
-          return result.outputPath;
-        }
-      } finally {
-        await pool.terminate();
-      }
-    }
-    
-    // For small datasets, use regular method
+    // TODO 2.2.0: re-enable worker-pool offload for large datasets.
     return this.toExcel(data, output, options);
   }
 }

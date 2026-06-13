@@ -82,7 +82,15 @@ const COVERAGE_TS_ENTRY = [
 
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts', '**/__tests__/**/*.test.js', '**/?(*.)+(spec|test).js'],
+  // testMatch scoped to the root __tests__ ONLY. Each sibling workspace
+  // package (packages/*, plugins/*) owns its own jest config + tsconfig
+  // and runs via `cd <pkg> && npm test`. Including them here would apply
+  // the root's ts-jest config (which doesn't know about each package's
+  // local module shape) — the imports resolve to `undefined`.
+  testMatch: [
+    '<rootDir>/__tests__/**/*.test.ts',
+    '<rootDir>/__tests__/**/*.test.js',
+  ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/setup-jest.js',

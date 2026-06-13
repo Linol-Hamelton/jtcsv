@@ -133,6 +133,9 @@ export default defineConfig({
       { text: 'Security', items: [
         { text: 'Threat Model', link: '/THREAT_MODEL' },
       ]},
+      { text: 'Ecosystem', items: [
+        { text: 'Renames', link: '/ECOSYSTEM_RENAMES' },
+      ]},
       { text: 'Integrations', collapsed: true, items: [
         { text: 'Index', link: '/integrations/' },
         { text: 'Express', link: '/integrations/express' },

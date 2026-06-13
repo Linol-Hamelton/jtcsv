@@ -141,6 +141,8 @@
     "site:build": "vitepress build docs",
     "site:preview": "vitepress preview docs",
     "examples:smoke": "node scripts/run-examples.js",
+    "test:packages": "npm test --workspace packages/jtcsv-codemod && npm test --workspace packages/jtcsv-excel",
+    "test:all": "npm run test:unit && npm run test:packages",
     "tsc": "tsc",
     "tsc:dev": "tsc --project tsconfig.dev.json",
     "tsc:build": "tsc --project tsconfig.build.json",
