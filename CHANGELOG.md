@@ -1,5 +1,67 @@
 # Changelog
 
+## 3.3.0-beta.0 (unreleased)
+
+This beta freezes the public API surface for 3.3. Subsequent betas (.1, .2, …)
+and the eventual stable 3.3.0 should ship only fixes and additional tests —
+no behavior or signature changes.
+
+### Added
+
+- **VitePress documentation site** — full scaffold under `docs/` with the
+  ~60 lifted MD pages (W6 + W7 + W11), MiniSearch full-text search with a
+  custom tokenize + AND-combine pipeline, and deploy wiring.
+- **Subpath API reference pages** — four new ref pages under `/api/*`:
+  `jtcsv/csv`, `jtcsv/json`, `jtcsv/streams`, `jtcsv/errors`.
+- **CI smoke set** — 15 curated examples driven by `scripts/run-examples.js`,
+  wired into CI so every example stays runnable.
+- **Coverage badge generator** — `scripts/coverage-badge.js` consumes Jest
+  `json-summary` and emits `coverage/badge.json` + a shields.io URL.
+- **STRIDE threat model** — `docs/THREAT_MODEL.md` with two architecture
+  decision records:
+  - ADR-001: the transform-loader `vm.Script` is NOT a security sandbox —
+    treat user-supplied transform code as trusted input.
+  - ADR-002: the web-server module is dev-only — do not expose to the public
+    internet.
+- **+94 net new tests** across encoding/BOM/UTF-16 round-trips, schema/zod
+  adapters, and fuzz-seed reproducibility.
+- **csvtojson migration codemod** — `jtcsv-codemod` 0.2.0 (staged, not yet
+  published) extends the papaparse codemod to cover csvtojson call sites.
+- **Excel adapter rename + republish** — `@jtcsv/excel` → `jtcsv-excel` 2.1.0
+  (staged, not yet published), now unscoped to match the main package.
+- **Ecosystem docs** — `docs/ECOSYSTEM.md` (public) plus the internal
+  `docs/ECOSYSTEM_RENAMES.md` rename-plan.
+- **Fuzz replay tool** — `scripts/fuzz-replay.js` deterministically replays a
+  saved counterexample for triage.
+
+### Changed
+
+- **npm description** rewritten in the numbers-first POSITIONING voice.
+- **README hero** standardized on the canonical taglines —
+  "~18 KB gz core" and "Zero runtime deps in core".
+- **Web-server hardened** (W6) — CORS allowlist, 10 MB body cap, OPTIONS
+  preflight handling.
+- **Fuzz tests** (W11) honor the `JTCSV_FUZZ_RUNS` and `JTCSV_FUZZ_VERBOSE`
+  environment variables for CI tuning.
+
+### Fixed
+
+- **verify-release.js** (W12) — CHANGELOG regex no longer false-matches a
+  stable `3.3.0` header when checking for a `3.3.0-beta.N` entry.
+- **Excel package** (W9) — removed broken parent-traversing `require()`
+  statements that prevented the rename from installing cleanly.
+
+### Deprecated
+
+- `csvToJsonFile` / `csvToJsonFileSync` aliases — removal scheduled for 5.0.
+- `csvToJsonStream` / `csvFileToJsonStream` aliases — removal scheduled for 5.0.
+
+### Notes
+
+- The new surface is API-frozen for this beta. The path from beta → stable is
+  intentionally narrow: only **Fixed** entries and additional **Tests** are
+  expected; no new features, no signature changes.
+
 ## 3.2.3
 
 ### Patch Changes

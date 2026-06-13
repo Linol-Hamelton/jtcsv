@@ -246,3 +246,156 @@ npm deprecate jtcsv@<v> "broken: see CHANGELOG.md for <next-version>"
   from npm support unless absolutely necessary).
 - **Don't skip the verify step** to "save time" — every release-cycle
   step is cheap; the cost of a broken release is hours of cleanup.
+
+## Beta channel (next dist-tag)
+
+Stable releases of `jtcsv` flow over the default `latest` dist-tag —
+that's what `npm install jtcsv` resolves to. Beta releases use the
+parallel `next` dist-tag, so adventurous consumers can opt in without
+disturbing anyone who pins to `latest`.
+
+### Consumer install commands
+
+A consumer who wants to try the current beta:
+
+```bash
+# install the highest version tagged `next`
+npm install jtcsv@next
+
+# see every dist-tag the registry knows about
+npm dist-tag ls jtcsv
+# latest: 3.2.3
+# next:   3.3.0-beta.0
+```
+
+The package on disk is the same shape as a stable release — same
+entry points, same provenance attestation, same Sigstore signature.
+Only the dist-tag and the `-beta.N` suffix differ.
+
+### Operator workflow (cutting a beta)
+
+The full sequence from a clean `main` to a published `3.3.0-beta.0`:
+
+```bash
+# 1. Enter prerelease mode. This writes .changeset/pre.json which
+#    tells `changeset version` to add the -beta.N suffix and tells
+#    `changeset publish` to use --tag next.
+npx changeset pre enter next
+
+# 2. Record any new changesets for behaviour the beta introduces.
+#    (Same UX as a normal release — interactive prompt.)
+npx changeset
+
+# 3. Apply bumps. With pre.json present, this produces e.g.
+#    3.3.0-beta.0 (or 3.3.0-beta.1 if a beta already exists).
+npm run release:version:beta
+
+# 4. Sanity-check what got written.
+git diff
+git diff CHANGELOG.md
+```
+
+```bash
+# 5. Commit and push. CI takes over from here.
+git add -A
+git commit -m "chore(release): 3.3.0-beta.0"
+git push origin main
+```
+
+CI (`.github/workflows/release.yml`) detects the version bump, runs
+the full gate (build + tests + size + tsc) and invokes
+`release:publish:beta`, which is `changeset publish --tag next`. The
+tarball is published with `--provenance` exactly like a stable
+release.
+
+Once CI is green, verify from a separate shell:
+
+```bash
+# confirm the dist-tag landed
+npm view jtcsv@next version
+# 3.3.0-beta.0
+
+# run the post-publish checks against the beta version
+node scripts/verify-release.js 3.3.0-beta.0
+```
+
+Check 6 (CHANGELOG heading) uses a whitespace-or-EOL lookahead, so a
+stable `## 3.3.0` heading does NOT accidentally match when we're
+verifying `3.3.0-beta.0`.
+
+### Graduating beta to stable
+
+When the beta is ready to become the official `3.3.0`:
+
+```bash
+# Exits prerelease mode. The next `changeset version` will drop the
+# -beta.N suffix and re-stage the queued changesets as a normal bump.
+npx changeset pre exit
+
+npm run release:version           # writes 3.3.0
+git add -A && git commit -m "chore(release): 3.3.0"
+git push origin main
+```
+
+CI publishes 3.3.0 to `latest` and the `next` tag is left pointing at
+the last beta until the next prerelease cycle moves it forward.
+
+### Testing a beta as a consumer
+
+Smoke-test the beta in a clean directory before announcing it:
+
+```bash
+mkdir /tmp/jtcsv-beta-smoke && cd /tmp/jtcsv-beta-smoke
+npm init -y
+npm install jtcsv@next
+node -e "const j = require('jtcsv'); console.log(j.csvToJson('a,b\\n1,2'))"
+# expected: [{ a: '1', b: '2' }]
+```
+
+If `csvToJson` throws, or if `require('jtcsv')` is missing an export
+that 3.2.x had, the beta is broken — yank with `npm dist-tag rm jtcsv
+next` rather than unpublishing (the version stays on the registry,
+but no consumer running `npm install jtcsv@next` will pick it up).
+
+### Pre-publish guardrail
+
+`prepublishOnly` runs `npm run prerelease:check` before the test
+suite. The script reads `package.json#version` and asserts:
+
+```bash
+npm run prerelease:check
+# [prerelease:check] OK — version=3.2.3, mode=stable (latest)
+```
+
+Failure modes the guardrail catches:
+
+- Version is `3.3.0-beta.0` but `.changeset/pre.json` is missing →
+  `changeset publish` would tag this as `latest`, breaking everyone
+  pinned to `latest`. Fix: `npx changeset pre enter next`.
+- Version is `3.3.0` (clean) but `.changeset/pre.json` is still
+  present → `changeset publish` would tag the stable release as
+  `next`, hiding it from `npm install jtcsv`. Fix: `npx changeset
+  pre exit`.
+
+### What a beta MAY contain
+
+- New public APIs that are forward-compatible with the current major.
+- Behaviour changes that are opt-in (new option, new function,
+  feature flag).
+- Performance refactors that don't alter observable output.
+- Internal restructuring that is invisible to consumers (build
+  reorganisation, dependency moves between dev/runtime/peer, etc.).
+
+### What a beta MUST NOT contain
+
+- **Breaking changes within the same major.** Betas of `3.x` exist to
+  preview new `3.x` features, not to slip-stream a `4.x` worth of
+  removals. Breaking changes get their own pre-major cycle (e.g.
+  `4.0.0-beta.0`).
+- **Silent peer-dependency floor changes.** If a beta requires Node
+  20+ where stable is Node 18+, that's a breaking change for
+  consumers — promote it to a `4.0.0-beta.N` instead.
+- **Unsigned tarballs.** Every publish — stable or beta — goes
+  through `--provenance`. There is no "quick local beta" path; if you
+  need to test something locally, use `npm pack` and install the
+  tarball directly, never publish unsigned.

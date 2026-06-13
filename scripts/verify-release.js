@@ -128,7 +128,8 @@ try {
 // 6. CHANGELOG has the version heading
 try {
   const cl = fs.readFileSync(path.join(REPO_ROOT, 'CHANGELOG.md'), 'utf8');
-  const has = new RegExp(`^##\\s+${VERSION.replace(/\./g, '\\.')}\\b`, 'm').test(cl);
+  // Use (?=\s|$) instead of \b so a stable "## 3.3.0" heading does NOT match when verifying "3.3.0-beta.0" (the hyphen is a non-word char, so \b would erroneously match).
+  const has = new RegExp(`^##\\s+${VERSION.replace(/\./g, '\\.')}(?=\\s|$)`, 'm').test(cl);
   record(has, 'CHANGELOG.md has heading', has ? `"## ${VERSION}"` : `missing "## ${VERSION}"`);
 } catch (e) {
   record(false, 'CHANGELOG.md has heading', e.message);

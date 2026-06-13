@@ -1,6 +1,7 @@
 # jtcsv — JSON ↔ CSV toolkit for Node.js and browser
 
 [![npm version](https://img.shields.io/npm/v/jtcsv)](https://www.npmjs.com/package/jtcsv)
+[![npm beta](https://img.shields.io/npm/v/jtcsv/next.svg?label=beta&color=blue)](https://www.npmjs.com/package/jtcsv?activeTab=versions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Zero-Deps Core](https://img.shields.io/badge/core-zero%20deps-brightgreen.svg)](https://www.npmjs.com/package/jtcsv)
 [![Bundle Size](https://img.shields.io/badge/jtcsv%2Fcsv-~18%20KB%20gz-blue.svg)](#bundle-size)
@@ -8,7 +9,7 @@
 [![Provenance](https://img.shields.io/badge/npm-provenance%20signed-success.svg)](https://docs.npmjs.com/generating-provenance-statements)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Linol-Hamelton/jtcsv/badge)](https://scorecard.dev/viewer/?uri=github.com/Linol-Hamelton/jtcsv)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict%20clean-3178c6.svg)](https://github.com/Linol-Hamelton/jtcsv/blob/main/.strict-baseline.json)
-[![Coverage](https://img.shields.io/badge/coverage-67.9%25-orange.svg)](https://github.com/Linol-Hamelton/jtcsv/blob/main/CHANGELOG.md#testing)
+[![Coverage](https://img.shields.io/badge/coverage-68%25-orange.svg)](https://github.com/Linol-Hamelton/jtcsv/blob/main/CHANGELOG.md#testing)
 
 **JSON ↔ CSV in Node and the browser. Streaming. Tree-shakable. ~18 KB gz core. Zero runtime deps in core.**
 
