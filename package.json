@@ -1,7 +1,7 @@
 {
   "name": "jtcsv",
   "version": "3.2.3",
-  "description": "Complete JSON<->CSV and CSV<->JSON converter for Node.js and Browser with streaming, security, Web Workers, TypeScript support, and optional ecosystem (zero-deps core)",
+  "description": "JSON ↔ CSV toolkit for Node.js and browser. ~18 KB gz core. Streaming, NDJSON/TSV, worker threads, TypeScript-native. Zero runtime deps in core.",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "browser": "dist/jtcsv.umd.js",
@@ -141,6 +141,7 @@
     "site:build": "vitepress build docs",
     "site:preview": "vitepress preview docs",
     "examples:smoke": "node scripts/run-examples.js",
+    "fuzz:replay": "node scripts/fuzz-replay.js",
     "test:packages": "npm test --workspace packages/jtcsv-codemod && npm test --workspace packages/jtcsv-excel",
     "test:all": "npm run test:unit && npm run test:packages",
     "tsc": "tsc",

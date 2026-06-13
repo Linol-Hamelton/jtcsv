@@ -19,10 +19,15 @@
  *     case is a parser-side cleanup task.
  *   - Cells that are entirely whitespace are filtered out — `trim:true`
  *     is the default, so they'd round-trip to '' and fail compare.
+ *
+ * NOTE: numRuns / verbosity / seed are now controlled centrally via
+ * env vars wired through __tests__/setup-fc-seed.js. Per-call overrides
+ * have been removed so all 9 properties scale uniformly when
+ * JTCSV_FUZZ_RUNS is set (e.g. JTCSV_FUZZ_RUNS=5 for fast triage).
  */
 import { describe, test, expect } from '@jest/globals';
 import * as fc from 'fast-check';
-import { csvToJson, jsonToCsv } from '../index';
+import { csvToJson, csvToJsonIterator, jsonToCsv, jsonToNdjson, ndjsonToJson } from '../index';
 
 const fieldName = fc.stringMatching(/^[a-z][a-z0-9_]{0,15}$/);
 
@@ -76,10 +81,10 @@ describe('csvToJson(jsonToCsv(x)) round-trip — newline-in-cell', () => {
     fc.assert(buildRoundTripProperty(newlineAlphabet, ','));
   });
   test('semicolon delimiter survives newlines-in-cell', () => {
-    fc.assert(buildRoundTripProperty(newlineAlphabet, ';'), { numRuns: 50 } as never);
+    fc.assert(buildRoundTripProperty(newlineAlphabet, ';'));
   });
   test('tab delimiter survives newlines-in-cell', () => {
-    fc.assert(buildRoundTripProperty(newlineAlphabet, '\t'), { numRuns: 50 } as never);
+    fc.assert(buildRoundTripProperty(newlineAlphabet, '\t'));
   });
 });
 
@@ -99,7 +104,7 @@ describe('csvToJson(jsonToCsv(x)) round-trip — quote-in-cell (raw, no normaliz
     fc.assert(buildRoundTripProperty(quoteAlphabet, ',', opts));
   });
   test('semicolon delimiter survives quote-in-cell', () => {
-    fc.assert(buildRoundTripProperty(quoteAlphabet, ';', opts), { numRuns: 50 } as never);
+    fc.assert(buildRoundTripProperty(quoteAlphabet, ';', opts));
   });
 });
 
@@ -121,7 +126,109 @@ describe('Numeric round-trip with parseNumbers', () => {
           }
         },
       ),
-      { numRuns: 100 },
+    );
+  });
+});
+
+describe('Phase 4 W11 polish', () => {
+  // Three additional properties shipped in the W11 polish pass.
+  // Kept here (not in their own file) so they share the same global
+  // numRuns / seed / verbosity wired via setup-fc-seed.js.
+
+  // ─── 1. NDJSON round-trip ─────────────────────────────────────────
+  // jsonToNdjson uses JSON.stringify per record, ndjsonToJson uses
+  // JSON.parse per non-blank line. We need to ensure the generated
+  // records don't contain values that ndjsonToJson would *filter*
+  // (it drops empty/whitespace-only lines via `line.trim()` check)
+  // — JSON.stringify of any object yields `{...}` which never
+  // .trim()s to empty, so we're safe with arbitrary record contents.
+  test('jsonToNdjson → ndjsonToJson preserves arbitrary record arrays', () => {
+    const ndjsonRecordArb = fc.record({
+      id: fc.integer({ min: -1000, max: 1000 }),
+      name: fc.string({ minLength: 0, maxLength: 20 }),
+      active: fc.boolean(),
+    });
+    fc.assert(
+      fc.property(
+        fc.array(ndjsonRecordArb, { minLength: 1, maxLength: 20 }),
+        (records) => {
+          const text = jsonToNdjson(records);
+          const back = ndjsonToJson(text);
+          expect(back).toEqual(records);
+        },
+      ),
+    );
+  });
+
+  // ─── 2. parseBooleans round-trip ──────────────────────────────────
+  // jsonToCsv stringifies booleans to 'true'/'false'. csvToJson with
+  // parseBooleans:true coerces those exact strings back. Other field
+  // shapes (number, plain ASCII string) round-trip via the default
+  // string coercion — we only assert the boolean column.
+  //
+  // Constraint: the string field must NOT be 'true' or 'false' (case
+  // insensitive), or parseBooleans would coerce *it* to a boolean and
+  // the deepEqual would fail. Constrain via fc.stringMatching.
+  test('parseBooleans:true preserves boolean column after CSV round-trip', () => {
+    const nonBoolString = fc.stringMatching(/^[a-z0-9_]{1,15}$/).filter(
+      (s) => s.toLowerCase() !== 'true' && s.toLowerCase() !== 'false',
+    );
+    const boolRecordArb = fc.record({
+      tag: nonBoolString,
+      flag: fc.boolean(),
+    });
+    fc.assert(
+      fc.property(
+        fc.array(boolRecordArb, { minLength: 1, maxLength: 20 }),
+        (records) => {
+          const csv = jsonToCsv(records, { delimiter: ',' });
+          const back = csvToJson(csv, {
+            delimiter: ',',
+            parseBooleans: true,
+          }) as Array<{ tag: string; flag: boolean }>;
+          expect(back.length).toBe(records.length);
+          for (let i = 0; i < records.length; i++) {
+            expect(back[i].flag).toBe(records[i].flag);
+            expect(back[i].tag).toBe(records[i].tag);
+          }
+        },
+      ),
+    );
+  });
+
+  // ─── 3. Iterator vs sync parity ───────────────────────────────────
+  // csvToJson(csv) must equal [...csvToJsonIterator(csv)] for any
+  // input that both can handle. We reuse the comma/newline-in-cell
+  // arbitrary from the suite above to generate realistic CSV.
+  //
+  // LOCK CURRENT (W11): the iterator path skips the row-shift repair
+  // heuristic that the sync path applies by default. To keep this
+  // property meaningful, we feed it through jsonToCsv first (which
+  // produces well-formed CSV with no row-shift edge cases) — that's
+  // the contract this property checks: "for well-formed CSV produced
+  // by jtcsv itself, iterator and sync agree."
+  test('csvToJson(csv) deepEquals [...csvToJsonIterator(csv)] for well-formed CSV', () => {
+    const cellChar = fc.constantFrom(
+      ...'abcdefghijklmnopqrstuvwxyz0123456789-_. '.split(''),
+    );
+    const cellString = fc.stringOf(cellChar, { minLength: 1, maxLength: 20 });
+    const recordArb = (fields: string[]) =>
+      fc.record(Object.fromEntries(fields.map((f) => [f, cellString])));
+
+    fc.assert(
+      fc.property(
+        fc.uniqueArray(fieldName, { minLength: 1, maxLength: 4 }).chain((fields) =>
+          fc
+            .array(recordArb(fields), { minLength: 1, maxLength: 15 })
+            .filter(rejectAllWhitespaceCells),
+        ),
+        (records) => {
+          const csv = jsonToCsv(records, { delimiter: ',' });
+          const sync = csvToJson(csv, { delimiter: ',' });
+          const iterated = [...csvToJsonIterator(csv, { delimiter: ',' })];
+          expect(iterated).toEqual(sync);
+        },
+      ),
     );
   });
 });

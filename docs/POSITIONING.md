@@ -68,7 +68,7 @@ that the entry pulls in. Measured by `npm run size`.)
 
 ### 3. Migration codemod
 
-`npx jtcsv-codemod papaparse "src/**/*.{js,ts,tsx}"` rewrites
+`npx jtcsv-codemod papaparse 'src/**/*.{js,ts,tsx}'` rewrites
 your imports and call sites to jtcsv equivalents in seconds.
 Renames `header` → `hasHeaders`, `dynamicTyping` → `parseNumbers`,
 drops Papa-specific options that have no jtcsv equivalent (with a
@@ -98,7 +98,7 @@ blurb instead of an honest positioning.
 
 - **You need a decade of battle-tested edge cases.** Use
   [`csv-parse`](https://www.npmjs.com/package/csv-parse). jtcsv is
-  ~5 months old. Its fuzz pass is fresh. Rare encodings (UTF-16
+  ~5 months old (created Jan 2026). Its fuzz pass is fresh. Rare encodings (UTF-16
   with BOM in a stream mid-chunk, custom row terminators, IBM-EBCDIC
   input) may bite you in ways csv-parse worked through in 2014.
 
@@ -121,8 +121,8 @@ blurb instead of an honest positioning.
 
 | Capability                          | jtcsv 3.2 | papaparse 5.x | csv-parse 5.x | fast-csv 5.x |
 | ----------------------------------- | --------- | ------------- | ------------- | ------------ |
-| Tree-shakable subpaths              | ✅ 6      | ❌           | ❌           | ❌          |
-| Bundle (`csvToJson` only, gz)       | **~18 KB** | ~14 KB browser | ~25 KB    | ~7 KB        |
+| Tree-shakable subpaths              | ✅ 9      | ❌           | ❌           | ❌          |
+| Bundle (`csvToJson` only)           | **~18 KB gz** | ~35 KB min / ~9 KB gz[^pp] | ~25 KB gz | ~7 KB gz |
 | CSV injection prevention by default | ✅        | ❌           | ❌           | ❌          |
 | TypeScript-native source            | ✅        | ❌ (JS + @types) | partial   | partial      |
 | NDJSON support in same package      | ✅        | ❌           | ❌           | ❌          |
@@ -133,13 +133,18 @@ blurb instead of an honest positioning.
 | Sigstore-signed releases            | ✅        | ✅ (recent)  | ✅           | ❌          |
 | Streaming parser                    | ✅        | ✅           | ✅           | ✅          |
 | Sync parser                         | ✅        | ✅           | sync wrapper | ❌          |
-| Age (production years)              | **<1**    | 12           | 13           | 11           |
+| Age                                 | **~5 months** | 12 years | 13 years     | 11 years     |
 | GitHub stars (Jun 2026)             | <100      | 12.6k        | 4k           | 1.7k         |
 
 **Honest tradeoff**: years 1-12 belong to papaparse and csv-parse.
 jtcsv earns trust per-release, not per-decade. The bundle, security,
 and ergonomic wins above are real today; the long-tail edge-case
 coverage will accumulate.
+
+[^pp]: Papaparse comparison is reported two ways for transparency:
+  ~35 KB minified (matches papaparse's npm listing) and ~9 KB gzipped
+  (matches mzr methodology). The wedge sentence in this doc leads with
+  the minified number because it's the larger and more honest gap.
 
 ## Voice and tone
 

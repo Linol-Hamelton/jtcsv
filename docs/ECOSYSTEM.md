@@ -5,7 +5,7 @@ description: All the packages, codemods, framework adapters, and integrations th
 
 # jtcsv Ecosystem
 
-jtcsv is a CSV/JSON toolkit shipped as ONE small published package (~18 KB
+jtcsv is a JSON ↔ CSV toolkit shipped as ONE small published package (~18 KB
 gz) with optional siblings for Excel, codemods, framework adapters, and a
 terminal UI. This page is the map.
 
@@ -81,8 +81,9 @@ untrusted-string-derived. See [Plugin authoring](/PLUGIN_AUTHORING) and
 
 ## Browser bundle
 
-`jtcsv/browser` is a self-contained UMD + ESM bundle (~16 KB) with a
-separate Web Worker integration via the `jtcsv-workers` subpath (see
+`jtcsv/browser` is a self-contained UMD + ESM bundle (~16 KB ESM / ~16 KB
+UMD — browser ESM bundle, distinct from the ~18 KB gz `jtcsv/csv` subpath)
+with a separate Web Worker integration via the `jtcsv-workers` subpath (see
 [Browser Workers](/BROWSER_WORKERS)).
 
 ## Codemods
