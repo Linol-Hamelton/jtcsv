@@ -13,6 +13,7 @@ const { execFileSync } = require('child_process');
 
 const TRANSFORMS = {
   papaparse: 'papaparse-to-jtcsv',
+  csvtojson: 'csvtojson-to-jtcsv',
 };
 
 const args = process.argv.slice(2);
@@ -25,6 +26,7 @@ Usage:
 
 Transforms:
   papaparse    Migrate from papaparse → jtcsv
+  csvtojson    Rewrite csvtojson imports + call sites to jtcsv
 
 Common jscodeshift flags (after --):
   --dry        Don't write changes; print a diff.

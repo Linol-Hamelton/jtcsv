@@ -4,6 +4,8 @@ import { defineConfig } from 'vitepress';
 // All human-readable Markdown in /docs is now part of the published site.
 // Public deploy URL is decided in Phase 4 W11 (DOCS M7); for now this
 // builds locally and into the gh-pages preview slot.
+// - DOCS M6 (Week 10): switched local search to a richer MiniSearch config —
+//   custom tokenize/processTerm + AND-combine, branded translations.
 export default defineConfig({
   title: 'jtcsv',
   description:
@@ -134,6 +136,7 @@ export default defineConfig({
         { text: 'Threat Model', link: '/THREAT_MODEL' },
       ]},
       { text: 'Ecosystem', items: [
+        { text: 'Overview', link: '/ECOSYSTEM' },
         { text: 'Renames', link: '/ECOSYSTEM_RENAMES' },
       ]},
       { text: 'Integrations', collapsed: true, items: [
@@ -164,6 +167,46 @@ export default defineConfig({
 
     search: {
       provider: 'local',
+      options: {
+        detailedView: true,
+        translations: {
+          button: {
+            buttonText: 'Search docs',
+            buttonAriaLabel: 'Search documentation',
+          },
+          modal: {
+            displayDetails: 'Display detailed list',
+            resetButtonTitle: 'Reset search',
+            backButtonTitle: 'Close search',
+            noResultsText: 'No results for',
+            footer: {
+              selectText: 'to select',
+              navigateText: 'to navigate',
+              closeText: 'to close',
+            },
+          },
+        },
+        miniSearch: {
+          options: {
+            tokenize: (text) => text.split(/[\s\-_/.,;:!?()[\]{}'"`]+/u),
+            processTerm: (term) => {
+              const t = term.toLowerCase().trim();
+              if (t.length < 2) return null;
+              const stop = new Set([
+                'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'is',
+                'it', 'for', 'on', 'with', 'as', 'by', 'be', 'this', 'that',
+              ]);
+              return stop.has(t) ? null : t;
+            },
+          },
+          searchOptions: {
+            fuzzy: 0.2,
+            prefix: true,
+            boost: { title: 4, text: 2, titles: 1 },
+            combineWith: 'AND',
+          },
+        },
+      },
     },
   },
 

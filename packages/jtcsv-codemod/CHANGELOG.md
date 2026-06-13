@@ -1,5 +1,16 @@
 # jtcsv-codemod
 
+## 0.2.0 (2026-06-13)
+
+### Added
+
+- csvtojson-to-jtcsv transform — rewrites `csvtojson` default imports / require calls and their `.fromString` / `.fromFile` / `.fromStream(...).subscribe(...)` chains into `csvToJson` / `readCsvAsJson` / `createCsvToJsonStream` calls. Option renames covered: `noheader` → `hasHeaders` (inverted), `delimiter`, `checkType` → `parseNumbers` + `parseBooleans`, `trim`. Unmappable options (`includeColumns`, `output`, `colParser`) and the `.on('json'/'end_parsed')` / `preFileLine` hooks are surfaced as inline TODO comments instead of being silently dropped.
+- CLI: new positional argument `csvtojson` (alongside the existing `papaparse`).
+
+### Notes
+
+- No new runtime dependencies. The transform reads/writes source text; you never need to install `csvtojson` to run the migration.
+
 ## 0.1.1
 
 ### Patch Changes

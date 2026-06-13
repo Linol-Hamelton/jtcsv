@@ -5,16 +5,18 @@ migrate existing CSV-handling code to [jtcsv](https://www.npmjs.com/package/jtcs
 
 ```bash
 npx jtcsv-codemod papaparse "src/**/*.{js,ts,tsx}"
+npx jtcsv-codemod csvtojson "src/**/*.{js,ts,tsx}"
 ```
 
 ## Available transforms
 
-| Transform   | From          | What it rewrites                                    |
-|-------------|---------------|------------------------------------------------------|
-| `papaparse` | `papaparse`   | imports, `Papa.parse`, `Papa.unparse`, option names |
+| Transform   | From          | What it rewrites                                                                |
+|-------------|---------------|----------------------------------------------------------------------------------|
+| `papaparse` | `papaparse`   | imports, `Papa.parse`, `Papa.unparse`, option names                              |
+| `csvtojson` | `csvtojson`   | imports, `csv().fromString/.fromFile/.fromStream(...).subscribe`, option names   |
 
-More transforms (`csvtojson`, `csv-parser`) are planned — open an issue
-or PR with a code sample if you'd like one.
+More transforms (`csv-parser`) are planned — open an issue or PR with a
+code sample if you'd like one.
 
 ## papaparse → jtcsv
 
@@ -76,6 +78,76 @@ await createReadStream('big.csv')
   .pipe(createCsvToJsonStream({ hasHeaders: true, parseNumbers: true }))
   .on('data', (row) => { /* per-row logic that used to live in step() */ });
 ```
+
+## csvtojson → jtcsv
+
+### Imports
+
+```diff
+- import csv from 'csvtojson';
++ import { csvToJson } from 'jtcsv';
+```
+
+```diff
+- const csv = require('csvtojson');
++ const { csvToJson } = require('jtcsv');
+```
+
+The codemod only imports the jtcsv helpers it actually needs (`csvToJson`,
+`readCsvAsJson`, `createCsvToJsonStream`, `createCsvFileToJsonStream`)
+based on the call sites in each file.
+
+### Calls
+
+```diff
+- const rows = await csv().fromString(s);
++ const rows = await csvToJson(s);
+```
+
+```diff
+- const rows = await csv().fromFile('a.csv');
++ const rows = await readCsvAsJson('a.csv');
+```
+
+### Option renames
+
+```diff
+- csv({ noheader: true, checkType: true, delimiter: ';' }).fromString(s);
++ csvToJson(s, { hasHeaders: false, parseNumbers: true, parseBooleans: true, delimiter: ';' });
+```
+
+### Stream subscribe → pipe
+
+```diff
+- csv().fromStream(readable).subscribe(rowCb, errCb, endCb);
++ readable
++   .pipe(createCsvToJsonStream())
++   .on('data', rowCb)
++   .on('error', errCb)
++   .on('end', endCb);
+```
+
+### Options translation
+
+| csvtojson option | jtcsv option                              | Notes                                        |
+|------------------|-------------------------------------------|-----------------------------------------------|
+| `noheader`       | `hasHeaders` (value **inverted**)         | `noheader: true` → `hasHeaders: false`        |
+| `delimiter`      | `delimiter`                               | unchanged                                     |
+| `checkType`      | `parseNumbers` + `parseBooleans`          | fan-out — both keys emitted                   |
+| `trim`           | `trim`                                    | unchanged                                     |
+| `includeColumns` | — (dropped, TODO comment)                 | no jtcsv equivalent today                     |
+| `ignoreColumns`  | — (dropped, TODO comment)                 | no jtcsv equivalent today                     |
+| `output`         | — (dropped, TODO comment)                 | no jtcsv equivalent today                     |
+| `colParser`      | — (dropped, TODO comment)                 | no jtcsv equivalent today                     |
+
+### Limitations
+
+- `.on('json', cb)` and `.on('end_parsed', cb)` — left in place with a TODO;
+  the closest jtcsv equivalent is `.on('data', cb)` on `createCsvToJsonStream`,
+  but the row shape differs slightly so the codemod refuses to guess.
+- `preFileLine(fn)` — left in place with a TODO; jtcsv has no per-line
+  preprocessing hook, so you'll want to preprocess the readable stream
+  manually before piping it through `createCsvToJsonStream()`.
 
 ## CLI flags
 
