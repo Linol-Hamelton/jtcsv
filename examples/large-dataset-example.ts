@@ -194,7 +194,7 @@ export async function main(): Promise<void> {
 
 // Run if called directly
 if (require.main === module) {
-  main().catch(console.error);
+  main().then(() => console.log('ok')).catch((e) => { console.error(e); process.exit(1); });
 }
 
 export default {

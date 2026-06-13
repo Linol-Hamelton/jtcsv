@@ -126,6 +126,9 @@ module.exports = {
   collectCoverageFrom: COVERAGE_TARGET === 'ts'
     ? (COVERAGE_SCOPE === 'entry' ? COVERAGE_TS_ENTRY : COVERAGE_TS_FULL)
     : (COVERAGE_SCOPE === 'entry' ? COVERAGE_JS_ENTRY : COVERAGE_JS_FULL),
+  // 'json-summary' is required by scripts/coverage-badge.js to read
+  // coverage/coverage-summary.json and emit a shields.io badge URL.
+  coverageReporters: ['text', 'lcov', 'clover', 'json', 'json-summary'],
   setupFilesAfterEnv: [
     '<rootDir>/__tests__/setup-jest.js',
     '<rootDir>/__tests__/setup-fc-seed.js',

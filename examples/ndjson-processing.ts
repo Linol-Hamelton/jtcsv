@@ -453,4 +453,4 @@ async function main() {
   console.log('All NDJSON examples completed.');
 }
 
-main().catch(console.error);
+main().then(() => console.log('ok')).catch((e) => { console.error(e); process.exit(1); });

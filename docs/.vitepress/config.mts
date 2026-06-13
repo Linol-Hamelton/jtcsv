@@ -26,8 +26,10 @@ export default defineConfig({
   srcDir: '.',
   outDir: '.vitepress/dist',
 
-  // Exclude Russian-internal working docs, generated TypeDoc HTML under /api/,
-  // and code-embed fragments under /embeds/ from the published site.
+  // Exclude Russian-internal working docs, the generated TypeDoc HTML bundle
+  // (classes/functions/interfaces + the static *.html roots under /api/), and
+  // /embeds/ code fragments. We KEEP /api/*.md — the four hand-authored
+  // subpath reference pages (csv/json/streams/errors) live there.
   srcExclude: [
     '**/FINAL_REPORT.md',
     '**/FINAL_SUMMARY.md',
@@ -39,7 +41,13 @@ export default defineConfig({
     '**/POSITIONING_DRAFT.md',
     '**/README_ALL_DOCS.md',
     '**/BEST_PRACTICES_AND_INSIGHTS.md',
-    '**/api/**',
+    '**/api/classes/**',
+    '**/api/functions/**',
+    '**/api/interfaces/**',
+    '**/api/assets/**',
+    '**/api/index.html',
+    '**/api/hierarchy.html',
+    '**/api/modules.html',
     '**/embeds/**',
   ],
 
@@ -77,6 +85,15 @@ export default defineConfig({
         { text: 'Errors', link: '/ERRORS' },
         { text: 'Schema Validator', link: '/SCHEMA_VALIDATOR' },
       ]},
+      {
+        text: 'API Reference (Subpaths)',
+        items: [
+          { text: 'jtcsv/csv', link: '/api/csv' },
+          { text: 'jtcsv/json', link: '/api/json' },
+          { text: 'jtcsv/streams', link: '/api/streams' },
+          { text: 'jtcsv/errors', link: '/api/errors' },
+        ],
+      },
       { text: 'Recipes', collapsed: true, items: [
         { text: 'Index', link: '/recipes/' },
         { text: 'Upload & parse', link: '/recipes/01-upload-parse-table' },

@@ -353,4 +353,4 @@ async function main(): Promise<void> {
   console.log('All examples completed.');
 }
 
-main().catch(console.error);
+main().then(() => console.log('ok')).catch((e) => { console.error(e); process.exit(1); });
