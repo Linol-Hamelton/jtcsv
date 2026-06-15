@@ -1,0 +1,75 @@
+{
+  "name": "jtcsv-react",
+  "version": "0.1.0",
+  "description": "React hooks and components for jtcsv. useCsvUpload, useCsvParse, <CsvDropZone> over the jtcsv/browser surface.",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "build": "echo 'No build step required'",
+    "example": "echo 'See examples/basic-usage.tsx'"
+  },
+  "keywords": [
+    "jtcsv",
+    "react",
+    "csv",
+    "hooks",
+    "react-hook",
+    "csv-upload",
+    "csv-parse",
+    "drag-drop"
+  ],
+  "author": "Ruslan Fomenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linol-Hamelton/jtcsv.git",
+    "directory": "packages/jtcsv-react"
+  },
+  "bugs": {
+    "url": "https://github.com/Linol-Hamelton/jtcsv/issues"
+  },
+  "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-react#readme",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "peerDependencies": {
+    "jtcsv": "^3.2.0 || ^4.0.0",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "peerDependenciesMeta": {
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.12",
+    "ts-jest": "^29.1.2",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@testing-library/react": "^14.2.0",
+    "@testing-library/jest-dom": "^6.4.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jtcsv": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "files": [
+    "src/",
+    "examples/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ]
+}

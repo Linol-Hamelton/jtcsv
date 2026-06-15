@@ -27,10 +27,14 @@ terminal UI. This page is the map.
 | jtcsv | 3.2.3 | Core JSON↔CSV/NDJSON/TSV toolkit. Streaming, browser-safe, zero deps. | `npm i jtcsv` |
 | jtcsv-codemod | 0.2.0 | jscodeshift transforms for migrations from papaparse / csvtojson / csv-parser. | `npx jtcsv-codemod papaparse` |
 | jtcsv-excel | 2.1.0 | Excel (.xlsx) round-trip via exceljs as a peer dep. | `npm i jtcsv-excel exceljs jtcsv` |
+| jtcsv-react   | 0.1.0 | React hooks + components for jtcsv (useCsvUpload, useCsvParse, `<CsvDropZone>`). | `npm i jtcsv-react jtcsv react` |
+| jtcsv-vue     | 0.1.0 | Vue 3 plugin + composables + v-csv-upload directive. | `npm i jtcsv-vue jtcsv vue` |
 
 Note: `jtcsv-excel` is staged for npm publish in the Phase 4 release window.
 Until then it lives in the monorepo and can be linked locally via npm
 workspaces.
+
+All three of jtcsv-excel, jtcsv-react, jtcsv-vue are staged for unscoped publish in Phase 5 — see [docs/ECOSYSTEM_RENAMES.md](/ECOSYSTEM_RENAMES) for the rename plan; the imminent jtcsv@3.3.0-beta.0 cut on the next dist-tag is the first opportunity to publish them alongside the core.
 
 ## Planned packages
 

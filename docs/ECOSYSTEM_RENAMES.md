@@ -25,9 +25,11 @@ This is a one-way rename per package — once a name is published, it stays.
 | @jtcsv/hono               | jtcsv-hono              | 2.0.0   | planned Phase 5 W14 | @fomenkoruslan | Currently private. |
 | @jtcsv/nestjs             | jtcsv-nestjs            | 2.0.0   | planned Phase 5 W14 | @fomenkoruslan | Currently private. |
 | @jtcsv/nextjs             | jtcsv-nextjs            | 2.0.0   | planned Phase 5 W14 | @fomenkoruslan | Currently private. Directory is plugins/nextjs-api. |
+| (new — greenfield) | jtcsv-react       | 0.1.0 | scaffolded Week 13 (this milestone) | @fomenkoruslan | First React adapter package; no prior @jtcsv/* form. |
+| (new — greenfield) | jtcsv-vue         | 0.1.0 | scaffolded Week 14 (this milestone) | @fomenkoruslan | Lifted from examples/frameworks/vue (no prior @jtcsv/vue private publish). |
 
 Future-reserve (404 on npm as of audit, available for our use):
-- jtcsv-react · jtcsv-vue · jtcsv-svelte · jtcsv-angular · jtcsv-next · jtcsv-stream · jtcsv-cli · jtcsv-types
+- jtcsv-svelte · jtcsv-angular · jtcsv-next · jtcsv-stream · jtcsv-cli · jtcsv-types
 
 ## Per-package checklist
 
