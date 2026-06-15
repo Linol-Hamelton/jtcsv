@@ -407,3 +407,18 @@ These steps require credentials / payment / external accounts and cannot be auto
 - Reserve @jtcsv social handles (Bluesky, Mastodon/fosstodon, GitHub org, npm org).
 - Upload docs/public/og-image.svg (converted to 1200×630 PNG) to GitHub repo → Settings → Social preview.
 - Optional: brief a designer for an iteration on docs/public/logo.svg (~$300 budget — Phase 6 plan).
+
+## Phase 6 W16 marketing rollout
+
+The launch content + run-book lives under marketing/:
+  dev-to/01-migrating-from-papaparse.md
+  dev-to/02-shipping-csv-under-18kb.md
+  dev-to/03-csv-injection-default-on.md
+  hn/launch-post.md
+  reddit/r-javascript.md
+  reddit/r-node.md
+  reddit/r-typescript.md
+  blog/jtcsv-vs-papaparse-vs-csv-parse.md
+  LAUNCH_CHECKLIST.md  ← READ THIS FIRST
+
+The launch is operator-driven: marketing/LAUNCH_CHECKLIST.md has the timing, posting order, and decision criteria. Every draft references docs/BRAND_KIT.md for voice consistency.

@@ -36,6 +36,7 @@ no behavior or signature changes.
 - Brand visuals (Phase 5 W15): docs/public/{logo,logo-wordmark,favicon,og-image,brand-mark}.svg + docs/BRAND_KIT.md.
 - VitePress head[] block with og:* and twitter:* meta + favicon link + themeConfig.logo wired (W15).
 - README hero now ships with the wordmark image.
+- Marketing launch kit (Phase 6 W16): 3 dev.to articles, 1 HN post, 3 Reddit variants, 1 long-form comparison + LAUNCH_CHECKLIST.md run-book. Operator-driven publish; drafts honor the POSITIONING + BRAND_KIT locked voice.
 
 ### Changed
 
