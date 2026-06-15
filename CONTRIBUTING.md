@@ -27,7 +27,7 @@
 
 ### Сообщить об ошибке
 
-1. Проверьте, что ошибка ещё не зарегистрирована в [Issues](https://github.com/jtcsv/jtcsv/issues)
+1. Проверьте, что ошибка ещё не зарегистрирована в [Issues](https://github.com/Linol-Hamelton/jtcsv/issues)
 2. Создайте новый issue с шаблоном "Bug Report"
 3. Включите:
    - Версию JTCSV
@@ -334,4 +334,4 @@ interface CsvOptions {
 
 ---
 
-**Вопросы?** Создайте [Discussion](https://github.com/jtcsv/jtcsv/discussions) или напишите в [Issues](https://github.com/jtcsv/jtcsv/issues)
+**Вопросы?** Создайте [Discussion](https://github.com/Linol-Hamelton/jtcsv/discussions) или напишите в [Issues](https://github.com/Linol-Hamelton/jtcsv/issues)

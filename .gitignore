@@ -91,7 +91,10 @@ typings/
 
 # Gatsby files
 .cache/
-public
+# Note: 'public' was matching docs/public/ (VitePress static asset root)
+# which holds brand assets — logos, favicon, OG image, screenshots.
+# We don't ship a Gatsby site, so this Gatsby-template line is removed.
+# If a future Gatsby build needs its own public/ exclusion, scope it: 'gatsby/public'.
 
 # vuepress build output
 .vuepress/dist

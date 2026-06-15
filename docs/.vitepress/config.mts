@@ -16,6 +16,26 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
 
+  head: [
+    // Favicon
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ['link', { rel: 'mask-icon', href: '/favicon.svg', color: '#0EA5A4' }],
+    // OpenGraph
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:title', content: 'jtcsv — JSON ↔ CSV toolkit' }],
+    ['meta', { property: 'og:description', content: 'JSON ↔ CSV in Node and the browser. Streaming. Tree-shakable. ~18 KB gz core. Zero runtime deps in core.' }],
+    ['meta', { property: 'og:image', content: 'https://raw.githubusercontent.com/Linol-Hamelton/jtcsv/main/docs/public/og-image.svg' }],
+    ['meta', { property: 'og:url', content: 'https://linol-hamelton.github.io/jtcsv/' }],
+    ['meta', { property: 'og:site_name', content: 'jtcsv' }],
+    // Twitter
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: 'jtcsv — JSON ↔ CSV toolkit' }],
+    ['meta', { name: 'twitter:description', content: 'JSON ↔ CSV in Node and the browser. ~18 KB gz core. Zero runtime deps in core.' }],
+    ['meta', { name: 'twitter:image', content: 'https://raw.githubusercontent.com/Linol-Hamelton/jtcsv/main/docs/public/og-image.svg' }],
+    // Theme color (PWA + Safari)
+    ['meta', { name: 'theme-color', content: '#0EA5A4' }],
+  ],
+
   // External links open in a new tab; relative MD links rewrite to the
   // generated route automatically (so /docs/POSITIONING.md → /POSITIONING).
   rewrites: {
@@ -54,6 +74,13 @@ export default defineConfig({
   ],
 
   themeConfig: {
+    logo: {
+      light: '/logo.svg',
+      dark: '/logo.svg',
+      alt: 'jtcsv',
+    },
+    siteTitle: 'jtcsv',
+
     nav: [
       { text: 'Getting Started', link: '/GETTING_STARTED' },
       { text: 'API', link: '/API_DECISION_TREE' },
@@ -139,6 +166,9 @@ export default defineConfig({
         { text: 'Overview', link: '/ECOSYSTEM' },
         { text: 'Renames', link: '/ECOSYSTEM_RENAMES' },
       ]},
+      { text: 'Brand', items: [
+        { text: 'Brand Kit', link: '/BRAND_KIT' },
+      ]},
       { text: 'Integrations', collapsed: true, items: [
         { text: 'Index', link: '/integrations/' },
         { text: 'Express', link: '/integrations/express' },
@@ -153,6 +183,9 @@ export default defineConfig({
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Linol-Hamelton/jtcsv' },
       { icon: 'npm', link: 'https://www.npmjs.com/package/jtcsv' },
+      // The following two are placeholders — handles registered Phase 5 W15 operator follow-up:
+      // { icon: 'bluesky', link: 'https://bsky.app/profile/jtcsv.bsky.social' },
+      // { icon: 'mastodon', link: 'https://fosstodon.org/@jtcsv' },
     ],
 
     footer: {

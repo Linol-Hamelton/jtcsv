@@ -280,10 +280,10 @@ jtcsv json-to-csv data.json --flatten --flatten-max-depth 5 --array-handling joi
 
 ## Дополнительные ресурсы
 
-- [Документация jtcsv](https://github.com/yourusername/jtcsv)
-- [Примеры использования](https://github.com/yourusername/jtcsv/examples)
-- [Руководство по миграции](https://github.com/yourusername/jtcsv/docs/MIGRATION_GUIDE.md)
-- [Часто задаваемые вопросы](https://github.com/yourusername/jtcsv/docs/FAQ.md)
+- [Документация jtcsv](https://github.com/Linol-Hamelton/jtcsv)
+- [Примеры использования](https://github.com/Linol-Hamelton/jtcsv/examples)
+- [Руководство по миграции](https://github.com/Linol-Hamelton/jtcsv/docs/MIGRATION_GUIDE.md)
+- [Часто задаваемые вопросы](https://github.com/Linol-Hamelton/jtcsv/docs/FAQ.md)
 
 ---
 

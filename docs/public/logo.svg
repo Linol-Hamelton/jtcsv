@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="jtcsv">
+  <rect x="0" y="0" width="64" height="64" rx="14" ry="14" fill="#0EA5A4"/>
+  <rect x="18" y="16" width="28" height="4" rx="2" ry="2" fill="#FFFFFF"/>
+  <rect x="18" y="44" width="28" height="4" rx="2" ry="2" fill="#FFFFFF"/>
+  <line x1="22" y1="32" x2="42" y2="32" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <polygon points="18,32 24,28 24,36" fill="#FFFFFF"/>
+  <polygon points="46,32 40,28 40,36" fill="#FFFFFF"/>
+</svg>

@@ -33,6 +33,9 @@ no behavior or signature changes.
   `docs/ECOSYSTEM_RENAMES.md` rename-plan.
 - **Fuzz replay tool** — `scripts/fuzz-replay.js` deterministically replays a
   saved counterexample for triage.
+- Brand visuals (Phase 5 W15): docs/public/{logo,logo-wordmark,favicon,og-image,brand-mark}.svg + docs/BRAND_KIT.md.
+- VitePress head[] block with og:* and twitter:* meta + favicon link + themeConfig.logo wired (W15).
+- README hero now ships with the wordmark image.
 
 ### Changed
 

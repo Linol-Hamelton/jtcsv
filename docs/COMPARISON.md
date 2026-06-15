@@ -283,4 +283,4 @@ const data = csvToJson(csv, { hasHeaders: true });
 
 ---
 
-**Нашли ошибку?** Создайте issue на [GitHub](https://github.com/jtcsv/jtcsv/issues)
+**Нашли ошибку?** Создайте issue на [GitHub](https://github.com/Linol-Hamelton/jtcsv/issues)

@@ -399,3 +399,11 @@ Failure modes the guardrail catches:
   through `--provenance`. There is no "quick local beta" path; if you
   need to test something locally, use `npm pack` and install the
   tarball directly, never publish unsigned.
+
+## Operator follow-ups (Phase 5 W15 brand-visuals)
+
+These steps require credentials / payment / external accounts and cannot be automated. See docs/BRAND_KIT.md → "Operator follow-up" for the full list:
+- Register the jtcsv.dev domain.
+- Reserve @jtcsv social handles (Bluesky, Mastodon/fosstodon, GitHub org, npm org).
+- Upload docs/public/og-image.svg (converted to 1200×630 PNG) to GitHub repo → Settings → Social preview.
+- Optional: brief a designer for an iteration on docs/public/logo.svg (~$300 budget — Phase 6 plan).

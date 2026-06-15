@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/public/logo-wordmark.svg" alt="jtcsv" width="360" />
+</p>
+
 # jtcsv — JSON ↔ CSV toolkit for Node.js and browser
 
 [![npm version](https://img.shields.io/npm/v/jtcsv)](https://www.npmjs.com/package/jtcsv)
