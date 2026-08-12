@@ -38,6 +38,7 @@
   "files": [
     "bin/",
     "transforms/",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ]
 }

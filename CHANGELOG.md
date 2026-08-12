@@ -6,7 +6,64 @@ This beta freezes the public API surface for 3.3. Subsequent betas (.1, .2, …)
 and the eventual stable 3.3.0 should ship only fixes and additional tests —
 no behavior or signature changes.
 
+### Changed — `jtcsv/browser` parsing (read before upgrading)
+
+The browser parser now behaves like the Node parser. It previously split
+rows with `line.split(delimiter)` and had no notion of quoting at all, so
+every RFC 4180 quoting rule produced silently corrupted data. Fixing that
+also required aligning three behaviours that had drifted from Node:
+
+- **Values stay strings unless `parseNumbers: true`.** The browser used to
+  coerce numbers *and* booleans unconditionally while ignoring
+  `parseNumbers` entirely, so `csvToJson('a,b\n1,2')` returned
+  `{ a: 1, b: 2 }` in the browser and `{ a: '1', b: '2' }` in Node. Both
+  now return strings; pass `parseNumbers: true` for the old numeric
+  behaviour. Booleans are no longer coerced at all — Node never did.
+- **`maxRows` throws `LimitError`** instead of silently returning a
+  truncated result.
+- **An unclosed quote throws `ParsingError`** instead of returning mangled
+  rows.
+
+These are corrections to undocumented behaviour that contradicted the
+documented option set, not intentional API changes — but they do change
+output for existing browser callers, hence this notice.
+
+### Fixed
+
+- **RFC 4180 quoting in `jtcsv/browser`** — quoted fields containing the
+  delimiter, newlines, or escaped `""` are parsed correctly. A stack of
+  compensating heuristics (`repairShiftedRows`, `normalizeQuotesInField`,
+  and a hardcoded user-agent/hex-colour rule tuned to one test fixture) is
+  gone, taking ~190 lines with it.
+- **Browser stream helpers dropped their options** — `csvToJsonStream`,
+  `jsonToCsvStream` and `jsonToNdjsonStream` declared a single `options`
+  parameter and forwarded only that one argument to implementations taking
+  `(input, options)`, so the options object was discarded.
+- **`csvToJsonStream` on a `ReadableStream`** returned unparsed
+  `{ raw: line }` fragments from behind a `// TODO`. It now parses
+  incrementally with a quote-aware record splitter that carries partial
+  records across chunk boundaries.
+- **`autoDetectDelimiter` missing from the ESM build** — it was exported
+  only through a CommonJS `module.exports` block, while a hand-written
+  `.d.ts` declared it public.
+- **`browser.d.ts` stream signatures** declared the wrong arity for all
+  three stream functions, typing the input parameter away entirely.
+- **`npm run test:types` destroyed the repo's `package.json`** —
+  `workspaces: ["."]` links `node_modules/jtcsv` back to the repo root, and
+  the type-test harness wrote its stub manifest straight through that
+  symlink.
+- **TypeDoc produced no output** — it was pointed at `index.d.ts`, which
+  TypeScript always drops in favour of the sibling `index.ts`. It also ran
+  with `cleanOutputDir` against `docs/api`, deleting the four hand-authored
+  subpath reference pages on every successful build.
+- **Release blocked by its own size gate** — two budgets were stale and the
+  two size configs disagreed with each other.
+
 ### Added
+
+- **Node ↔ browser parity suite** — `__tests__/browser-node-parity.test.ts`
+  runs 28 CSV shapes through both parsers and asserts identical output, so
+  the two halves of the library cannot drift apart again.
 
 - **VitePress documentation site** — full scaffold under `docs/` with the
   ~60 lifted MD pages (W6 + W7 + W11), MiniSearch full-text search with a

@@ -2,19 +2,24 @@ import { defineConfig } from 'vitepress';
 
 // VitePress site config — Phase 2 Week 7 (DOCS M2) lift-and-shift.
 // All human-readable Markdown in /docs is now part of the published site.
-// Public deploy URL is decided in Phase 4 W11 (DOCS M7); for now this
-// builds locally and into the gh-pages preview slot.
 // - DOCS M6 (Week 10): switched local search to a richer MiniSearch config —
 //   custom tokenize/processTerm + AND-combine, branded translations.
+// - The public deploy target is https://jtcsv.online (custom domain bound
+//   via docs/public/CNAME, which VitePress copies to the artifact root).
+//   Nothing is served until GitHub Pages is enabled on the repo and the
+//   DNS records are pointed at it — see docs/DEPLOY_SITE.md.
 export default defineConfig({
   title: 'jtcsv',
   description:
     'JSON ↔ CSV toolkit for Node.js and the browser. Streaming. Tree-shakable. 18 KB gz core. Zero deps.',
-  // We currently host static type-doc output under /api/. Keep the
-  // VitePress site under the root so cross-links from README work.
+  // Served from the apex of a dedicated domain, so the site sits at the
+  // root. Static TypeDoc output is mounted under /api/ by the docs workflow.
   base: '/',
   cleanUrls: true,
   lastUpdated: true,
+
+  // Emits sitemap.xml with absolute URLs — needed for search indexing.
+  sitemap: { hostname: 'https://jtcsv.online' },
 
   head: [
     // Favicon
@@ -24,23 +29,29 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'jtcsv — JSON ↔ CSV toolkit' }],
     ['meta', { property: 'og:description', content: 'JSON ↔ CSV in Node and the browser. Streaming. Tree-shakable. ~18 KB gz core. Zero runtime deps in core.' }],
-    ['meta', { property: 'og:image', content: 'https://raw.githubusercontent.com/Linol-Hamelton/jtcsv/main/docs/public/og-image.svg' }],
-    ['meta', { property: 'og:url', content: 'https://linol-hamelton.github.io/jtcsv/' }],
+    // PNG, not the SVG next to it: Slack, X and several other scrapers
+    // silently drop SVG previews. Served from raw.githubusercontent so the
+    // card resolves before jtcsv.online is live; switch to
+    // https://jtcsv.online/og-image.png once the site answers.
+    ['meta', { property: 'og:image', content: 'https://raw.githubusercontent.com/Linol-Hamelton/jtcsv/main/docs/public/og-image.png' }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { property: 'og:url', content: 'https://jtcsv.online/' }],
     ['meta', { property: 'og:site_name', content: 'jtcsv' }],
     // Twitter
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: 'jtcsv — JSON ↔ CSV toolkit' }],
     ['meta', { name: 'twitter:description', content: 'JSON ↔ CSV in Node and the browser. ~18 KB gz core. Zero runtime deps in core.' }],
-    ['meta', { name: 'twitter:image', content: 'https://raw.githubusercontent.com/Linol-Hamelton/jtcsv/main/docs/public/og-image.svg' }],
+    ['meta', { name: 'twitter:image', content: 'https://raw.githubusercontent.com/Linol-Hamelton/jtcsv/main/docs/public/og-image.png' }],
     // Theme color (PWA + Safari)
-    ['meta', { name: 'theme-color', content: '#0EA5A4' }],
+    ['meta', { name: 'theme-color', content: '#0EA5A4' }]
   ],
 
   // External links open in a new tab; relative MD links rewrite to the
   // generated route automatically (so /docs/POSITIONING.md → /POSITIONING).
   rewrites: {
     // The repo's /docs root maps to the site root.
-    ':path(.*)': ':path',
+    ':path(.*)': ':path'
   },
 
   // Source files live in /docs at the repo root — same directory we
@@ -70,14 +81,14 @@ export default defineConfig({
     '**/api/index.html',
     '**/api/hierarchy.html',
     '**/api/modules.html',
-    '**/embeds/**',
+    '**/embeds/**'
   ],
 
   themeConfig: {
     logo: {
       light: '/logo.svg',
       dark: '/logo.svg',
-      alt: 'jtcsv',
+      alt: 'jtcsv'
     },
     siteTitle: 'jtcsv',
 
@@ -92,9 +103,9 @@ export default defineConfig({
         items: [
           { text: 'npm', link: 'https://www.npmjs.com/package/jtcsv' },
           { text: 'GitHub', link: 'https://github.com/Linol-Hamelton/jtcsv' },
-          { text: 'Changelog', link: 'https://github.com/Linol-Hamelton/jtcsv/blob/main/CHANGELOG.md' },
-        ],
-      },
+          { text: 'Changelog', link: 'https://github.com/Linol-Hamelton/jtcsv/blob/main/CHANGELOG.md' }
+        ]
+      }
     ],
 
     // Sidebar groups by topic — matches the README's "Documentation" table.
@@ -104,24 +115,24 @@ export default defineConfig({
         { text: 'Getting Started', link: '/GETTING_STARTED' },
         { text: 'Positioning', link: '/POSITIONING' },
         { text: 'FAQ', link: '/FAQ' },
-        { text: 'How-to', link: '/HOWTO' },
-      ]},
+        { text: 'How-to', link: '/HOWTO' }
+      ] },
       { text: 'API', items: [
         { text: 'Intro', link: '/API_INTRO' },
         { text: 'Decision Tree', link: '/API_DECISION_TREE' },
         { text: 'Canonicalization', link: '/API_CANONICALIZATION' },
         { text: 'Migration (internal API)', link: '/API_MIGRATION' },
         { text: 'Errors', link: '/ERRORS' },
-        { text: 'Schema Validator', link: '/SCHEMA_VALIDATOR' },
-      ]},
+        { text: 'Schema Validator', link: '/SCHEMA_VALIDATOR' }
+      ] },
       {
         text: 'API Reference (Subpaths)',
         items: [
           { text: 'jtcsv/csv', link: '/api/csv' },
           { text: 'jtcsv/json', link: '/api/json' },
           { text: 'jtcsv/streams', link: '/api/streams' },
-          { text: 'jtcsv/errors', link: '/api/errors' },
-        ],
+          { text: 'jtcsv/errors', link: '/api/errors' }
+        ]
       },
       { text: 'Recipes', collapsed: true, items: [
         { text: 'Index', link: '/recipes/' },
@@ -134,41 +145,41 @@ export default defineConfig({
         { text: 'Encoding', link: '/recipes/07-special-characters-encoding' },
         { text: 'react-hook-form', link: '/recipes/08-react-hook-form' },
         { text: 'Database import (Prisma)', link: '/recipes/09-database-import-prisma' },
-        { text: 'CLI automation', link: '/recipes/10-cli-automation' },
-      ]},
+        { text: 'CLI automation', link: '/recipes/10-cli-automation' }
+      ] },
       { text: 'Guides', items: [
         { text: 'Streaming', link: '/STREAMING_GUIDE' },
         { text: 'Browser', link: '/BROWSER' },
         { text: 'Browser Workers', link: '/BROWSER_WORKERS' },
         { text: 'CLI', link: '/CLI' },
         { text: 'TUI', link: '/TUI-README' },
-        { text: 'Troubleshooting', link: '/TROUBLESHOOTING' },
-      ]},
+        { text: 'Troubleshooting', link: '/TROUBLESHOOTING' }
+      ] },
       { text: 'Plugins', items: [
         { text: 'Overview', link: '/PLUGINS' },
         { text: 'Plugin Authoring', link: '/PLUGIN_AUTHORING' },
-        { text: 'Plugin Registry', link: '/PLUGIN_REGISTRY' },
-      ]},
+        { text: 'Plugin Registry', link: '/PLUGIN_REGISTRY' }
+      ] },
       { text: 'Migration', items: [
         { text: 'From papaparse', link: '/MIGRATION_PAPAPARSE' },
         { text: 'From csvtojson', link: '/MIGRATION_CSVTOJSON' },
-        { text: 'Comparison matrix', link: '/COMPARISON' },
-      ]},
+        { text: 'Comparison matrix', link: '/COMPARISON' }
+      ] },
       { text: 'Performance', items: [
         { text: 'Performance', link: '/PERFORMANCE' },
         { text: 'Benchmarks', link: '/BENCHMARKS' },
-        { text: 'Testing Guide', link: '/TESTING_GUIDE' },
-      ]},
+        { text: 'Testing Guide', link: '/TESTING_GUIDE' }
+      ] },
       { text: 'Security', items: [
-        { text: 'Threat Model', link: '/THREAT_MODEL' },
-      ]},
+        { text: 'Threat Model', link: '/THREAT_MODEL' }
+      ] },
       { text: 'Ecosystem', items: [
         { text: 'Overview', link: '/ECOSYSTEM' },
-        { text: 'Renames', link: '/ECOSYSTEM_RENAMES' },
-      ]},
+        { text: 'Renames', link: '/ECOSYSTEM_RENAMES' }
+      ] },
       { text: 'Brand', items: [
-        { text: 'Brand Kit', link: '/BRAND_KIT' },
-      ]},
+        { text: 'Brand Kit', link: '/BRAND_KIT' }
+      ] },
       { text: 'Integrations', collapsed: true, items: [
         { text: 'Index', link: '/integrations/' },
         { text: 'Express', link: '/integrations/express' },
@@ -176,13 +187,13 @@ export default defineConfig({
         { text: 'Next.js (App Router)', link: '/integrations/nextjs-app-router' },
         { text: 'react-hook-form', link: '/integrations/react-hook-form' },
         { text: 'Drizzle ORM', link: '/integrations/drizzle-orm' },
-        { text: 'GraphQL', link: '/integrations/graphql' },
-      ]},
+        { text: 'GraphQL', link: '/integrations/graphql' }
+      ] }
     ],
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Linol-Hamelton/jtcsv' },
-      { icon: 'npm', link: 'https://www.npmjs.com/package/jtcsv' },
+      { icon: 'npm', link: 'https://www.npmjs.com/package/jtcsv' }
       // The following two are placeholders — handles registered Phase 5 W15 operator follow-up:
       // { icon: 'bluesky', link: 'https://bsky.app/profile/jtcsv.bsky.social' },
       // { icon: 'mastodon', link: 'https://fosstodon.org/@jtcsv' },
@@ -190,12 +201,12 @@ export default defineConfig({
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'jtcsv — JSON ↔ CSV toolkit',
+      copyright: 'jtcsv — JSON ↔ CSV toolkit'
     },
 
     editLink: {
       pattern: 'https://github.com/Linol-Hamelton/jtcsv/edit/main/docs/:path',
-      text: 'Edit this page on GitHub',
+      text: 'Edit this page on GitHub'
     },
 
     search: {
@@ -205,7 +216,7 @@ export default defineConfig({
         translations: {
           button: {
             buttonText: 'Search docs',
-            buttonAriaLabel: 'Search documentation',
+            buttonAriaLabel: 'Search documentation'
           },
           modal: {
             displayDetails: 'Display detailed list',
@@ -215,32 +226,34 @@ export default defineConfig({
             footer: {
               selectText: 'to select',
               navigateText: 'to navigate',
-              closeText: 'to close',
-            },
-          },
+              closeText: 'to close'
+            }
+          }
         },
         miniSearch: {
           options: {
             tokenize: (text) => text.split(/[\s\-_/.,;:!?()[\]{}'"`]+/u),
             processTerm: (term) => {
               const t = term.toLowerCase().trim();
-              if (t.length < 2) return null;
+              if (t.length < 2) {
+                return null;
+              }
               const stop = new Set([
                 'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'is',
-                'it', 'for', 'on', 'with', 'as', 'by', 'be', 'this', 'that',
+                'it', 'for', 'on', 'with', 'as', 'by', 'be', 'this', 'that'
               ]);
               return stop.has(t) ? null : t;
-            },
+            }
           },
           searchOptions: {
             fuzzy: 0.2,
             prefix: true,
             boost: { title: 4, text: 2, titles: 1 },
-            combineWith: 'AND',
-          },
-        },
-      },
-    },
+            combineWith: 'AND'
+          }
+        }
+      }
+    }
   },
 
   // DOCS M2: fail the build on dead links — link-fixer has patched all known
@@ -251,6 +264,6 @@ export default defineConfig({
   ignoreDeadLinks: [
     /^https?:\/\/localhost/,
     /^\.\.?\/api\//,
-    /^\/api\//,
-  ],
+    /^\/api\//
+  ]
 });

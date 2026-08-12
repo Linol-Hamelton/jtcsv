@@ -21,22 +21,29 @@
   <!-- Title -->
   <text x="80" y="320" font-family="'JetBrains Mono', 'DM Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="144" font-weight="700" fill="#FFFFFF" letter-spacing="-0.03em">jtcsv</text>
 
-  <!-- Sub-line -->
-  <text x="80" y="400" font-family="'JetBrains Mono', 'DM Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="48" font-weight="400" fill="#E2E8F0">JSON ↔ CSV toolkit for Node.js and browser</text>
+  <!-- Sub-line.
+       Sizes below assume a monospace advance of ~0.62em, the widest of the
+       fallbacks in the stack. The previous 48px setting was measured against
+       JetBrains Mono, which is not installed on most machines (and never on a
+       rasteriser), so the line ran past the right edge everywhere else:
+       42 chars x 48 x 0.6 = 1210px against a 1040px text column. -->
+  <text x="80" y="400" font-family="'JetBrains Mono', 'DM Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="38" font-weight="400" fill="#E2E8F0">JSON ↔ CSV toolkit for Node.js and browser</text>
 
-  <!-- Pillar chips at y=500 -->
-  <g font-family="'JetBrains Mono', 'DM Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="28" font-weight="500" fill="#FFFFFF">
+  <!-- Pillar chips at y=500. Each pill is sized chars x 0.62em + 40px padding,
+       so the label cannot overflow its rounded background when the font
+       falls back. -->
+  <g font-family="'JetBrains Mono', 'DM Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24" font-weight="500" fill="#FFFFFF">
     <g transform="translate(80 500)">
-      <rect x="0" y="0" width="200" height="56" rx="28" ry="28" fill="#FFFFFF22" stroke="#FFFFFF66" stroke-width="1"/>
-      <text x="24" y="37">~18 KB gz</text>
+      <rect x="0" y="0" width="174" height="56" rx="28" ry="28" fill="#FFFFFF22" stroke="#FFFFFF66" stroke-width="1"/>
+      <text x="20" y="36">~18 KB gz</text>
     </g>
-    <g transform="translate(300 500)">
-      <rect x="0" y="0" width="288" height="56" rx="28" ry="28" fill="#FFFFFF22" stroke="#FFFFFF66" stroke-width="1"/>
-      <text x="24" y="37">Zero runtime deps</text>
+    <g transform="translate(272 500)">
+      <rect x="0" y="0" width="293" height="56" rx="28" ry="28" fill="#FFFFFF22" stroke="#FFFFFF66" stroke-width="1"/>
+      <text x="20" y="36">Zero runtime deps</text>
     </g>
-    <g transform="translate(608 500)">
-      <rect x="0" y="0" width="448" height="56" rx="28" ry="28" fill="#FFFFFF22" stroke="#FFFFFF66" stroke-width="1"/>
-      <text x="24" y="37">CSV injection guard by default</text>
+    <g transform="translate(583 500)">
+      <rect x="0" y="0" width="486" height="56" rx="28" ry="28" fill="#FFFFFF22" stroke="#FFFFFF66" stroke-width="1"/>
+      <text x="20" y="36">CSV injection guard by default</text>
     </g>
   </g>
 </svg>

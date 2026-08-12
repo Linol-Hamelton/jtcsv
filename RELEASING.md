@@ -256,7 +256,11 @@ disturbing anyone who pins to `latest`.
 
 ### Consumer install commands
 
-A consumer who wants to try the current beta:
+> **No beta has been cut yet.** The registry currently carries only
+> `latest`, so `npm install jtcsv@next` fails until the first beta ships.
+> The sequence below is the process, not a description of live state.
+
+A consumer who wants to try a beta once one exists:
 
 ```bash
 # install the highest version tagged `next`
@@ -265,7 +269,7 @@ npm install jtcsv@next
 # see every dist-tag the registry knows about
 npm dist-tag ls jtcsv
 # latest: 3.2.3
-# next:   3.3.0-beta.0
+# next:   3.3.0-beta.0   <- example output, once a beta is published
 ```
 
 The package on disk is the same shape as a stable release — same
