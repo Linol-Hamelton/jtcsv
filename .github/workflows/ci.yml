@@ -17,7 +17,7 @@ jobs:
       - run: npm run tsc:check
       - run: npm run tsc:types
       - run: npm run test:types
-      - run: npm test
+      - run: npm run test:ci
       - run: npm run test:coverage:entry
       - run: npm run lint
       - run: npm run build
@@ -32,7 +32,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run test:ci
 
   examples-smoke:
     runs-on: ubuntu-latest

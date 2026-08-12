@@ -35,7 +35,7 @@ worker threads, framework adapters, and the full subpath layout.
 
 | | jtcsv | papaparse | csv-parse | fast-csv |
 |---|:---:|:---:|:---:|:---:|
-| Speed (1M rows, fastPath) | **836 ms** | 1752 ms | 2659 ms | 3491 ms |
+| Speed (1M rows, fastPath) | **1.00×** | 2.06× | 3.55× | 4.14× |
 | Bundle (gz, parser only)  | **~18 KB** | ~9 KB     | ~14 KB    | ~30 KB    |
 | TypeScript types          | ✅ first-class | DT only | ✅ | DT only |
 | CSV-injection guard by default | ✅ | — | — | — |
@@ -50,10 +50,16 @@ Bundle column is gzipped parser-only (mzr methodology). The wedge claim
 "half the bytes vs papaparse" is measured against papaparse minified
 (~35 KB) per docs/POSITIONING.md.
 
-Reproduce the bench yourself: `npm run benchmark:vs`. CI re-runs it on
-every push to main and on PRs touching the parser, publishes the table
-to the workflow run summary, and comments on a PR when any parser slows
-by more than 25 %.
+Speed is given as a ratio, not milliseconds: absolute timings say more
+about the machine than the parser. These are from a GitHub-hosted
+`ubuntu-latest` runner, median of 5 — 1232 ms for jtcsv on the fastPath
+against 2532 ms for papaparse. The ordering holds across all three
+workloads the bench runs (10 K / 100 K / 1 M rows).
+
+Reproduce it yourself: `npm run benchmark:vs`. CI re-runs it on every push
+to main and on PRs touching the parser, publishes the full table with
+absolute numbers to the workflow run summary, and comments on a PR when
+any parser slows by more than 25 %.
 
 ## Subpath imports (tree-shaking)
 

@@ -46,7 +46,7 @@ jobs:
         run: npm run build
 
       - name: Test (skip benchmarks/load/memory)
-        run: npx jest --testPathIgnorePatterns="(__tests__/benchmark-suite\.test|__tests__/load-tests\.test|__tests__/soak-memory\.test|__tests__/memory-profiling\.test)"
+        run: npm run test:ci
 
       - name: Bundle size gate
         run: npm run size

@@ -82,6 +82,7 @@
   "scripts": {
     "test": "jest",
     "test:unit": "jest --testPathIgnorePatterns=\"(__tests__/benchmark-suite\\.test|__tests__/load-tests\\.test|__tests__/soak-memory\\.test|__tests__/security-fuzzing\\.test|__tests__/memory-profiling\\.test)\"",
+    "test:ci": "jest --testPathIgnorePatterns=\"(__tests__/benchmark-suite\\.test|__tests__/load-tests\\.test|__tests__/soak-memory\\.test|__tests__/memory-profiling\\.test)\"",
     "test:coverage": "node scripts/run-coverage.js --target=ts --scope=full --strict=0",
     "coverage:badge": "node scripts/coverage-badge.js",
     "test:coverage:strict": "cross-env JTCSV_COVERAGE_STRICT=1 JTCSV_FUZZ_SEED=4242 node scripts/run-coverage.js --target=ts --scope=full --strict=1",
