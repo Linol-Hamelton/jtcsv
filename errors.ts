@@ -146,7 +146,7 @@ export class ParsingError extends JtcsvError {
     super(detailedMessage, 'PARSING_ERROR', {
       ...meta,
       context: resolvedContext ?? meta.context ?? null,
-      hint,
+      hint
     });
     this.name = 'ParsingError';
     this.lineNumber = lineNumber;
@@ -179,7 +179,7 @@ export class ParsingError extends JtcsvError {
       context,
       null,
       null,
-      { hint },
+      { hint }
     );
   }
 
@@ -195,8 +195,8 @@ export class ParsingError extends JtcsvError {
     rowContent: string | null = null
   ): ParsingError {
     const hint = actualCount < expectedCount
-      ? `try \`repairRowShifts: true\` to auto-fill missing trailing cells, or quote any cell value that contains the delimiter`
-      : `the row has more fields than the header — check for an unquoted delimiter inside a cell value`;
+      ? 'try `repairRowShifts: true` to auto-fill missing trailing cells, or quote any cell value that contains the delimiter'
+      : 'the row has more fields than the header — check for an unquoted delimiter inside a cell value';
     return new ParsingError(
       'Field count mismatch',
       lineNumber,
@@ -204,7 +204,7 @@ export class ParsingError extends JtcsvError {
       rowContent ? `Row: "${rowContent.substring(0, 100)}${rowContent.length > 100 ? '...' : ''}"` : null,
       `${expectedCount} fields`,
       `${actualCount} fields`,
-      { hint },
+      { hint }
     );
   }
 
@@ -227,8 +227,8 @@ export class ParsingError extends JtcsvError {
         hint:
           'the parser scanned to end-of-input still inside a quoted field — '
           + 'a closing `"` may be missing, or a literal `"` in cell content '
-          + 'was not escaped as `""`',
-      },
+          + 'was not escaped as `""`'
+      }
     );
   }
 
@@ -250,8 +250,8 @@ export class ParsingError extends JtcsvError {
       {
         hint:
           'delimiter must be a single character. Common choices: `,` `;` `\\t` `|`. '
-          + 'For auto-detection, omit the option or set `autoDetect: true`.',
-      },
+          + 'For auto-detection, omit the option or set `autoDetect: true`.'
+      }
     );
   }
 
@@ -274,7 +274,7 @@ export class ParsingError extends JtcsvError {
       null,
       null,
       null,
-      { value, hint },
+      { value, hint }
     );
   }
 
@@ -293,8 +293,8 @@ export class ParsingError extends JtcsvError {
         hint:
           'try `useFastPath: false` to fall back to the standard quote-aware parser. '
           + 'The standard parser handles edge cases (CRLF in quotes, escaped quotes, '
-          + 'mismatched columns) more robustly at a small perf cost.',
-      },
+          + 'mismatched columns) more robustly at a small perf cost.'
+      }
     );
   }
 }

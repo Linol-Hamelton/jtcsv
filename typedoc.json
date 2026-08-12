@@ -1,7 +1,20 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["./index.d.ts"],
-  "out": "./docs/api",
+  // Document the source barrel, not index.d.ts: TypeScript drops a .d.ts
+  // whenever the sibling .ts exists (it treats it as that file's emit), so
+  // index.d.ts is never part of any program and typedoc found no entry
+  // points at all. index.ts is the real public surface and carries the
+  // JSDoc that the @deprecated / @category tags below rely on.
+  "entryPoints": ["./index.ts"],
+  "tsconfig": "./tsconfig.build.json",
+  // Generated output goes to a build-only directory, never into
+  // docs/api. `cleanOutputDir` below wipes the target first, and
+  // docs/api holds four hand-authored subpath reference pages
+  // (csv/json/streams/errors.md) that VitePress builds the site from —
+  // pointing typedoc there deletes them on every docs build.
+  // .github/workflows/docs.yml copies this directory into the published
+  // site under /api/, where it sits alongside those pages.
+  "out": "./docs/.typedoc",
   "name": "jtcsv API Documentation",
   "readme": "./docs/API_INTRO.md",
   "includeVersion": true,

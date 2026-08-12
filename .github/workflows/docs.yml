@@ -38,12 +38,20 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci --no-audit --no-fund
+      # `npm run docs` writes the generated reference to docs/.typedoc
+      # (gitignored). VitePress then builds the site from /docs, which
+      # includes the four hand-authored pages in docs/api/*.md. Finally the
+      # generated reference is layered into the site under /api/ — the two
+      # sets do not share filenames.
+      #
+      # Do NOT point typedoc at docs/api: it runs with cleanOutputDir and
+      # would delete those hand-authored pages before VitePress reads them.
       - name: Build typedoc and VitePress
         run: |
           npm run docs
           npm run site:build
           mkdir -p docs/.vitepress/dist/api
-          cp -r docs/api/* docs/.vitepress/dist/api/
+          cp -r docs/.typedoc/* docs/.vitepress/dist/api/
       - name: Mirror gh-pages /dev/bench into dist
         continue-on-error: true
         run: |

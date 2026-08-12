@@ -7,6 +7,22 @@ const nodeModules = path.join(root, 'node_modules');
 
 function ensurePackage(name, typesPath, mainPath) {
   const dir = path.join(nodeModules, name);
+
+  // The root package.json lists "." in `workspaces`, so npm links
+  // node_modules/jtcsv straight back to the repo root. Writing a stub
+  // manifest through that link overwrites the real root package.json, and
+  // tsd then resolves the stub's "../../" against the root's realpath —
+  // one directory too high. The link already exposes the real manifest
+  // (types: index.d.ts, main via exports), so leave any self-linked
+  // workspace package alone.
+  if (fs.existsSync(dir)) {
+    const real = fs.realpathSync(dir);
+    const realNodeModules = fs.realpathSync(nodeModules);
+    if (path.relative(realNodeModules, real).startsWith('..')) {
+      return;
+    }
+  }
+
   fs.mkdirSync(dir, { recursive: true });
   const pkg = {
     name,

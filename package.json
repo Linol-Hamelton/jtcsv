@@ -137,7 +137,7 @@
     "plugins:build": "npm run build && cd plugins/express-middleware && npm run build && cd ../fastify-plugin && npm run build && cd ../nextjs-api && npm run build",
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
-    "docs:serve": "typedoc && npx serve docs/api",
+    "docs:serve": "typedoc && npx serve docs/.typedoc",
     "site:dev": "vitepress dev docs",
     "site:build": "vitepress build docs",
     "site:preview": "vitepress preview docs",
@@ -321,7 +321,7 @@
     {
       "name": "jtcsv/json (entry, gz)",
       "path": "dist/json.esm.js",
-      "limit": "5 KB",
+      "limit": "3 KB",
       "brotli": false
     },
     {
@@ -333,19 +333,19 @@
     {
       "name": "jtcsv/ndjson (entry, gz)",
       "path": "dist/ndjson.esm.js",
-      "limit": "8 KB",
+      "limit": "5 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/tsv (entry, gz)",
       "path": "dist/tsv.esm.js",
-      "limit": "6 KB",
+      "limit": "4 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/errors (entry, gz)",
       "path": "dist/errors.esm.js",
-      "limit": "5 KB",
+      "limit": "4.5 KB",
       "brotli": false
     },
     {
@@ -355,9 +355,15 @@
       "brotli": false
     },
     {
+      "name": "jtcsv/browser ESM (gz)",
+      "path": "dist/jtcsv.esm.js",
+      "limit": "20 KB",
+      "brotli": false
+    },
+    {
       "name": "jtcsv/browser UMD (CDN, gz)",
       "path": "dist/jtcsv.umd.js",
-      "limit": "30 KB",
+      "limit": "25 KB",
       "brotli": false
     }
   ],

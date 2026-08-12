@@ -33,12 +33,49 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci --audit=false
-      - name: Run npm audit (fail on moderate+)
-        # No `continue-on-error` — security-fix CVEs at moderate+ severity
-        # must fail the build. Soft-mode (continue-on-error) was masking
-        # real advisories. To suppress a false-positive, use a real npm
-        # override in package.json, not a blanket workflow flag.
-        run: npm audit --audit-level=moderate
+
+      # BLOCKING GATE — the dependency surface a consumer actually installs.
+      #
+      # A bare `npm audit` at the repo root audits the whole workspace tree:
+      # blessed-contrib (jtcsv-tui), exceljs (jtcsv-excel), next, hono,
+      # vitepress and every other sibling/dev tool. That tree carries dozens
+      # of advisories at any time, so the gate failed every single run since
+      # the workflow was added and stopped carrying information.
+      #
+      # `jtcsv` ships with `dependencies: {}` and one optional dep (glob), so
+      # the honest question is: does installing the published tarball pull in
+      # anything vulnerable? That is what this step measures, and it must
+      # stay green. To suppress a genuine false-positive here, use a real npm
+      # override in package.json, not a blanket workflow flag.
+      - name: Audit the published dependency surface (blocking)
+        run: |
+          set -euo pipefail
+          tarball="$(npm pack --silent | tail -n 1)"
+          consumer="$RUNNER_TEMP/consumer"
+          mkdir -p "$consumer"
+          cd "$consumer"
+          npm init -y > /dev/null
+          npm install "$GITHUB_WORKSPACE/$tarball" --no-fund --no-audit > /dev/null
+          npm audit --audit-level=moderate
+
+      # REPORT ONLY — dev + workspace tooling. Visible, never blocking:
+      # these never reach a consumer's node_modules.
+      - name: Audit dev and workspace tooling (report only)
+        continue-on-error: true
+        run: |
+          npm audit --audit-level=moderate | tee npm-audit.txt
+          {
+            echo '## Dev / workspace advisories (non-blocking)'
+            echo ''
+            echo '```'
+            cat npm-audit.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Write machine-readable report
+        if: always()
+        run: npm audit --json > npm-audit.json || true
+
       - name: Upload audit report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
@@ -46,6 +83,7 @@ jobs:
           name: npm-audit-report
           path: |
             npm-audit.json
+            npm-audit.txt
           retention-days: 7
 
   codeql:

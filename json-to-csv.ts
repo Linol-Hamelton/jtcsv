@@ -677,7 +677,7 @@ export function jsonToCsv(
         return '';
       }
 
-      let stringValue: string = typeof value === 'string' ? value : String(value);
+      const stringValue: string = typeof value === 'string' ? value : String(value);
       
       // CSV Injection protection - escape formulas if enabled
       let escapedValue = stringValue;

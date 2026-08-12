@@ -202,3 +202,14 @@ test-*.js
 
 # Local-only screenshots (not part of the project)
 /screenshot*.png
+
+# Generated TypeDoc API reference (built by `npm run docs`,
+# published by .github/workflows/docs.yml — never committed).
+docs/.typedoc/
+
+# Generated TypeDoc HTML used to be committed here; it is now built
+# into docs/.typedoc by `npm run docs`. Only the hand-authored
+# subpath reference pages (*.md) belong in docs/api.
+docs/api/**
+!docs/api/
+!docs/api/*.md

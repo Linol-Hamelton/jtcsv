@@ -86,9 +86,21 @@ jobs:
             "
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # The chart publish needs an existing `gh-pages` branch — the action
+      # fetches it rather than creating it, and dies with
+      # "couldn't find remote ref gh-pages" when it is absent. That has
+      # failed this job on every push since the workflow was added, masking
+      # the benchmark result itself (which runs fine, and is published to
+      # the job summary and as an artifact above).
+      #
+      # Kept non-fatal until the branch exists. To enable the chart:
+      #   git switch --orphan gh-pages && git commit --allow-empty \
+      #     -m "chore: seed gh-pages" && git push -u origin gh-pages
+      # then turn on GitHub Pages and drop the continue-on-error below.
       - name: Publish to gh-pages chart
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba  # v1.22.1
         if: github.event_name == 'push'
+        continue-on-error: true
         with:
           tool: 'customSmallerIsBetter'
           output-file-path: benchmarks/results.json

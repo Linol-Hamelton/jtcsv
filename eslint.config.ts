@@ -1,5 +1,5 @@
-import js from "@eslint/js";
-import globals from "globals";
+import js from '@eslint/js';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default [
@@ -172,16 +172,37 @@ export default [
       '@typescript-eslint/no-unused-vars': 'off'
     }
   },
+  {
+    // Declaration files describe signatures, they do not implement them.
+    // TypeScript requires every parameter to be named even though nothing reads
+    // it, so `no-unused-vars` flags every single one — 496 findings that are
+    // all false positives. The names are the documentation.
+    files: ['**/*.d.ts'],
+    rules: {
+      'no-unused-vars': 'off'
+    }
+  },
   // Ignore patterns
   {
+    // Build output only. Without these, `npm run lint:all` reported ~40k
+    // problems, 87 % of them inside the built VitePress site, the generated
+    // TypeDoc bundle and the emitted .d.ts tree — noise that buried the few
+    // hundred findings in actual source.
     ignores: [
       'node_modules/**',
       'coverage/**',
       'dist/**',
+      'dist-types/**',              // tsc-emitted declarations
       'demo/node_modules/**',
+      'demo/dist/**',
       'plugins/**/node_modules/**',
+      'plugins/**/dist/**',
       'packages/**/node_modules/**',
-      'docs/api/**'  // Generated documentation files
+      'packages/**/dist/**',
+      'docs/api/**',                // Generated documentation files
+      'docs/.typedoc/**',           // Generated TypeDoc HTML bundle
+      'docs/.vitepress/dist/**',    // Built site
+      'docs/.vitepress/cache/**'
     ]
   }
 ];

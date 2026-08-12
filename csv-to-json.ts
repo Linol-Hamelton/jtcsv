@@ -603,7 +603,7 @@ export function csvToJson(
           if (hasCandidateDelimiter) {
             throw ParsingError.fastPathBailout(
               'header row contained a candidate delimiter but was not split correctly',
-              headerText,
+              headerText
             );
           }
         }
