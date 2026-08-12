@@ -1,6 +1,6 @@
 {
   "name": "jtcsv",
-  "version": "3.2.3",
+  "version": "3.3.0",
   "description": "JSON ↔ CSV toolkit for Node.js and browser. ~18 KB gz core. Streaming, NDJSON/TSV, worker threads, TypeScript-native. Zero runtime deps in core.",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",

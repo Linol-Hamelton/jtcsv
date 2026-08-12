@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.3.0
+
+### Minor Changes
+
+- 9b45f62: The browser CSV parser now implements RFC 4180 quoting and matches the Node
+  parser exactly; a parity suite pins the two together.
+
+  **Behaviour changes for `jtcsv/browser` consumers** — values stay strings
+  unless `parseNumbers: true` is passed (the option was previously ignored and
+  numbers and booleans were always coerced), `maxRows` raises `LimitError`
+  instead of truncating silently, and an unclosed quote raises `ParsingError`
+  instead of returning mangled rows.
+
+  See the notes below for the full list, including the stream helpers that
+  dropped their `options` argument and the release pipeline that had been red
+  since 12 June.
+
 ### Breaking — `jtcsv/browser` parsing (read before upgrading)
 
 The browser parser now behaves like the Node parser. It previously split
@@ -8,7 +25,7 @@ every RFC 4180 quoting rule produced silently corrupted data. Fixing that
 also required aligning three behaviours that had drifted from Node:
 
 - **Values stay strings unless `parseNumbers: true`.** The browser used to
-  coerce numbers *and* booleans unconditionally while ignoring
+  coerce numbers _and_ booleans unconditionally while ignoring
   `parseNumbers` entirely, so `csvToJson('a,b\n1,2')` returned
   `{ a: 1, b: 2 }` in the browser and `{ a: '1', b: '2' }` in Node. Both
   now return strings; pass `parseNumbers: true` for the old numeric
@@ -112,7 +129,7 @@ output for existing browser callers, hence this notice.
 - **Fuzz replay tool** — `scripts/fuzz-replay.js` deterministically replays a
   saved counterexample for triage.
 - Brand visuals (Phase 5 W15): docs/public/{logo,logo-wordmark,favicon,og-image,brand-mark}.svg + docs/BRAND_KIT.md.
-- VitePress head[] block with og:* and twitter:* meta + favicon link + themeConfig.logo wired (W15).
+- VitePress head[] block with og:_ and twitter:_ meta + favicon link + themeConfig.logo wired (W15).
 - README hero now ships with the wordmark image.
 - Marketing launch kit (Phase 6 W16): 3 dev.to articles, 1 HN post, 3 Reddit variants, 1 long-form comparison + LAUNCH_CHECKLIST.md run-book. Operator-driven publish; drafts honor the POSITIONING + BRAND_KIT locked voice.
 
