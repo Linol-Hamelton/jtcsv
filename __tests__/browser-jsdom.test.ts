@@ -18,7 +18,7 @@
  * "Not implemented" — that's not a failure case we want to test, so
  * we stub it.
  */
-import { describe, test, expect, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, test, expect, jest } from '@jest/globals';
 import * as browser from '../src/browser/index';
 import {
   csvToJson as csvToJsonRaw,
@@ -157,33 +157,30 @@ describe('autoDetectDelimiter', () => {
   });
 });
 
+// jsdom implements neither createObjectURL nor revokeObjectURL, so both
+// are installed for the whole file rather than per-describe.
+//
+// Restoring the "originals" in an afterAll used to put `undefined` back,
+// which turned `downloadAsCsv` into a delayed-action failure: it schedules
+// `setTimeout(() => URL.revokeObjectURL(url), 100)`, so the call landed
+// after this block had torn down and blew up inside whichever unrelated
+// test happened to be running 100 ms later. That is ordering-dependent —
+// it passed on Windows and failed on Linux CI.
+const objectUrlCalls = { created: [] as string[], revoked: [] as string[] };
+
+URL.createObjectURL = jest.fn(() => {
+  const url = `blob:fake-${objectUrlCalls.created.length}`;
+  objectUrlCalls.created.push(url);
+  return url;
+}) as unknown as typeof URL.createObjectURL;
+
+URL.revokeObjectURL = jest.fn((url: string) => {
+  objectUrlCalls.revoked.push(url);
+}) as unknown as typeof URL.revokeObjectURL;
+
 describe('downloadAsCsv — DOM integration', () => {
-  // jsdom does not implement createObjectURL; we stub it and capture
-  // the resulting anchor element to verify the download flow.
-  let createdUrls: string[];
-  let revokedUrls: string[];
-  let originalCreate: typeof URL.createObjectURL;
-  let originalRevoke: typeof URL.revokeObjectURL;
-
-  beforeAll(() => {
-    createdUrls = [];
-    revokedUrls = [];
-    originalCreate = URL.createObjectURL;
-    originalRevoke = URL.revokeObjectURL;
-    URL.createObjectURL = jest.fn((blob: Blob) => {
-      const url = `blob:fake-${createdUrls.length}`;
-      createdUrls.push(url);
-      return url;
-    }) as unknown as typeof URL.createObjectURL;
-    URL.revokeObjectURL = jest.fn((url: string) => {
-      revokedUrls.push(url);
-    }) as unknown as typeof URL.revokeObjectURL;
-  });
-
-  afterAll(() => {
-    URL.createObjectURL = originalCreate;
-    URL.revokeObjectURL = originalRevoke;
-  });
+  const createdUrls = objectUrlCalls.created;
+  const revokedUrls = objectUrlCalls.revoked;
 
   test('creates an object URL and triggers a download anchor', () => {
     const initialLen = createdUrls.length;
@@ -204,6 +201,15 @@ describe('downloadAsCsv — DOM integration', () => {
     expect(() => browser.downloadAsCsv([{ a: 1 }], '', { delimiter: ',' })).toThrow(
       browser.ValidationError
     );
+  });
+
+  // The object URL is released on a 100 ms timer. Left unreleased it would
+  // pin the Blob in memory for the life of the document.
+  test('revokes the object URL it created', async () => {
+    const before = revokedUrls.length;
+    browser.downloadAsCsv([{ id: 1 }], 'revoked.csv', { delimiter: ',' });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(revokedUrls.length).toBeGreaterThan(before);
   });
 });
 
