@@ -160,11 +160,25 @@ See [`jtcsv-codemod`](packages/jtcsv-codemod/) and the manual
 migration guides in `docs/MIGRATION_PAPAPARSE.md` and
 `docs/MIGRATION_CSVTOJSON.md`.
 
-## Framework adapters (in development — not yet on npm)
+## Companion packages
 
-These live in this repo and are covered by tests, but **none are
-published yet**, so `npm install` will not resolve them. Track progress
-in [`docs/ECOSYSTEM_RENAMES.md`](docs/ECOSYSTEM_RENAMES.md).
+Published and installable today:
+
+| Package | | |
+|---------|---|---|
+| [`jtcsv-react`](https://www.npmjs.com/package/jtcsv-react) | React hooks + components | `npm i jtcsv-react` |
+| [`jtcsv-vue`](https://www.npmjs.com/package/jtcsv-vue)     | Vue composables          | `npm i jtcsv-vue`   |
+| [`jtcsv-excel`](https://www.npmjs.com/package/jtcsv-excel) | XLSX import / export     | `npm i jtcsv-excel` |
+| [`jtcsv-codemod`](https://www.npmjs.com/package/jtcsv-codemod) | papaparse / csvtojson migration | `npx jtcsv-codemod` |
+
+The names are unscoped on purpose: the `@jtcsv` npm scope belongs to an
+unrelated account, so the whole sibling ecosystem ships as `jtcsv-*`.
+
+### Server adapters — in development, not yet on npm
+
+These live in this repo and are covered by tests, but are **not
+published**, so `npm install` will not resolve them. Track progress in
+[`docs/ECOSYSTEM_RENAMES.md`](docs/ECOSYSTEM_RENAMES.md).
 
 | Planned package  | Framework                                    | Source                                          |
 |------------------|----------------------------------------------|-------------------------------------------------|
@@ -174,15 +188,9 @@ in [`docs/ECOSYSTEM_RENAMES.md`](docs/ECOSYSTEM_RENAMES.md).
 | `jtcsv-hono`     | Hono ^4                                      | [`plugins/hono/`](plugins/hono/)                |
 | `jtcsv-nestjs`   | NestJS ^9 \|\| ^10 \|\| ^11                  | [`plugins/nestjs/`](plugins/nestjs/)            |
 
-The names are unscoped on purpose: the `@jtcsv` npm scope belongs to an
-unrelated account, so the whole sibling ecosystem ships as `jtcsv-*`.
-Only [`jtcsv-codemod`](https://www.npmjs.com/package/jtcsv-codemod) has
-shipped so far.
-
-Client-side / meta-framework recipes (Vue, Angular, Svelte, SvelteKit,
-Nuxt, Remix, tRPC) live as copy-paste examples in
-[`examples/frameworks/`](examples/frameworks/) — open an issue if any
-deserves a published wrapper.
+Angular, Svelte, SvelteKit, Nuxt, Remix and tRPC stay as copy-paste
+recipes in [`examples/frameworks/`](examples/frameworks/) — open an issue
+if any deserves a published wrapper.
 
 ## Documentation
 

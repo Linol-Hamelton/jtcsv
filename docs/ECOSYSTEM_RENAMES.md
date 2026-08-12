@@ -11,13 +11,13 @@ The `@jtcsv` npm scope is owned by an unrelated user. Attempts to publish under 
 
 This is a one-way rename per package — once a name is published, it stays.
 
-## Status (as of 2026-06-13)
+## Status (as of 2026-08-12)
 
 | Current name              | Target name             | Version | Status            | Owner | Notes |
 |---------------------------|-------------------------|---------|-------------------|-------|-------|
-| jtcsv                     | jtcsv                   | 3.2.3   | shipped           | @fomenkoruslan | The core; no rename. |
-| jtcsv-codemod             | jtcsv-codemod           | 0.1.1   | shipped (Week 5)  | @fomenkoruslan | Already unscoped from day one. |
-| @jtcsv/excel              | jtcsv-excel             | 2.1.0   | renamed Week 9 (this milestone) | @fomenkoruslan | First @jtcsv/* → jtcsv-* migration. |
+| jtcsv                     | jtcsv                   | 3.3.0   | shipped           | @fomenkoruslan | The core; no rename. |
+| jtcsv-codemod             | jtcsv-codemod           | 0.2.0   | shipped           | @fomenkoruslan | Already unscoped from day one. |
+| @jtcsv/excel              | jtcsv-excel             | 2.1.0   | shipped 12 Aug 2026 | @fomenkoruslan | First @jtcsv/* → jtcsv-* migration. |
 | @jtcsv/validator          | jtcsv-validator         | 2.0.0   | planned Phase 5 W13 | @fomenkoruslan | Currently private. |
 | @jtcsv/tui                | jtcsv-tui               | 3.0.0   | planned Phase 5 W14 | @fomenkoruslan | Currently private. |
 | @jtcsv/express-middleware | jtcsv-express           | 2.0.0   | planned Phase 5 W13 | @fomenkoruslan | Drop "-middleware" suffix; the name implies it. |
@@ -25,8 +25,8 @@ This is a one-way rename per package — once a name is published, it stays.
 | @jtcsv/hono               | jtcsv-hono              | 2.0.0   | planned Phase 5 W14 | @fomenkoruslan | Currently private. |
 | @jtcsv/nestjs             | jtcsv-nestjs            | 2.0.0   | planned Phase 5 W14 | @fomenkoruslan | Currently private. |
 | @jtcsv/nextjs             | jtcsv-nextjs            | 2.0.0   | planned Phase 5 W14 | @fomenkoruslan | Currently private. Directory is plugins/nextjs-api. |
-| (new — greenfield) | jtcsv-react       | 0.1.0 | scaffolded Week 13 (this milestone) | @fomenkoruslan | First React adapter package; no prior @jtcsv/* form. |
-| (new — greenfield) | jtcsv-vue         | 0.1.0 | scaffolded Week 14 (this milestone) | @fomenkoruslan | Lifted from examples/frameworks/vue (no prior @jtcsv/vue private publish). |
+| (new — greenfield) | jtcsv-react       | 0.1.0 | shipped 12 Aug 2026 | @fomenkoruslan | First React adapter package; no prior @jtcsv/* form. |
+| (new — greenfield) | jtcsv-vue         | 0.1.0 | shipped 12 Aug 2026 | @fomenkoruslan | Lifted from examples/frameworks/vue (no prior @jtcsv/vue private publish). |
 
 Future-reserve (404 on npm as of audit, available for our use):
 - jtcsv-svelte · jtcsv-angular · jtcsv-next · jtcsv-stream · jtcsv-cli · jtcsv-types
