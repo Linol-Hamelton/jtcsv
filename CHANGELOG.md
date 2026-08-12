@@ -1,12 +1,6 @@
 # Changelog
 
-## 3.3.0-beta.0 (unreleased)
-
-This beta freezes the public API surface for 3.3. Subsequent betas (.1, .2, …)
-and the eventual stable 3.3.0 should ship only fixes and additional tests —
-no behavior or signature changes.
-
-### Changed — `jtcsv/browser` parsing (read before upgrading)
+### Breaking — `jtcsv/browser` parsing (read before upgrading)
 
 The browser parser now behaves like the Node parser. It previously split
 rows with `line.split(delimiter)` and had no notion of quoting at all, so
@@ -58,6 +52,33 @@ output for existing browser callers, hence this notice.
   subpath reference pages on every successful build.
 - **Release blocked by its own size gate** — two budgets were stale and the
   two size configs disagreed with each other.
+- **`npm ci` could not install the project** — three packages declared
+  `"jtcsv": "workspace:*"`, a pnpm/yarn protocol npm does not implement, and
+  the lockfile predated `jtcsv-react` and `jtcsv-vue` entirely. Every
+  workflow died at install with `EUNSUPPORTEDPROTOCOL`.
+- **Coverage gate demanded an unreachable number** — `test:coverage:entry`
+  enforced a flat 85 %, the roadmap's target rather than a measurement, so it
+  could never pass. Now per-scope floors taken from real runs.
+- **Object-URL stub leaked past its own teardown** — the jsdom suite restored
+  `URL.revokeObjectURL` to jsdom's non-existent original, so `downloadAsCsv`'s
+  100 ms release timer threw inside whichever unrelated test was running.
+  Green on Windows, red on Linux.
+- **Wall-clock assertions gated correctness** — `ci.yml` ran the benchmark
+  suite, whose ops/sec thresholds flip with runner noise; the same commit
+  passed one run and failed the next. Both CI and release now share one
+  `test:ci` script that excludes the timing- and memory-sensitive suites.
+- **Sibling packages would have published at the wrong versions** — changesets
+  force-majors any package holding a peerDependency on a package being
+  released, which would have debuted the React and Vue scaffolds at 1.0.0.
+- **`verify:browser` checked for artifacts the build stopped emitting** — it
+  looked for a `jtcsv-core.*` / `jtcsv-full.*` split abandoned when the
+  browser build consolidated onto `jtcsv.*`. Repointed, and given smoke tests
+  that exercise the built bundle.
+
+- **verify-release.js** (W12) — CHANGELOG regex no longer false-matches a
+  stable `3.3.0` header when checking for a `3.3.0-beta.N` entry.
+- **Excel package** (W9) — removed broken parent-traversing `require()`
+  statements that prevented the rename from installing cleanly.
 
 ### Added
 
@@ -104,13 +125,6 @@ output for existing browser callers, hence this notice.
   preflight handling.
 - **Fuzz tests** (W11) honor the `JTCSV_FUZZ_RUNS` and `JTCSV_FUZZ_VERBOSE`
   environment variables for CI tuning.
-
-### Fixed
-
-- **verify-release.js** (W12) — CHANGELOG regex no longer false-matches a
-  stable `3.3.0` header when checking for a `3.3.0-beta.N` entry.
-- **Excel package** (W9) — removed broken parent-traversing `require()`
-  statements that prevented the rename from installing cleanly.
 
 ### Deprecated
 
