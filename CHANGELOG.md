@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.3.1
+
+### Patch Changes
+
+- Documentation only — no code change.
+
+  Removes the "npm provenance signed" badge and its comparison-table row. No
+  published version has ever carried a provenance attestation: 3.1.1, 3.2.0,
+  3.2.1 and 3.3.0 all report `attestations: none` against the registry. (The
+  `signatures: 1` every version shows is the registry's own signature, which
+  is unrelated.) 3.3.0 shipped a minute before the correction landed, so its
+  npm page still carries the badge — this release is what replaces it.
+
+  Also records the companion packages that went live alongside 3.3.0 —
+  `jtcsv-react`, `jtcsv-vue`, `jtcsv-excel` and `jtcsv-codemod` — which the
+  previous README described as unpublished.
+
 ## 3.3.0
 
 ### Minor Changes

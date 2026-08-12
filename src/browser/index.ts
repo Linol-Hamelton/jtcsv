@@ -153,7 +153,7 @@ const jtcsv = {
   unparseAsync: jsonToCsvAsync,
   
   // Версия
-  version: '3.3.0'
+  version: '3.3.1'
 };
 
 // Экспорт для разных сред
