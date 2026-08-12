@@ -124,32 +124,35 @@ export function parseCsvFileStream(
 
 /**
  * Создает поток для конвертации JSON в CSV
- * 
+ *
+ * @param input - Данные для конвертации (массив, итерируемое, ReadableStream)
  * @param options - Опции для jsonToCsv
  * @returns ReadableStream
  */
-export function jsonToCsvStream(options: JsonToCsvOptions = {}): ReadableStream {
-  return createJsonToCsvStream(options);
+export function jsonToCsvStream(input: any, options: JsonToCsvOptions = {}): ReadableStream {
+  return createJsonToCsvStream(input, options);
 }
 
 /**
  * Создает поток для конвертации JSON в NDJSON
- * 
+ *
+ * @param input - Данные для конвертации (массив, итерируемое, ReadableStream)
  * @param options - Опции для конвертации
  * @returns ReadableStream
  */
-export function jsonToNdjsonStream(options: any = {}): ReadableStream {
-  return createJsonToNdjsonStream(options);
+export function jsonToNdjsonStream(input: any, options: any = {}): ReadableStream {
+  return createJsonToNdjsonStream(input, options);
 }
 
 /**
  * Создает поток для парсинга CSV в JSON
- * 
+ *
+ * @param input - CSV-данные (строка, File, Blob, ReadableStream)
  * @param options - Опции для csvToJson
  * @returns ReadableStream
  */
-export function csvToJsonStream(options: CsvToJsonOptions = {}): ReadableStream {
-  return createCsvToJsonStream(options);
+export function csvToJsonStream(input: any, options: CsvToJsonOptions = {}): ReadableStream {
+  return createCsvToJsonStream(input, options);
 }
 
 /**
@@ -399,4 +402,3 @@ if (typeof module !== 'undefined' && module.exports) {
     loadCsvFromLocalStorageAsync
   };
 }
-

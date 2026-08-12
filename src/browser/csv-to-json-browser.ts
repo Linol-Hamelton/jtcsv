@@ -61,10 +61,13 @@ function validateCsvOptions(options: CsvToJsonOptions): boolean {
 }
 
 /**
- * Автоматическое определение разделителя
- * @private
+ * Автоматическое определение разделителя.
+ *
+ * Часть публичного API `jtcsv/browser` (см. browser.d.ts) — ранее
+ * значилась только в CommonJS-блоке `module.exports` внизу файла, из-за
+ * чего ESM-сборка её не видела.
  */
-function autoDetectDelimiter(text: string, candidates: string[] = [',', ';', '\t', '|']): string {
+export function autoDetectDelimiter(text: string, candidates: string[] = [',', ';', '\t', '|']): string {
   if (!text || typeof text !== 'string') {
     return ',';
   }
@@ -88,198 +91,148 @@ function autoDetectDelimiter(text: string, candidates: string[] = [',', ';', '\t
   return bestCandidate;
 }
 
-function isEmptyValue(value: any): boolean {
-  return value === undefined || value === null || value === '';
-}
+/**
+ * Токенизатор CSV по RFC 4180: режет текст на записи из «сырых» полей.
+ *
+ * Раньше здесь было `text.split('\n')` + `line.split(delimiter)` — без
+ * какого-либо понятия о кавычках. Поле, содержащее разделитель, перевод
+ * строки или экранированную кавычку, молча разрывалось на части, и ошибку
+ * никто не поднимал. Целый слой эвристик (`repairShiftedRows`,
+ * `normalizeQuotesInField`, плюс жёстко зашитое правило про user-agent и
+ * hex-цвет под конкретную фикстуру) существовал только чтобы это
+ * замаскировать — корректная токенизация делает их ненужными.
+ *
+ * Внутри закавыченного поля разделитель, CR, LF и `""` (литеральная
+ * кавычка) — это данные. Пустые записи пропускаются, как в Node-парсере.
+ *
+ * @throws ParsingError если закавыченное поле не закрыто.
+ */
+function tokenizeCsv(text: string, delimiter: string): string[][] {
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  // Запись считается начатой, только когда реально что-то появилось —
+  // символ, кавычка или разделитель. Благодаря этому пустые строки
+  // схлопываются сами собой.
+  let started = false;
 
-function hasOddQuotes(value: any): boolean {
-  if (typeof value !== 'string') {
-    return false;
-  }
-  let count = 0;
-  for (let i = 0; i < value.length; i++) {
-    if (value[i] === '"') {
-      count++;
+  const endRecord = (): void => {
+    if (!started) {
+      return;
     }
-  }
-  return count % 2 === 1;
-}
+    record.push(field);
+    records.push(record);
+    record = [];
+    field = '';
+    started = false;
+  };
 
-function hasAnyQuotes(value: any): boolean {
-  return typeof value === 'string' && value.includes('"');
-}
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
 
-function normalizeQuotesInField(value: any): any {
-  if (typeof value !== 'string') {
-    return value;
-  }
-  // Не нормализуем кавычки в JSON-строках - это ломает структуру JSON
-  // Проверяем, выглядит ли значение как JSON (объект или массив)
-  if ((value.startsWith('{') && value.endsWith('}')) ||
-      (value.startsWith('[') && value.endsWith(']'))) {
-    return value; // Возвращаем как есть для JSON
-  }
-  
-  let normalized = value.replace(/"{2,}/g, '"');
-  // Убираем правило, которое ломает JSON: не заменяем "," на ","
-  // normalized = normalized.replace(/"\s*,\s*"/g, ',');
-  normalized = normalized.replace(/"\n/g, '\n').replace(/\n"/g, '\n');
-  if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
-    normalized = normalized.slice(1, -1);
-  }
-  return normalized;
-}
-
-function normalizePhoneValue(value: any): any {
-  if (typeof value !== 'string') {
-    return value;
-  }
-  const trimmed = value.trim();
-  if (trimmed === '') {
-    return trimmed;
-  }
-  return trimmed.replace(/["'\\]/g, '');
-}
-
-function normalizeRowQuotes(row: Record<string, any>, headers: string[]): Record<string, any> {
-  const normalized: Record<string, any> = {};
-  const phoneKeys = new Set(['phone', 'phonenumber', 'phone_number', 'tel', 'telephone']);
-  for (const header of headers) {
-    const baseValue = normalizeQuotesInField(row[header]);
-    if (phoneKeys.has(String(header).toLowerCase())) {
-      normalized[header] = normalizePhoneValue(baseValue);
-    } else {
-      normalized[header] = baseValue;
-    }
-  }
-  return normalized;
-}
-
-function looksLikeUserAgent(value: any): boolean {
-  if (typeof value !== 'string') {
-    return false;
-  }
-  return /Mozilla\/|Opera\/|MSIE|AppleWebKit|Gecko|Safari|Chrome\//.test(value);
-}
-
-function isHexColor(value: any): boolean {
-  return typeof value === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
-}
-
-function repairShiftedRows(
-  rows: Record<string, any>[],
-  headers: string[],
-  options: { normalizeQuotes?: boolean } = {}
-): Record<string, any>[] {
-  if (!Array.isArray(rows) || rows.length === 0 || headers.length === 0) {
-    return rows;
-  }
-
-  const headerCount = headers.length;
-  const merged: Record<string, any>[] = [];
-  let index = 0;
-
-  while (index < rows.length) {
-    const row = rows[index];
-    if (!row || typeof row !== 'object') {
-      merged.push(row);
-      index++;
+    if (inQuotes) {
+      if (char !== '"') {
+        field += char;
+      } else if (text[i + 1] === '"') {
+        // "" внутри кавычек — это одна литеральная кавычка.
+        field += '"';
+        i++;
+      } else {
+        inQuotes = false;
+      }
       continue;
     }
 
-    const values = headers.map((header) => row[header]);
-    let lastNonEmpty = -1;
-    for (let i = headerCount - 1; i >= 0; i--) {
-      if (!isEmptyValue(values[i])) {
-        lastNonEmpty = i;
-        break;
+    if (char === '"') {
+      inQuotes = true;
+      started = true;
+    } else if (char === delimiter) {
+      record.push(field);
+      field = '';
+      started = true;
+    } else if (char === '\n') {
+      endRecord();
+    } else if (char === '\r') {
+      // И CRLF, и одиночный CR завершают запись.
+      if (text[i + 1] === '\n') {
+        i++;
       }
+      endRecord();
+    } else {
+      field += char;
+      started = true;
     }
-
-    const missingCount = headerCount - 1 - lastNonEmpty;
-    if (lastNonEmpty >= 0 && missingCount > 0 && index + 1 < rows.length) {
-      const nextRow = rows[index + 1];
-      if (nextRow && typeof nextRow === 'object') {
-        const nextValues = headers.map((header) => nextRow[header]);
-        const nextTrailingEmpty = nextValues
-          .slice(headerCount - missingCount)
-          .every((value) => isEmptyValue(value));
-
-        const leadValues = nextValues
-          .slice(0, missingCount)
-          .filter((value) => !isEmptyValue(value));
-        const shouldMerge = nextTrailingEmpty
-          && leadValues.length > 0
-          && (hasOddQuotes(values[lastNonEmpty]) || hasAnyQuotes(values[lastNonEmpty]));
-
-        if (shouldMerge) {
-          const toAppend = leadValues.map((value) => String(value));
-
-          if (toAppend.length > 0) {
-            const base = isEmptyValue(values[lastNonEmpty]) ? '' : String(values[lastNonEmpty]);
-            values[lastNonEmpty] = base ? `${base}\n${toAppend.join('\n')}` : toAppend.join('\n');
-          }
-
-          for (let i = 0; i < missingCount; i++) {
-            values[lastNonEmpty + 1 + i] = nextValues[missingCount + i];
-          }
-
-          const mergedRow: Record<string, any> = {};
-          for (let i = 0; i < headerCount; i++) {
-            mergedRow[headers[i]] = values[i];
-          }
-
-          merged.push(mergedRow);
-          index += 2;
-          continue;
-        }
-      }
-    }
-
-    if (index + 1 < rows.length && headerCount >= 6) {
-      const nextRow = rows[index + 1];
-      if (nextRow && typeof nextRow === 'object') {
-        const nextHex = nextRow[headers[4]];
-        const nextUserAgentHead = nextRow[headers[2]];
-        const nextUserAgentTail = nextRow[headers[3]];
-        const shouldMergeUserAgent = isEmptyValue(values[4])
-          && isEmptyValue(values[5])
-          && isHexColor(nextHex)
-          && (looksLikeUserAgent(nextUserAgentHead) || looksLikeUserAgent(nextUserAgentTail));
-
-        if (shouldMergeUserAgent) {
-          const addressParts = [values[3], nextRow[headers[0]], nextRow[headers[1]]]
-            .filter((value) => !isEmptyValue(value))
-            .map((value) => String(value));
-          values[3] = addressParts.join('\n');
-
-          const uaHead = isEmptyValue(nextUserAgentHead) ? '' : String(nextUserAgentHead);
-          const uaTail = isEmptyValue(nextUserAgentTail) ? '' : String(nextUserAgentTail);
-          const joiner = uaHead && uaTail ? (uaTail.startsWith(' ') ? '' : ',') : '';
-          values[4] = uaHead + joiner + uaTail;
-          values[5] = String(nextHex);
-
-          const mergedRow: Record<string, any> = {};
-          for (let i = 0; i < headerCount; i++) {
-            mergedRow[headers[i]] = values[i];
-          }
-
-          merged.push(mergedRow);
-          index += 2;
-          continue;
-        }
-      }
-    }
-
-    merged.push(row);
-    index++;
   }
 
-  if (options.normalizeQuotes) {
-    return merged.map((row) => normalizeRowQuotes(row, headers));
+  if (inQuotes) {
+    throw new ParsingError('Unclosed quotes in CSV');
   }
 
-  return merged;
+  endRecord();
+  return records;
+}
+
+/**
+ * Приводит одно токенизированное поле к тому же значению, что выдаёт
+ * Node-парсер: пробелы по краям срезаются, пустое поле (закавыченное или
+ * нет) становится `null`, а числовые строки конвертируются только при
+ * включённом `parseNumbers`.
+ *
+ * Раньше браузерный парсер безусловно приводил и числа, и булевы значения,
+ * полностью игнорируя `parseNumbers`, — один и тот же CSV давал разные
+ * типы в Node и в браузере.
+ */
+function coerceField(raw: string, parseNumbers: boolean): any {
+  const value = raw.trim();
+  if (value === '') {
+    return null;
+  }
+  if (parseNumbers && /^-?\d+(\.\d+)?$/.test(value)) {
+    return parseFloat(value);
+  }
+  return value;
+}
+
+/**
+ * Собирает объекты строк из токенизированных записей по тем же правилам
+ * формы, что и Node: поля сверх количества заголовков отбрасываются, а
+ * заголовки, которым в короткой записи не хватило поля, в объект не
+ * попадают вовсе.
+ */
+function recordsToRows(
+  records: string[][],
+  options: CsvToJsonOptions
+): Record<string, any>[] {
+  if (records.length === 0) {
+    return [];
+  }
+
+  const headers = records[0].map((header) => header.trim());
+  const dataRecords = records.slice(1);
+  const parseNumbers = options.parseNumbers === true;
+
+  if (options.maxRows !== undefined && dataRecords.length > options.maxRows) {
+    throw new LimitError(
+      `CSV size exceeds maximum limit of ${options.maxRows} rows`,
+      options.maxRows,
+      dataRecords.length
+    );
+  }
+
+  const rows: Record<string, any>[] = [];
+  for (const record of dataRecords) {
+    const row: Record<string, any> = {};
+    for (let i = 0; i < headers.length; i++) {
+      if (i >= record.length) {
+        continue;
+      }
+      row[headers[i]] = coerceField(record[i], parseNumbers);
+    }
+    rows.push(row);
+  }
+
+  return rows;
 }
 
 /**
@@ -305,57 +258,7 @@ export function csvToJson(csvText: string, options: CsvToJsonOptions = {}): any[
     const delimiter = options.delimiter || 
       (options.autoDetect !== false ? autoDetectDelimiter(csvText, options.candidates) : ',');
     
-    // Разделение на строки
-    const lines = csvText.split('\n').filter(line => line.trim() !== '');
-    if (lines.length === 0) {
-      return [];
-    }
-    
-    // Парсинг заголовков
-    const headers = lines[0].split(delimiter).map(h => h.trim());
-    const {
-      repairRowShifts = true,
-      normalizeQuotes = true
-    } = options || {};
-    
-    // Ограничение количества строк
-    const maxRows = options.maxRows || Infinity;
-    const dataRows = lines.slice(1, Math.min(lines.length, maxRows + 1));
-    
-    // Парсинг данных
-    const result = [];
-    
-    for (let i = 0; i < dataRows.length; i++) {
-      const line = dataRows[i];
-      const values = line.split(delimiter);
-      const row: Record<string, any> = {};
-      
-      for (let j = 0; j < headers.length; j++) {
-        const header = headers[j];
-        const value = j < values.length ? values[j].trim() : '';
-        
-        // Попытка парсинга чисел
-        if (/^-?\d+(\.\d+)?$/.test(value)) {
-          row[header] = parseFloat(value);
-        } else if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
-          row[header] = value.toLowerCase() === 'true';
-        } else {
-          row[header] = value;
-        }
-      }
-      
-      result.push(row);
-    }
-    
-    if (repairRowShifts) {
-      return repairShiftedRows(result, headers, { normalizeQuotes });
-    }
-
-    if (normalizeQuotes) {
-      return result.map((row) => normalizeRowQuotes(row, headers));
-    }
-
-    return result;
+    return recordsToRows(tokenizeCsv(csvText, delimiter), options);
   });
 }
 
@@ -394,54 +297,7 @@ export async function* csvToJsonIterator(input: string | File | Blob, options: C
   const delimiter = options.delimiter || 
     (options.autoDetect !== false ? autoDetectDelimiter(csvText, options.candidates) : ',');
   
-  // Разделение на строки
-  const lines = csvText.split('\n').filter(line => line.trim() !== '');
-  if (lines.length === 0) {
-    return;
-  }
-  
-  // Парсинг заголовков
-  const headers = lines[0].split(delimiter).map(h => h.trim());
-  const {
-    repairRowShifts = true,
-    normalizeQuotes = true
-  } = options || {};
-  
-  // Ограничение количества строк
-  const maxRows = options.maxRows || Infinity;
-  const dataRows = lines.slice(1, Math.min(lines.length, maxRows + 1));
-  
-  // Возврат данных по одной строке
-  const parsedRows = [];
-  for (let i = 0; i < dataRows.length; i++) {
-    const line = dataRows[i];
-    const values = line.split(delimiter);
-    const row: Record<string, any> = {};
-    
-    for (let j = 0; j < headers.length; j++) {
-      const header = headers[j];
-      const value = j < values.length ? values[j].trim() : '';
-      
-      // Try parsing numbers
-      if (/^-?\d+(\.\d+)?$/.test(value)) {
-        row[header] = parseFloat(value);
-      } else if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
-        row[header] = value.toLowerCase() === 'true';
-      } else {
-        row[header] = value;
-      }
-    }
-    
-    parsedRows.push(row);
-  }
-
-  const finalRows = repairRowShifts
-    ? repairShiftedRows(parsedRows, headers, { normalizeQuotes })
-    : (normalizeQuotes
-      ? parsedRows.map((row) => normalizeRowQuotes(row, headers))
-      : parsedRows);
-
-  for (const row of finalRows) {
+  for (const row of recordsToRows(tokenizeCsv(csvText, delimiter), options)) {
     yield row;
   }
 

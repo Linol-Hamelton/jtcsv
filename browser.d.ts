@@ -76,9 +76,18 @@ export function parseCsvFile(file: File, options?: CsvToJsonOptions): Promise<an
 export function parseCsvFileAsync(file: File, options?: CsvToJsonOptions): Promise<any[]>;
 export function parseCsvFileStream(file: File, options?: CsvToJsonOptions): AsyncIterator<any>;
 
-export function jsonToCsvStream(options?: JsonToCsvOptions): ReadableStream;
-export function jsonToNdjsonStream(options?: any): ReadableStream;
-export function csvToJsonStream(options?: CsvToJsonOptions): ReadableStream;
+export function jsonToCsvStream(
+  input: any[] | Iterable<any> | AsyncIterable<any> | ReadableStream,
+  options?: JsonToCsvOptions
+): ReadableStream<string>;
+export function jsonToNdjsonStream(
+  input: any[] | Iterable<any> | AsyncIterable<any> | ReadableStream,
+  options?: any
+): ReadableStream<string>;
+export function csvToJsonStream(
+  input: string | File | Blob | ReadableStream,
+  options?: CsvToJsonOptions
+): ReadableStream<any>;
 
 export function autoDetectDelimiter(csv: string, options?: { candidates?: string[] }): string;
 export function autoDetectDelimiterAsync(csv: string): Promise<string>;

@@ -59,7 +59,9 @@ async function parseCSVWithWorkerLazy(
   const adaptedProgress = onProgress
     ? (p: unknown) => {
         const pct = (p as { percentage?: number } | null)?.percentage;
-        if (typeof pct === 'number') onProgress(pct);
+        if (typeof pct === 'number') {
+onProgress(pct);
+}
       }
     : null;
   return (await mod.parseCSVWithWorker(csvInput, options, adaptedProgress)) as any[];
@@ -151,7 +153,7 @@ const jtcsv = {
   unparseAsync: jsonToCsvAsync,
   
   // Версия
-  version: '2.0.0-browser'
+  version: '3.2.3'
 };
 
 // Экспорт для разных сред

@@ -3,7 +3,7 @@ import {
   ConfigurationError,
   LimitError
 } from './errors-browser';
-import { csvToJsonIterator } from './csv-to-json-browser';
+import { csvToJsonIterator, autoDetectDelimiter } from './csv-to-json-browser';
 
 import type { CsvToJsonOptions, JsonToCsvOptions } from '../types';
 
@@ -203,7 +203,9 @@ async function* jsonToCsvChunkIterator(input: any, options: JsonToCsvOptions = {
   
   while (true) {
     const { value, done } = await iterator.next();
-    if (done) break;
+    if (done) {
+      break;
+    }
 
     const item = value;
     
@@ -288,7 +290,9 @@ async function* jsonToNdjsonChunkIterator(input: any, options: any = {}): AsyncG
 
   while (true) {
     const { value, done } = await iterator.next();
-    if (done) break;
+    if (done) {
+      break;
+    }
 
     let jsonStr: string;
     
@@ -320,31 +324,87 @@ async function* csvToJsonChunkIterator(input: any, options: CsvToJsonOptions = {
     const reader = input.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
-    
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        
-        // Обработка буфера по строкам
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        
-        // TODO: Реализовать парсинг CSV из чанков
-        // Пока просто возвращаем сырые строки
-        for (const line of lines) {
-          if (line.trim()) {
-            yield { raw: line };
+    let header: string | null = null;
+    let delimiter: string | undefined = options.delimiter;
+
+    // Peels every *complete* record off `buffer`, leaving any partial
+    // trailing record for the next chunk. A newline only terminates a
+    // record when it falls outside a quoted field, so quoted values are
+    // free to contain newlines and to straddle chunk boundaries.
+    const takeCompleteRecords = (): string[] => {
+      const records: string[] = [];
+      let quoted = false;
+      let start = 0;
+
+      for (let i = 0; i < buffer.length; i++) {
+        const ch = buffer[i];
+        if (ch === '"') {
+          // "" inside a quoted field is an escaped quote, not a terminator.
+          if (quoted && buffer[i + 1] === '"') {
+            i++;
+            continue;
           }
+          quoted = !quoted;
+        } else if (!quoted && (ch === '\n' || ch === '\r')) {
+          records.push(buffer.slice(start, i));
+          if (ch === '\r' && buffer[i + 1] === '\n') {
+i++;
+}
+          start = i + 1;
         }
       }
-      
-      // Обработка остатка буфера
-      if (buffer.trim()) {
-        yield { raw: buffer };
+
+      buffer = buffer.slice(start);
+      return records;
+    };
+
+    // Re-attaches the header to each batch so the row parser sees a
+    // well-formed CSV document, and pins the delimiter detected from the
+    // header so later batches cannot drift onto a different one.
+    async function* parseBatch(records: string[]): AsyncGenerator<any> {
+      const rows = records.filter(record => record.trim() !== '');
+      if (rows.length === 0) {
+return;
+}
+
+      if (header === null) {
+        header = rows.shift() as string;
+        if (delimiter === undefined) {
+          delimiter = options.autoDetect !== false
+            ? autoDetectDelimiter(header, options.candidates)
+            : ',';
+        }
+        if (rows.length === 0) {
+return;
+}
       }
+
+      yield* csvToJsonIterator(
+        `${header}\n${rows.join('\n')}`,
+        { ...options, delimiter, autoDetect: false }
+      );
+    }
+
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        yield* parseBatch(takeCompleteRecords());
+      }
+
+      // Flush any multi-byte character the decoder is still holding, then
+      // treat whatever is left as the final (unterminated) record.
+      buffer += decoder.decode();
+      const trailing = takeCompleteRecords();
+      if (buffer.trim() !== '') {
+        trailing.push(buffer);
+        buffer = '';
+      }
+      yield* parseBatch(trailing);
     } finally {
       reader.releaseLock();
     }

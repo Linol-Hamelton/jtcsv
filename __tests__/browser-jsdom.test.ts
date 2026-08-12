@@ -23,7 +23,7 @@ import * as browser from '../src/browser/index';
 import {
   csvToJson as csvToJsonRaw,
   jsonToCsv as jsonToCsvRaw,
-  autoDetectDelimiter,
+  autoDetectDelimiter
 } from '../src/browser/index';
 
 // jsdom's Blob misses both `text()` and `arrayBuffer()` in the version
@@ -84,7 +84,7 @@ describe('csvToJson (browser)', () => {
     const out = csvToJsonRaw('id,name\n1,Anna\n2,Bob', { delimiter: ',', parseNumbers: true });
     expect(out).toEqual([
       { id: 1, name: 'Anna' },
-      { id: 2, name: 'Bob' },
+      { id: 2, name: 'Bob' }
     ]);
   });
 
@@ -196,13 +196,13 @@ describe('downloadAsCsv — DOM integration', () => {
     // shimming Document.createElement; instead verify it doesn't throw
     // and produces a URL like the named case.
     expect(() =>
-      browser.downloadAsCsv([{ a: 1 }], 'noext', { delimiter: ',' }),
+      browser.downloadAsCsv([{ a: 1 }], 'noext', { delimiter: ',' })
     ).not.toThrow();
   });
 
   test('throws ValidationError on empty filename', () => {
     expect(() => browser.downloadAsCsv([{ a: 1 }], '', { delimiter: ',' })).toThrow(
-      browser.ValidationError,
+      browser.ValidationError
     );
   });
 });
@@ -215,7 +215,7 @@ describe('parseCsvFile — File API', () => {
     const out = await browser.parseCsvFile(file, { delimiter: ',', parseNumbers: true });
     expect(out).toEqual([
       { id: 1, name: 'Anna' },
-      { id: 2, name: 'Bob' },
+      { id: 2, name: 'Bob' }
     ]);
   });
 
@@ -227,21 +227,90 @@ describe('parseCsvFile — File API', () => {
   });
 });
 
+// Drains a ReadableStream to an array. The previous versions of these
+// tests only checked that a stream object came back and never read from
+// it — which is why the whole browser streaming API could be broken
+// (options dropped, ReadableStream input yielding `{ raw }` blobs)
+// while the suite stayed green. Always drain.
+async function drain<T>(stream: ReadableStream<T>): Promise<T[]> {
+  const reader = stream.getReader();
+  const out: T[] = [];
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+    out.push(value as T);
+  }
+  return out;
+}
+
 describe('csvToJsonStream — ReadableStream (browser API)', () => {
   test('returns a ReadableStream', () => {
-    const stream = browser.csvToJsonStream({ delimiter: ',' });
+    const stream = browser.csvToJsonStream('a,b\n1,2');
     expect(stream).toBeDefined();
     // jsdom exposes ReadableStream via global; presence of getReader is
     // a robust shape check.
     expect(typeof (stream as ReadableStream).getReader).toBe('function');
   });
+
+  // Values stay strings unless `parseNumbers` is set — the browser parser
+  // used to coerce unconditionally, diverging from Node. See
+  // browser-node-parity.test.ts.
+  test('parses rows from a string input', async () => {
+    expect(await drain(browser.csvToJsonStream('a,b\n1,2'))).toEqual([
+      { a: '1', b: '2' }
+    ]);
+  });
+
+  test('applies parseNumbers when asked', async () => {
+    expect(await drain(browser.csvToJsonStream('a,b\n1,2', { parseNumbers: true })))
+      .toEqual([{ a: 1, b: 2 }]);
+  });
+
+  // Regression: the wrapper declared a single `options` parameter and
+  // forwarded only that one argument, so the real options object was
+  // silently discarded and every call parsed with auto-detected defaults.
+  test('forwards the options argument to the parser', async () => {
+    const csv = 'a,b\n1,2';
+    expect(await drain(browser.csvToJsonStream(csv, { delimiter: '|' })))
+      .toEqual(browser.csvToJson(csv, { delimiter: '|' }));
+  });
+
+  // Regression: the ReadableStream branch was a stub that yielded
+  // `{ raw: line }` for every line instead of parsing anything.
+  test('parses a chunked ReadableStream input', async () => {
+    const encoder = new TextEncoder();
+    const chunks = ['id,na', 'me\n1,Jane\n2,', 'Bob\n'];
+    const source = new ReadableStream({
+      start(controller) {
+        for (const chunk of chunks) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        controller.close();
+      }
+    });
+
+    expect(await drain(browser.csvToJsonStream(source))).toEqual([
+      { id: '1', name: 'Jane' },
+      { id: '2', name: 'Bob' }
+    ]);
+  });
 });
 
 describe('jsonToCsvStream — ReadableStream', () => {
   test('returns a ReadableStream', () => {
-    const stream = browser.jsonToCsvStream({ delimiter: ',' });
+    const stream = browser.jsonToCsvStream([{ a: 1, b: 2 }]);
     expect(stream).toBeDefined();
     expect(typeof (stream as ReadableStream).getReader).toBe('function');
+  });
+
+  test('serialises rows passed as input', async () => {
+    const out = (await drain(browser.jsonToCsvStream([{ a: 1, b: 2 }]))).join('');
+    expect(out).toContain('a');
+    expect(out).toContain('b');
+    expect(out).toContain('1');
+    expect(out).toContain('2');
   });
 });
 
@@ -250,10 +319,12 @@ describe('csvToJsonIterator — AsyncGenerator', () => {
     const rows: any[] = [];
     const csv = 'id,name\n1,Anna\n2,Bob';
     const iter = (browser as any).csvToJsonIterator(csv, { delimiter: ',', parseNumbers: true });
-    for await (const row of iter) rows.push(row);
+    for await (const row of iter) {
+      rows.push(row);
+    }
     expect(rows).toEqual([
       { id: 1, name: 'Anna' },
-      { id: 2, name: 'Bob' },
+      { id: 2, name: 'Bob' }
     ]);
   });
 
@@ -261,10 +332,12 @@ describe('csvToJsonIterator — AsyncGenerator', () => {
     const file = new File(['a,b\n1,2\n3,4'], 'x.csv', { type: 'text/csv' });
     const rows: any[] = [];
     const iter = (browser as any).csvToJsonIterator(file, { delimiter: ',', parseNumbers: true });
-    for await (const row of iter) rows.push(row);
+    for await (const row of iter) {
+      rows.push(row);
+    }
     expect(rows).toEqual([
       { a: 1, b: 2 },
-      { a: 3, b: 4 },
+      { a: 3, b: 4 }
     ]);
   });
 });
@@ -317,7 +390,7 @@ describe('Edge cases — browser path', () => {
   test('jsonToCsv with single object (not array) — does not throw', () => {
     // Some libraries accept a single object; jtcsv normalizes to array.
     expect(() =>
-      jsonToCsvRaw([{ id: 1, name: 'Anna' }], { delimiter: ',' }),
+      jsonToCsvRaw([{ id: 1, name: 'Anna' }], { delimiter: ',' })
     ).not.toThrow();
   });
 });

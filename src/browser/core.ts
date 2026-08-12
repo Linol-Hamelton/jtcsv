@@ -106,7 +106,7 @@ const jtcsvCore = {
   unparseAsync: jsonToCsvAsync,
   
   // Версия
-  version: '3.0.0-core'
+  version: '3.2.3'
 };
 
 // Экспорт для разных сред
