@@ -48,7 +48,7 @@
     "vue": "^3.4.0",
     "@vue/test-utils": "^2.4.0",
     "jest-environment-jsdom": "^29.7.0",
-    "jtcsv": "workspace:*"
+    "jtcsv": "*"
   },
   "publishConfig": {
     "access": "public",

@@ -23,6 +23,12 @@ successfully but has nowhere to deploy.
 | DNS for `jtcsv.online` | **not pointed at GitHub** |
 | `gh-pages` branch (bench chart) | **does not exist** |
 
+> **Do the DNS step first.** `docs/public/CNAME` ships in the build output,
+> so the moment Pages is enabled GitHub binds `jtcsv.online` as the custom
+> domain and stops serving the `github.io` URL. If DNS is not pointing at
+> GitHub yet, the site is then reachable at neither address. Set the records
+> in step 2, let them resolve, and only then enable Pages.
+
 ## 1. Enable GitHub Pages
 
 Repository → Settings → Pages → **Source: GitHub Actions**.
