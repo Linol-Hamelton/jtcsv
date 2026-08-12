@@ -1,7 +1,18 @@
 # Releasing jtcsv
 
 Releases are managed by [changesets](https://github.com/changesets/changesets).
-Every released package is signed with [npm provenance](https://docs.npmjs.com/generating-provenance-statements).
+Releases cut through CI are signed with
+[npm provenance](https://docs.npmjs.com/generating-provenance-statements).
+
+> **No published version carries a provenance attestation yet.** Checked
+> against the registry on 12 Aug 2026: 3.1.1, 3.2.0, 3.2.1 and 3.3.0 all
+> report `attestations: none`. (The `signatures: 1` every version shows is
+> the registry's own signature, which is unrelated.) 3.3.0 was published
+> from a workstation because the CI token had no write permission, and
+> provenance requires the OIDC token only a CI runner can mint. The
+> workflow is wired correctly — `id-token: write` plus
+> `NPM_CONFIG_PROVENANCE: 'true'` — so the first successful CI publish will
+> attach one. Until then, do not claim provenance in user-facing copy.
 
 ## Day-to-day: recording an intent
 

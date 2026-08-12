@@ -20,7 +20,7 @@ const transformLoader: any = transformLoaderImport;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const schemaValidator: any = schemaValidatorImport;
 // VERSION is kept in sync with package.json by the release process.
-const VERSION = '3.2.3';
+const VERSION = '3.3.0';
 
 type ConversionResult = {
   records?: number;

@@ -9,7 +9,6 @@
 [![Zero-Deps Core](https://img.shields.io/badge/core-zero%20deps-brightgreen.svg)](https://www.npmjs.com/package/jtcsv)
 [![Bundle Size](https://img.shields.io/badge/jtcsv%2Fcsv-~18%20KB%20gz-blue.svg)](#bundle-size)
 [![Bench](https://img.shields.io/badge/bench-fastest%20vs%20papaparse%20%E2%80%A2%20csv--parse%20%E2%80%A2%20fast--csv-success.svg)](#performance)
-[![Provenance](https://img.shields.io/badge/npm-provenance%20signed-success.svg)](https://docs.npmjs.com/generating-provenance-statements)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Linol-Hamelton/jtcsv/badge)](https://scorecard.dev/viewer/?uri=github.com/Linol-Hamelton/jtcsv)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict%20clean-3178c6.svg)](https://github.com/Linol-Hamelton/jtcsv/blob/main/.strict-baseline.json)
 [![Coverage](https://img.shields.io/badge/coverage-67%25-orange.svg)](https://github.com/Linol-Hamelton/jtcsv/blob/main/CHANGELOG.md#testing)
@@ -43,7 +42,6 @@ worker threads, framework adapters, and the full subpath layout.
 | Worker threads (Node)     | ✅ opt-in  | — | — | — |
 | Streaming                 | ✅ Transform + iterator | ✅ step | ✅ Transform | ✅ Transform |
 | NDJSON / TSV first-class  | ✅ | — | — | — |
-| `--provenance` signed publish | ✅ | — | — | — |
 | Subpath imports           | ✅ 10 entries | — | — | — |
 
 Bundle column is gzipped parser-only (mzr methodology). The wedge claim
