@@ -48,7 +48,7 @@ export async function csvToJsonMultithreaded(
   let headers: string[] = [];
   
   if (hasHeaders) {
-    headers = lines[0].split(csvOptions.delimiter || ';');
+    headers = lines[0].split(csvOptions.delimiter || ',');
     const dataLines = lines.slice(1);
     dataChunks = chunkData(dataLines, chunkSize);
   } else {
@@ -60,7 +60,7 @@ export async function csvToJsonMultithreaded(
     // Восстанавливаем CSV чанк с заголовками если нужно
     let chunkCsv = chunk.join('\n');
     if (hasHeaders && headers.length > 0) {
-      chunkCsv = headers.join(csvOptions.delimiter || ';') + '\n' + chunkCsv;
+      chunkCsv = headers.join(csvOptions.delimiter || ',') + '\n' + chunkCsv;
     }
     
     return createWorkerTask('csv_parse', chunkCsv, {

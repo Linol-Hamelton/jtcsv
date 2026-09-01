@@ -60,7 +60,7 @@ describe('jsonToCsv additional coverage', () => {
     const csv = jsonToCsv(data, { template: { id: null } });
     const headerRow = csv.split(/\r?\n/)[0];
 
-    expect(headerRow).toBe('id;name;age');
+    expect(headerRow).toBe('id,name,age');
   });
 
   test('applies renameMap with template and keeps unmapped headers', () => {
@@ -71,8 +71,8 @@ describe('jsonToCsv additional coverage', () => {
     });
     const rows = csv.split(/\r?\n/);
 
-    expect(rows[0]).toBe('ID;extra;name');
-    expect(rows[1]).toBe('1;;Alice');
+    expect(rows[0]).toBe('ID,extra,name');
+    expect(rows[1]).toBe('1,,Alice');
   });
 
   test('does not escape formulas when preventCsvInjection is false', () => {
@@ -81,7 +81,9 @@ describe('jsonToCsv additional coverage', () => {
     const rows = csv.split(/\r?\n/);
 
     expect(rows[0]).toBe('formula');
-    expect(rows[1]).toBe('=SUM(1,2)');
+    // Quoted because the value contains the delimiter, not because of the
+    // injection guard: with preventCsvInjection off there is no leading `'`.
+    expect(rows[1]).toBe('"=SUM(1,2)"');
   });
 });
 

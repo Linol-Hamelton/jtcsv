@@ -453,7 +453,7 @@ export function jsonToCsv(
     const opts: JsonToCsvOptions = options && typeof options === 'object' ? options : {};
     
     const {
-      delimiter = ';',
+      delimiter = ',',
       includeHeaders = true,
       renameMap = {},
       template = {},

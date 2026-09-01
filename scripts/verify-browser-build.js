@@ -24,10 +24,10 @@ const dist = path.join(root, 'dist');
 
 const REQUIRED_ARTIFACTS = [
   'jtcsv.umd.js',
-  'jtcsv.esm.js',
+  'jtcsv.mjs',
   'jtcsv.cjs.js',
   'jtcsv-workers.umd.js',
-  'jtcsv-workers.esm.js'
+  'jtcsv-workers.mjs'
 ];
 
 const missing = REQUIRED_ARTIFACTS.filter((file) => !fs.existsSync(path.join(dist, file)));
@@ -36,7 +36,7 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-const workersEsm = fs.readFileSync(path.join(dist, 'jtcsv-workers.esm.js'), 'utf8');
+const workersEsm = fs.readFileSync(path.join(dist, 'jtcsv-workers.mjs'), 'utf8');
 if (!workersEsm.includes('WorkerPool') && !workersEsm.includes('worker')) {
   console.error('Workers bundle does not appear to include worker exports.');
   process.exit(1);

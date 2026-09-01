@@ -42,7 +42,7 @@ import { parallelJsonToCsv } from './src/workers/parallelize';
 export function createJsonToCsvStream(options: JsonToCsvStreamOptions = {}): Transform {
   return safeExecuteSync(() => {
     const {
-      delimiter = ';',
+      delimiter = ',',
       includeHeaders = true,
       renameMap = {},
       template = {},

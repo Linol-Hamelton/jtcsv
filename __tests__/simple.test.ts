@@ -6,8 +6,8 @@ describe('Simple Test', () => {
     const data = [{ id: 1, name: 'John' }];
     const result = jsonToCsv(data);
     expect(typeof result).toBe('string');
-    expect(result).toContain('id;name');
-    expect(result).toContain('1;John');
+    expect(result).toContain('id,name');
+    expect(result).toContain('1,John');
   });
 
   test('preprocessData should work', () => {

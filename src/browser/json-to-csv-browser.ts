@@ -187,7 +187,7 @@ export function jsonToCsv(data: any[], options: JsonToCsvOptions = {}): string {
     }
     
     // Настройки по умолчанию
-    const delimiter = options.delimiter || ';';
+    const delimiter = options.delimiter || ',';
     const includeHeaders = options.includeHeaders !== false;
     const maxRecords = options.maxRecords || data.length;
     const preventInjection = options.preventCsvInjection !== false;
@@ -250,7 +250,7 @@ export async function jsonToCsvAsync(data: any[], options: JsonToCsvOptions = {}
 export async function* jsonToCsvIterator(data: any[] | AsyncIterable<any>, options: JsonToCsvOptions = {}): AsyncGenerator<string> {
   validateInput(Array.isArray(data) ? data : [], options);
   
-  const delimiter = options.delimiter || ';';
+  const delimiter = options.delimiter || ',';
   const includeHeaders = options.includeHeaders !== false;
   const preventInjection = options.preventCsvInjection !== false;
   const rfc4180Compliant = options.rfc4180Compliant !== false;

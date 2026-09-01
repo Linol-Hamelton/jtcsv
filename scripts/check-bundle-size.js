@@ -13,24 +13,24 @@ const zlib = require('zlib');
 // `package.json#size-limit` mirrors it for the optional `npm run size:why`
 // report — keep the two in sync when a limit moves here.
 const LIMITS = [
-  { name: 'jtcsv/csv (entry)',           file: 'dist/csv.esm.js',     limit:      1024 },
-  { name: 'jtcsv/json (entry)',          file: 'dist/json.esm.js',    limit:  3 * 1024 },
-  { name: 'jtcsv/streams (entry)',       file: 'dist/streams.esm.js', limit:      1024 },
-  { name: 'jtcsv/ndjson (entry)',        file: 'dist/ndjson.esm.js',  limit:  5 * 1024 },
-  { name: 'jtcsv/tsv (entry)',           file: 'dist/tsv.esm.js',     limit:  4 * 1024 },
+  { name: 'jtcsv/csv (entry)',           file: 'dist/csv.mjs',     limit:      1024 },
+  { name: 'jtcsv/json (entry)',          file: 'dist/json.mjs',    limit:  3 * 1024 },
+  { name: 'jtcsv/streams (entry)',       file: 'dist/streams.mjs', limit:      1024 },
+  { name: 'jtcsv/ndjson (entry)',        file: 'dist/ndjson.mjs',  limit:  5 * 1024 },
+  { name: 'jtcsv/tsv (entry)',           file: 'dist/tsv.mjs',     limit:  4 * 1024 },
   // 3.2.3 added actionable hints + docs links to every error class, taking
   // this entry from ~2.4 KB to 3.7 KB. That is the feature, not a
   // regression — budget raised to 4.5 KB to leave ~20 % headroom.
-  { name: 'jtcsv/errors (entry)',        file: 'dist/errors.esm.js',  limit:  4.5 * 1024 },
+  { name: 'jtcsv/errors (entry)',        file: 'dist/errors.mjs',  limit:  4.5 * 1024 },
   // Barrel re-exports every entry, so it absorbs the errors growth above
   // and sat 0.2 KB over the old 50 KB budget. 55 KB restores headroom.
-  { name: 'jtcsv (full barrel ESM)',     file: 'dist/index.esm.js',   limit: 55 * 1024 },
-  { name: 'jtcsv/browser ESM',           file: 'dist/jtcsv.esm.js',   limit: 20 * 1024 },
+  { name: 'jtcsv (full barrel ESM)',     file: 'dist/index.mjs',   limit: 55 * 1024 },
+  { name: 'jtcsv/browser ESM',           file: 'dist/jtcsv.mjs',   limit: 20 * 1024 },
   { name: 'jtcsv/browser UMD (CDN)',     file: 'dist/jtcsv.umd.js',   limit: 25 * 1024 }
 ];
 
 // Real-world `import { csvToJson } from 'jtcsv/csv'` cost = entry + transitive shared chunks.
-// Computed by reading dist/csv.esm.js and following its `import './_shared/...'` lines.
+// Computed by reading dist/csv.mjs and following its `import './_shared/...'` lines.
 function importCost(entryFile) {
   const dir = path.dirname(entryFile);
   const src = fs.readFileSync(entryFile, 'utf8');
@@ -63,11 +63,11 @@ function importCost(entryFile) {
 }
 
 const SUBPATH_IMPORT_LIMITS = [
-  { name: "import { csvToJson } from 'jtcsv/csv'",       file: 'dist/csv.esm.js',     limit: 30 * 1024 },
-  { name: "import { jsonToCsv } from 'jtcsv/json'",      file: 'dist/json.esm.js',    limit: 15 * 1024 },
-  { name: "import * as s from 'jtcsv/streams'",          file: 'dist/streams.esm.js', limit: 35 * 1024 },
-  { name: "import * as n from 'jtcsv/ndjson'",           file: 'dist/ndjson.esm.js',  limit: 25 * 1024 },
-  { name: "import * as t from 'jtcsv/tsv'",              file: 'dist/tsv.esm.js',     limit: 40 * 1024 }
+  { name: "import { csvToJson } from 'jtcsv/csv'",       file: 'dist/csv.mjs',     limit: 30 * 1024 },
+  { name: "import { jsonToCsv } from 'jtcsv/json'",      file: 'dist/json.mjs',    limit: 15 * 1024 },
+  { name: "import * as s from 'jtcsv/streams'",          file: 'dist/streams.mjs', limit: 35 * 1024 },
+  { name: "import * as n from 'jtcsv/ndjson'",           file: 'dist/ndjson.mjs',  limit: 25 * 1024 },
+  { name: "import * as t from 'jtcsv/tsv'",              file: 'dist/tsv.mjs',     limit: 40 * 1024 }
 ];
 
 const fmt = (n) => `${(n / 1024).toFixed(1)} KB`;

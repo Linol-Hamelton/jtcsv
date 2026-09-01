@@ -76,7 +76,7 @@ export default [
   {
     input: 'src/browser/index.ts',
     output: {
-      file: 'dist/jtcsv.esm.js',
+      file: 'dist/jtcsv.mjs',
       format: 'es',
       sourcemap: !isProduction,
       exports: 'named'
@@ -111,7 +111,7 @@ export default [
   {
     input: 'src/browser/extensions/workers.ts',
     output: {
-      file: 'dist/jtcsv-workers.esm.js',
+      file: 'dist/jtcsv-workers.mjs',
       format: 'es',
       sourcemap: !isProduction,
       exports: 'named'
@@ -135,7 +135,7 @@ export default [
   },
 
   // ==================== NODE ENTRY POINTS ====================
-  // index.ts → dist/index.cjs.js + dist/index.esm.js (full Node API: file IO, streams, NDJSON, TSV)
+  // index.ts → dist/index.cjs.js + dist/index.mjs (full Node API: file IO, streams, NDJSON, TSV)
   // Used by: require('jtcsv') / import 'jtcsv' on Node side.
   {
     input: 'index.ts',
@@ -147,7 +147,7 @@ export default [
         exports: 'named'
       },
       {
-        file: 'dist/index.esm.js',
+        file: 'dist/index.mjs',
         format: 'es',
         sourcemap: !isProduction,
         exports: 'named'
@@ -168,7 +168,7 @@ export default [
         exports: 'named'
       },
       {
-        file: 'dist/plugins.esm.js',
+        file: 'dist/plugins.mjs',
         format: 'es',
         sourcemap: !isProduction,
         exports: 'named'
@@ -204,7 +204,7 @@ export default [
         exports: 'named'
       },
       {
-        file: 'dist/schema.esm.js',
+        file: 'dist/schema.mjs',
         format: 'es',
         sourcemap: !isProduction,
         exports: 'named'
@@ -231,8 +231,8 @@ export default [
       {
         dir: 'dist',
         format: 'es',
-        entryFileNames: '[name].esm.js',
-        chunkFileNames: '_shared/[name]-[hash].esm.js',
+        entryFileNames: '[name].mjs',
+        chunkFileNames: '_shared/[name]-[hash].mjs',
         sourcemap: !isProduction,
         exports: 'named'
       },

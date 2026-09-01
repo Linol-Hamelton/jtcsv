@@ -3,7 +3,7 @@
   "version": "3.3.1",
   "description": "JSON ↔ CSV toolkit for Node.js and browser. ~18 KB gz core. Streaming, NDJSON/TSV, worker threads, TypeScript-native. Zero runtime deps in core.",
   "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/index.mjs",
   "browser": "dist/jtcsv.umd.js",
   "types": "index.d.ts",
   "bin": {
@@ -13,57 +13,57 @@
     ".": {
       "types": "./index.d.ts",
       "require": "./dist/index.cjs.js",
-      "import": "./dist/index.esm.js",
+      "import": "./dist/index.mjs",
       "browser": "./dist/jtcsv.umd.js",
       "default": "./dist/index.cjs.js"
     },
     "./csv": {
       "types": "./dist/types/src/entry-csv.d.ts",
       "require": "./dist/csv.cjs.js",
-      "import": "./dist/csv.esm.js",
+      "import": "./dist/csv.mjs",
       "default": "./dist/csv.cjs.js"
     },
     "./json": {
       "types": "./dist/types/src/entry-json.d.ts",
       "require": "./dist/json.cjs.js",
-      "import": "./dist/json.esm.js",
+      "import": "./dist/json.mjs",
       "default": "./dist/json.cjs.js"
     },
     "./streams": {
       "types": "./dist/types/src/entry-streams.d.ts",
       "require": "./dist/streams.cjs.js",
-      "import": "./dist/streams.esm.js",
+      "import": "./dist/streams.mjs",
       "default": "./dist/streams.cjs.js"
     },
     "./ndjson": {
       "types": "./dist/types/src/entry-ndjson.d.ts",
       "require": "./dist/ndjson.cjs.js",
-      "import": "./dist/ndjson.esm.js",
+      "import": "./dist/ndjson.mjs",
       "default": "./dist/ndjson.cjs.js"
     },
     "./tsv": {
       "types": "./dist/types/src/entry-tsv.d.ts",
       "require": "./dist/tsv.cjs.js",
-      "import": "./dist/tsv.esm.js",
+      "import": "./dist/tsv.mjs",
       "default": "./dist/tsv.cjs.js"
     },
     "./errors": {
       "types": "./dist/types/src/entry-errors.d.ts",
       "require": "./dist/errors.cjs.js",
-      "import": "./dist/errors.esm.js",
+      "import": "./dist/errors.mjs",
       "default": "./dist/errors.cjs.js"
     },
     "./browser": {
       "types": "./browser.d.ts",
       "require": "./dist/jtcsv.cjs.js",
-      "import": "./dist/jtcsv.esm.js",
+      "import": "./dist/jtcsv.mjs",
       "browser": "./dist/jtcsv.umd.js",
-      "default": "./dist/jtcsv.esm.js"
+      "default": "./dist/jtcsv.mjs"
     },
     "./plugins": {
       "types": "./plugins.d.ts",
       "require": "./dist/plugins.cjs.js",
-      "import": "./dist/plugins.esm.js",
+      "import": "./dist/plugins.mjs",
       "default": "./dist/plugins.cjs.js"
     },
     "./cli": {
@@ -74,7 +74,7 @@
     "./schema": {
       "types": "./schema.d.ts",
       "require": "./dist/schema.cjs.js",
-      "import": "./dist/schema.esm.js",
+      "import": "./dist/schema.mjs",
       "default": "./dist/schema.cjs.js"
     },
     "./package.json": "./package.json"
@@ -236,6 +236,7 @@
   },
   "files": [
     "dist/**/*.js",
+    "dist/**/*.mjs",
     "dist/types/**/*.d.ts",
     "index.d.ts",
     "browser.d.ts",
@@ -315,49 +316,49 @@
   "size-limit": [
     {
       "name": "jtcsv/csv (entry, gz)",
-      "path": "dist/csv.esm.js",
+      "path": "dist/csv.mjs",
       "limit": "1 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/json (entry, gz)",
-      "path": "dist/json.esm.js",
+      "path": "dist/json.mjs",
       "limit": "3 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/streams (entry, gz)",
-      "path": "dist/streams.esm.js",
+      "path": "dist/streams.mjs",
       "limit": "1 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/ndjson (entry, gz)",
-      "path": "dist/ndjson.esm.js",
+      "path": "dist/ndjson.mjs",
       "limit": "5 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/tsv (entry, gz)",
-      "path": "dist/tsv.esm.js",
+      "path": "dist/tsv.mjs",
       "limit": "4 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/errors (entry, gz)",
-      "path": "dist/errors.esm.js",
+      "path": "dist/errors.mjs",
       "limit": "4.5 KB",
       "brotli": false
     },
     {
       "name": "jtcsv (full barrel, gz)",
-      "path": "dist/index.esm.js",
+      "path": "dist/index.mjs",
       "limit": "55 KB",
       "brotli": false
     },
     {
       "name": "jtcsv/browser ESM (gz)",
-      "path": "dist/jtcsv.esm.js",
+      "path": "dist/jtcsv.mjs",
       "limit": "20 KB",
       "brotli": false
     },

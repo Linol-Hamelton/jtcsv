@@ -543,7 +543,7 @@ try {
 ### 3. Default Delimiter
 
 **PapaParse** defaults to `,` (comma)
-**jtcsv** auto-detects delimiter by default, or uses `;` (semicolon) if specified
+**jtcsv** auto-detects the delimiter when reading and writes `,` by default, matching papaparse
 
 ```javascript
 // To match PapaParse behavior:

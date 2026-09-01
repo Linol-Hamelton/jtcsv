@@ -636,7 +636,7 @@ fs.createReadStream('./large.csv')
 ## API Reference
 
 ### `createCsvToJsonStream(options)`
-- `options.delimiter`: CSV delimiter (default: ';')
+- `options.delimiter`: CSV delimiter (default: `,`)
 - `options.hasHeaders`: Whether CSV has headers (default: true)
 - `options.parseNumbers`: Parse numeric values (default: false)
 - `options.parseBooleans`: Parse boolean values (default: false)

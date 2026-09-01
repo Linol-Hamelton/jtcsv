@@ -71,7 +71,7 @@ describe('stream-json-to-csv additional coverage', () => {
     const chunks = [];
     stream.on('data', (chunk) => chunks.push(chunk.toString()));
     stream.on('end', () => {
-      expect(chunks.join('')).toBe('id;name\n');
+      expect(chunks.join('')).toBe('id,name\n');
       done();
     });
 
@@ -147,7 +147,7 @@ describe('stream-json-to-csv additional coverage', () => {
     stream.on('data', (chunk) => chunks.push(chunk.toString()));
     stream.on('end', () => {
       const output = chunks.join('');
-      expect(output.startsWith('id;extra\n')).toBe(true);
+      expect(output.startsWith('id,extra\n')).toBe(true);
       done();
     });
 

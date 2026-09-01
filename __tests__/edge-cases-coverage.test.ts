@@ -56,7 +56,7 @@ describe('Edge Cases Coverage Tests', () => {
       const result = jsonToCsv(data, { template, rfc4180Compliant: false });
       
       const lines = result.split('\n');
-      expect(lines[0]).toBe('email;name;id');
+      expect(lines[0]).toBe('email,name,id');
     });
 
     test('should apply renameMap with template', () => {
@@ -70,7 +70,7 @@ describe('Edge Cases Coverage Tests', () => {
       const result = jsonToCsv(data, { renameMap, template, rfc4180Compliant: false });
       
       const lines = result.split('\n');
-      expect(lines[0]).toBe('Full Name;ID');
+      expect(lines[0]).toBe('Full Name,ID');
     });
   });
 

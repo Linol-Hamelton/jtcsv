@@ -166,7 +166,7 @@ async function* jsonToCsvChunkIterator(input: any, options: JsonToCsvOptions = {
     iterator = toAsyncIterator([input]);
   }
 
-  const delimiter = options.delimiter || ';';
+  const delimiter = options.delimiter || ',';
   const includeHeaders = options.includeHeaders !== false;
   const preventInjection = options.preventCsvInjection !== false;
   const normalizeQuotes = options.normalizeQuotes !== false;

@@ -71,7 +71,7 @@ jtcsv --version
 
 ## Options
 ### Conversion options
-- --delimiter=CHAR (default: ';')
+- --delimiter=CHAR (default: `,` on write; auto-detected on read)
 - --auto-detect / --auto-detect=false
 - --candidates=LIST (comma-separated, default: ;,\t,|)
 - --no-headers

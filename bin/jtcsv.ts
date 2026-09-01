@@ -159,7 +159,7 @@ ${color('EXAMPLES:', 'bright')}
   jtcsv web --port=3000
 
 ${color('CONVERSION OPTIONS:', 'bright')}
-  ${color('--delimiter=', 'cyan')}CHAR    CSV delimiter (default: ;)
+  ${color('--delimiter=', 'cyan')}CHAR    CSV delimiter (default: , on write, auto-detected on read)
   ${color('--auto-detect', 'cyan')}        Auto-detect delimiter (default: true)
   ${color('--candidates=', 'cyan')}LIST    Delimiter candidates (default: ;,\t|)
   ${color('--no-headers', 'cyan')}         Exclude headers from CSV output
@@ -1122,7 +1122,7 @@ async function streamJsonToCsv(inputFile, outputFile, options: any): Promise<voi
             // Write headers on first object
             if (!headersWritten && options.includeHeaders !== false) {
               const headers = Object.keys(finalObj);
-              writeStream.write(headers.join(options.delimiter || ';') + '\n');
+              writeStream.write(headers.join(options.delimiter || ',') + '\n');
               headersWritten = true;
             }
 
@@ -1132,7 +1132,7 @@ async function streamJsonToCsv(inputFile, outputFile, options: any): Promise<voi
                 .map((value) => {
                   const str = String(value);
                   if (
-                    str.includes(options.delimiter || ';') ||
+                    str.includes(options.delimiter || ',') ||
                     str.includes('"') ||
                     str.includes('\n')
                   ) {
@@ -1140,7 +1140,7 @@ async function streamJsonToCsv(inputFile, outputFile, options: any): Promise<voi
                   }
                   return str;
                 })
-                .join(options.delimiter || ';') + '\n';
+                .join(options.delimiter || ',') + '\n';
 
             writeStream.write(row);
 
@@ -1196,7 +1196,7 @@ async function streamJsonToCsv(inputFile, outputFile, options: any): Promise<voi
 
           if (!headersWritten && options.includeHeaders !== false) {
             const headers = Object.keys(finalObj);
-            writeStream.write(headers.join(options.delimiter || ';') + '\n');
+            writeStream.write(headers.join(options.delimiter || ',') + '\n');
           }
 
           const row =
@@ -1204,7 +1204,7 @@ async function streamJsonToCsv(inputFile, outputFile, options: any): Promise<voi
               .map((value) => {
                 const str = String(value);
                 if (
-                  str.includes(options.delimiter || ';') ||
+                  str.includes(options.delimiter || ',') ||
                   str.includes('"') ||
                   str.includes('\n')
                 ) {
@@ -1212,7 +1212,7 @@ async function streamJsonToCsv(inputFile, outputFile, options: any): Promise<voi
                 }
                 return str;
               })
-              .join(options.delimiter || ';') + '\n';
+              .join(options.delimiter || ',') + '\n';
 
           writeStream.write(row);
         } catch (error: any) {
@@ -1276,6 +1276,8 @@ async function streamCsvToJson(inputFile, outputFile, options: any): Promise<voi
     let buffer = '';
     let isFirstRow = true;
     let headers = [];
+    // Detected from the header row when --delimiter is not given.
+    let streamDelimiter: string | undefined = options.delimiter;
 
     readStream.on('data', (chunk) => {
       buffer += chunk;
@@ -1293,7 +1295,13 @@ async function streamCsvToJson(inputFile, outputFile, options: any): Promise<voi
         rowCount++;
 
         // Parse CSV line
-        const fields = parseCsvLineSimple(line, options.delimiter || ';');
+        // Detect from the first line, then hold that choice for the file.
+        if (streamDelimiter === undefined) {
+          streamDelimiter = jtcsv.autoDetectDelimiter(line);
+        }
+
+        // Parse CSV line
+        const fields = parseCsvLineSimple(line, streamDelimiter);
 
         // First row might be headers
         if (rowCount === 1 && options.hasHeaders !== false) {
@@ -1366,7 +1374,7 @@ async function streamCsvToJson(inputFile, outputFile, options: any): Promise<voi
       if (buffer.trim()) {
         const fields = parseCsvLineSimple(
           buffer.trim(),
-          options.delimiter || ';'
+          streamDelimiter ?? ','
         );
 
         if (fields.length > 0) {
@@ -1909,7 +1917,11 @@ async function batchProcessMixed(inputPattern, outputDir, options: any): Promise
 
 function parseOptions(args: any): any {
   const options = {
-    delimiter: ';',
+    // Left undefined on purpose: csvToJson auto-detects only when this is
+    // falsy. Hardcoding ';' disabled detection, so `jtcsv csv-to-json data.csv`
+    // parsed a standard comma file into a single column named "id,name,city"
+    // and reported success. `--delimiter` still sets it explicitly.
+    delimiter: undefined as string | undefined,
     autoDetect: true,
     candidates: [';', ',', '\t', '|'],
     hasHeaders: true,
@@ -2235,12 +2247,12 @@ async function runJsonToCsvTUI(rl: any): Promise<void> {
 
   rl.question('Input JSON file: ', (inputFile) => {
     rl.question('Output CSV file: ', async (outputFile) => {
-      rl.question('Delimiter (default: ;): ', async (delimiter) => {
+      rl.question('Delimiter (default: ,): ', async (delimiter) => {
         try {
           console.log(color('\nConverting...', 'dim'));
 
           const result = await convertJsonToCsv(inputFile, outputFile, {
-            delimiter: delimiter || ';',
+            delimiter: delimiter || ',',
             silent: false
           });
 
@@ -2266,13 +2278,13 @@ async function runCsvToJsonTUI(rl: any): Promise<void> {
 
   rl.question('Input CSV file: ', (inputFile) => {
     rl.question('Output JSON file: ', async (outputFile) => {
-      rl.question('Delimiter (default: ;): ', async (delimiter) => {
+      rl.question('Delimiter (default: ,): ', async (delimiter) => {
         rl.question('Pretty print? (y/n): ', async (pretty) => {
           try {
             console.log(color('\nConverting...', 'dim'));
 
             const result = await convertCsvToJson(inputFile, outputFile, {
-              delimiter: delimiter || ';',
+              delimiter: delimiter || ',',
               pretty: pretty.toLowerCase() === 'y',
               silent: false
             });
