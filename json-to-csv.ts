@@ -460,7 +460,10 @@ export function jsonToCsv(
       maxRecords,
       preventCsvInjection = true,
       rfc4180Compliant = true,
-      normalizeQuotes = true,
+      // Off by default since 4.0. It collapsed every doubled quote and deleted
+      // any quote adjacent to a newline, so a value carrying both lost data on
+      // the way through. The parser and serialiser are quote-correct now.
+      normalizeQuotes = false,
       schema = null,
       flatten = false,
       flattenSeparator = '.',

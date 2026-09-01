@@ -122,13 +122,26 @@ describe('CSV to JSON Functions', () => {
     });
 
     test('should handle quoted values', () => {
+      // RFC 4180 escapes an inner quote by doubling it. The second row used to
+      // be written `"He said "Hi""` — a quoted field with bare inner quotes,
+      // which is malformed — and relied on the old normalisation layer to guess
+      // at the intent. That layer deleted data elsewhere, so it is gone; the
+      // spec-correct spelling is asserted here instead.
       const csv = `id;text
 1;"Hello, World!"
-2;"He said "Hi""`;
+2;"He said ""Hi"""`;
       const result = csvToJson(csv, { delimiter: ';' });
-      
+
       expect(result[0].text).toBe('Hello, World!');
       expect(result[1].text).toBe('He said "Hi"');
+    });
+
+    test('recovers from bare inner quotes rather than throwing', () => {
+      // Malformed, but common in the wild. The parser closes the field at the
+      // first unescaped quote and carries on, so the row still arrives — the
+      // inner quotes are simply not preserved.
+      const csv = 'id;text\n1;"He said "Hi""';
+      expect(csvToJson(csv, { delimiter: ';' })[0].text).toBe('He said Hi');
     });
 
     test('should handle newlines in quoted values', () => {

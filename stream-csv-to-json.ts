@@ -40,6 +40,37 @@ import { parallelCsvToJson } from './src/workers/parallelize';
  *   parseBooleans: true
  * });
  */
+/**
+ * Peels complete records off the buffer, leaving any partial one behind.
+ *
+ * The transform used to do buffer.split(String.fromCharCode(10)) and keep the
+ * last element, which treats every newline as a record boundary. A quoted
+ * field holding a newline was therefore cut in half whenever it straddled a
+ * chunk, and the halves failed to parse. A newline ends a record only outside
+ * quotes; a doubled quote inside one is an escaped quote, not a terminator.
+ */
+function takeCompleteRecords(buffer: string): { records: string[]; rest: string } {
+  const records: string[] = [];
+  let inQuotes = false;
+  let start = 0;
+
+  for (let i = 0; i < buffer.length; i++) {
+    const char = buffer[i];
+    if (char === String.fromCharCode(34)) {
+      if (inQuotes && buffer[i + 1] === String.fromCharCode(34)) {
+        i++;
+        continue;
+      }
+      inQuotes = !inQuotes;
+    } else if (!inQuotes && char === String.fromCharCode(10)) {
+      records.push(buffer.slice(start, i));
+      start = i + 1;
+    }
+  }
+
+  return { records, rest: buffer.slice(start) };
+}
+
 export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Transform {
   return safeExecuteSync(() => {
     const {
@@ -58,8 +89,14 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
       fastPathMode: _fastPathMode = 'objects',
       onError = 'throw',
       errorHandler,
-      repairRowShifts = true,
-      normalizeQuotes = true
+      // Off by default since 4.0. It re-joined rows that the old newline split
+      // tore apart mid-quote; records stay whole now, so the merge heuristic
+      // only fires on correct data and corrupts it.
+      repairRowShifts = false,
+      // Off by default since 4.0. It collapsed every doubled quote and deleted
+      // any quote adjacent to a newline, so a value carrying both lost data on
+      // the way through. The parser and serialiser are quote-correct now.
+      normalizeQuotes = false
     } = options;
     
     // Validate options
@@ -378,10 +415,9 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
           buffer += chunkStr;
           
           // Process complete lines
-          const lines = buffer.split('\n');
-          
-          // Keep last incomplete line in buffer
-          buffer = lines.pop() || '';
+          const taken = takeCompleteRecords(buffer);
+          const lines = taken.records;
+          buffer = taken.rest;
           
           // Process complete lines
           let errorLine = '';  // Объявляем вне цикла для доступа в catch

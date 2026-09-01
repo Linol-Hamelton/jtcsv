@@ -312,8 +312,16 @@ export function csvToJson(
     cache,
     onError = 'throw',
     errorHandler,
-    repairRowShifts = true,
-    normalizeQuotes = true,
+    // Off by default since 4.0. It re-joined rows that the old newline
+    // split tore apart mid-quote. splitCsvRecords keeps them whole, so
+    // the merge heuristic now fires on correctly parsed data and
+    // corrupts it: any value holding a quote was a merge candidate.
+    repairRowShifts = false,
+    // Off by default since 4.0. It collapsed every doubled quote and
+    // deleted any quote adjacent to a newline, so a value such as
+    // a "q" followed by a newline lost its closing quote. The parser
+    // is quote-aware now and has nothing left for it to repair.
+    normalizeQuotes = false,
     memoryWarningThreshold = 1000000,
     memoryLimit = 5000000
   } = opts;
@@ -326,6 +334,17 @@ export function csvToJson(
 
     let resolvedUseFastPath = useFastPath;
     if (onError !== 'throw' && resolvedUseFastPath) {
+      resolvedUseFastPath = false;
+    }
+
+    // The fast-path engine decides whether a field spans a newline by counting
+    // quotes per line and testing parity. A doubled quote adds two to that
+    // count, so a line still inside a quoted field can look balanced: the
+    // engine then split one record into several and shifted every column after
+    // it, silently. Escaped quotes are exactly where the heuristic is unsound,
+    // so hand those inputs to the standard parser, which tracks quote state.
+    if (resolvedUseFastPath && typeof csv === 'string'
+      && csv.indexOf(String.fromCharCode(34).repeat(2)) !== -1) {
       resolvedUseFastPath = false;
     }
 
@@ -688,7 +707,7 @@ export function csvToJson(
     }
     
     // Standard CSV parsing implementation
-    const lines = processedCsv.split('\n').filter(line => line.trim().length > 0);
+    const lines = splitCsvRecords(processedCsv);
     
     if (lines.length === 0) {
       return [];
@@ -811,7 +830,11 @@ export function csvToJson(
         // Create object
         const row: AnyObject = {};
         for (let j = 0; j < finalHeaders.length; j++) {
-          let value: any = values[j];
+          // A header with no field in this row reads as null, the same way an
+          // empty field does. It used to be undefined, which is neither a value
+          // nor an absent key: Object.keys listed it but JSON.stringify dropped
+          // it, so saveAsJson and the in-memory row disagreed on the shape.
+          let value: any = j < values.length ? values[j] : null;
           
           // Parse numbers if enabled
           if (parseNumbers && !isNaN(Number(value)) && value.trim() !== '') {
@@ -826,7 +849,10 @@ export function csvToJson(
             }
           }
           
-          row[finalHeaders[j]] = value;
+          // An empty field reads as null whether or not it was quoted: CSV draws no
+          // distinction between the two, and the browser parser agrees. Leaving the
+          // quoted form as an empty string split the two parsers apart.
+          row[finalHeaders[j]] = value === '' ? null : value;
         }
         
         // Apply transform function if provided
@@ -850,6 +876,55 @@ export function csvToJson(
 /**
  * Parses a single CSV line
  */
+/**
+ * Splits CSV text into records, honouring quoted fields.
+ *
+ * The standard path used to do `processedCsv.split('\n')`, which tears any
+ * record containing a quoted newline into pieces. That stayed hidden because
+ * the fast-path engine handles those inputs; whenever it bailed out, the
+ * fallback threw "Unclosed quotes" on perfectly valid RFC 4180. The
+ * `normalizeQuotes` option then papered over the damage by deleting the quote
+ * sitting next to the newline — silently corrupting the value on the way out.
+ *
+ * A newline ends a record only outside quotes. A doubled quote inside a
+ * quoted field is an escaped quote, never a terminator. Quotes are kept in
+ * place here; parseCsvLine still owns unescaping.
+ */
+function splitCsvRecords(text: string): string[] {
+  const records: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (char === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        current += '""';
+        i++;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      current += char;
+      continue;
+    }
+
+    if (!inQuotes && (char === '\n' || char === '\r')) {
+      if (char === '\r' && text[i + 1] === '\n') {
+        i++;
+      }
+      records.push(current);
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  records.push(current);
+  return records.filter(record => record.trim().length > 0);
+}
+
 function parseCsvLine(
   line: string,
   delimiter: string,
@@ -885,9 +960,9 @@ function parseCsvLine(
       quoteChar = char;
     } else if (inQuotes && char === quoteChar && nextChar === quoteChar) {
       currentField += char;
-      if (i + 2 === line.length) {
-        inQuotes = false;
-      }
+      // A doubled quote is always an escaped quote. Closing the field when
+      // it happened to end the line mis-parsed every record whose quoted
+      // value ended with an escaped quote before a newline.
       i++;
     } else if (inQuotes && char === quoteChar) {
       inQuotes = false;
@@ -1173,8 +1248,16 @@ export function* csvToJsonIterator(
     cache,
     onError = 'throw',
     errorHandler,
-    repairRowShifts = true,
-    normalizeQuotes = true,
+    // Off by default since 4.0. It re-joined rows that the old newline
+    // split tore apart mid-quote. splitCsvRecords keeps them whole, so
+    // the merge heuristic now fires on correctly parsed data and
+    // corrupts it: any value holding a quote was a merge candidate.
+    repairRowShifts = false,
+    // Off by default since 4.0. It collapsed every doubled quote and
+    // deleted any quote adjacent to a newline, so a value such as
+    // a "q" followed by a newline lost its closing quote. The parser
+    // is quote-aware now and has nothing left for it to repair.
+    normalizeQuotes = false,
     memoryWarningThreshold = 1000000,
     memoryLimit = 5000000
   } = opts;
@@ -1437,7 +1520,7 @@ export function* csvToJsonIterator(
   }
 
   // Split into lines
-  const lines = processedCsv.split('\n').filter(line => line.trim().length > 0);
+  const lines = splitCsvRecords(processedCsv);
   
   if (lines.length === 0) {
     return;

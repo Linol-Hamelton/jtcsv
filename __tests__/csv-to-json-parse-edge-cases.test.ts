@@ -178,13 +178,20 @@ describe('CSV to JSON Parse Edge Cases - Uncovered Lines', () => {
       expect(result[0].text).toBe('test"quoted');
     });
 
-    test('should handle pattern "" at end of quoted field - special case', () => {
-      // This tests the specific branch: if (i + 2 === line.length)
-      // Pattern "" at the very end of the line
+    test('an unterminated quoted field raises ParsingError', () => {
+      // `"test""` opens a field, holds an escaped quote, and never closes. It
+      // used to return `test"` because parseCsvLine treated a doubled quote as
+      // a closer whenever it happened to land at the end of the line — the
+      // branch `if (i + 2 === line.length)`. That guess mis-parsed valid input
+      // whose quoted value ended with an escaped quote before a newline, so it
+      // is gone. Genuinely unterminated input now says so.
       const csv = 'id;text\n1;"test""';
-      const result = csvToJson(csv, { delimiter: ';' });
-      // According to code: first quote is part of field, second closes quote
-      expect(result[0].text).toBe('test"');
+      expect(() => csvToJson(csv, { delimiter: ';' })).toThrow(/[Uu]nclosed/);
+    });
+
+    test('a properly closed escaped quote at the end of a field parses', () => {
+      const csv = 'id;text\n1;"test"""';
+      expect(csvToJson(csv, { delimiter: ';' })[0].text).toBe('test"');
     });
     
     test('should handle pattern "" not at end of line', () => {

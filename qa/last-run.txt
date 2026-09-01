@@ -1,0 +1,112 @@
+jtcsv control test — 2026-09-01T21:46:56.768Z
+node v22.21.0 on win32
+==============================================================================
+
+## 1. Core conversion
+  ok   jsonToCsv emits a comma by default
+  ok   jsonToCsv honours an explicit delimiter
+  ok   jsonToCsv quotes a field containing the delimiter
+  ok   jsonToCsv doubles an embedded quote
+  ok   jsonToCsv quotes a field containing a newline
+  ok   jsonToCsv guards against CSV injection
+  ok   jsonToCsv on an empty array does not throw
+  ok   csvToJson parses a plain row
+  ok   csvToJson keeps a quoted delimiter intact
+  ok   csvToJson keeps a quoted newline intact
+  ok   csvToJson unescapes a doubled quote
+  ok   csvToJson maps an empty field to null
+  ok   csvToJson leaves values as strings by default
+  ok   csvToJson converts with parseNumbers
+  ok   csvToJson handles CRLF
+  ok   csvToJson skips a blank line
+  ok   csvToJson auto-detects a semicolon file
+  ok   csvToJson auto-detects a tab file
+  ok   csvToJson on an empty string returns []
+  ok   csvToJson on a header-only file returns []
+  ok   csvToJson strips a UTF-8 BOM from the first header
+  ok   csvToJson rejects a non-string input
+  ok   ROUND-TRIP: csv -> json -> csv is stable
+  ok   ROUND-TRIP survives unicode and emoji
+  ok   csvToJsonAsync matches the sync result
+  ok   jsonToCsvAsync matches the sync result
+  ok   csvToJsonIterator yields every row
+
+## 2. File IO
+  ok   readCsvAsJson reads a file
+  ok   readCsvAsJsonSync reads a file
+  ok   readCsvAsJson rejects a missing file
+  ok   saveAsCsv writes a readable file
+  ok   saveAsJson writes valid JSON
+  ok   saveAsJsonSync writes valid JSON
+  ok   validateFilePath rejects a traversal attempt
+
+## 3. Streams
+  ok   createCsvToJsonStream emits parsed rows
+  ok   createJsonToCsvStream emits CSV text
+  ok   createCsvFileToJsonStream reads from disk
+  ok   a quoted newline survives a chunk split
+  ok   streamCsvToJson(csv) resolves to rows
+
+## 4. NDJSON
+  ok   jsonToNdjson emits one object per line
+  ok   ndjsonToJson parses back
+  ok   ROUND-TRIP: json -> ndjson -> json
+  ok   getNdjsonStats reports a line count
+
+## 5. TSV
+  ok   jsonToTsv separates with tabs
+  ok   tsvToJson parses tabs
+  ok   ROUND-TRIP: json -> tsv -> json
+  ok   isTsv recognises tab-separated text
+  ok   isTsv rejects comma-separated text
+  ok   validateTsv returns a verdict
+
+## 6. Utilities
+  ok   autoDetectDelimiter finds a comma
+  ok   autoDetectDelimiter finds a semicolon
+  ok   autoDetectDelimiter finds a tab
+  ok   autoDetectDelimiter finds a pipe
+  ok   detectEncoding returns an encoding name
+  ok   isEmail accepts a valid address
+  ok   isEmail rejects a bare word
+  ok   isUrl accepts an https URL
+  ok   isDate accepts an ISO date
+  ok   preprocessData flattens nested input
+  ok   deepUnwrap unwraps a nested value
+
+## 7. Errors
+  ok   ERROR_CODES is exposed
+  ok   error classes are constructible and instanceof Error
+  ok   an unclosed quote raises ParsingError
+  ok   ParsingError carries a line number
+  ok   maxRows raises LimitError
+
+## 8. Deprecated aliases
+  ok   csvToJsonFile alias still resolves
+  ok   csvToJsonStream alias still resolves
+  ok   csvFileToJsonStream alias still resolves
+
+## 9. Subpath exports (CJS)
+  ok   require("jtcsv/csv") resolves and exports csvToJson
+  ok   require("jtcsv/json") resolves and exports jsonToCsv
+  ok   require("jtcsv/streams") resolves and exports createCsvToJsonStream
+  ok   require("jtcsv/ndjson") resolves and exports jsonToNdjson
+  ok   require("jtcsv/tsv") resolves and exports jsonToTsv
+  ok   require("jtcsv/errors") resolves and exports ValidationError
+  ok   require("jtcsv/schema") resolves
+  ok   require("jtcsv/plugins") resolves
+  ok   jtcsv/csv parses identically to the barrel
+  ok   jtcsv/json serialises identically to the barrel
+
+## 10. Adversarial input
+  ok   a row longer than the header drops the extra field
+  ok   a row shorter than the header leaves the key undefined (known gap)
+  ok   a lone quote inside an unquoted field does not hang
+  ok   a 10k-row file parses
+  ok   a field of 100k characters survives a round trip
+  ok   a header containing the delimiter round-trips
+  ok   null and undefined values serialise without throwing
+  ok   a nested object does not crash the serialiser
+
+==============================================================================
+total 86  passed 86  failed 0
