@@ -18,6 +18,10 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      # The CLI suite drives dist/bin/jtcsv.js through argv, so the bundle has
+      # to exist before the tests run; tsc:build emits declarations only.
+      - name: Build
+        run: npm run build
       - name: Run tests with coverage
         run: npm run test:coverage:entry
       - name: Upload coverage to Codecov
