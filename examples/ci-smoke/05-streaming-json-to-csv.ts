@@ -9,7 +9,8 @@ import { streamJsonToCsv } from 'jtcsv/streams';
     { id: 3, name: 'Linus' },
   ];
 
-  // Default delimiter is ';' — pin to ',' for a predictable shape.
+  // Comma is the default since 4.0; pinned here so the assertion below
+  // does not depend on it.
   const csv = await streamJsonToCsv(data, { delimiter: ',' });
   assert.equal(typeof csv, 'string');
 

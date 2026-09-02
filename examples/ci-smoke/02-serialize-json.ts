@@ -7,13 +7,15 @@ const data = [
   { firstName: 'Grace', lvl: 2 },
 ];
 
-// Default delimiter for jtcsv is ';'
+// Default delimiter is ',' — CSV means comma-separated values, and every
+// other parser in the ecosystem agrees. It was ';' before 4.0, which produced
+// files that broke Excel outside continental Europe.
 const def = jsonToCsv(data);
-assert.equal(def.split(/\r?\n/)[0], 'firstName;lvl');
+assert.equal(def.split(/\r?\n/)[0], 'firstName,lvl');
 
-// Custom delimiter
-const comma = jsonToCsv(data, { delimiter: ',' });
-assert.equal(comma.split(/\r?\n/)[0], 'firstName,lvl');
+// Custom delimiter, for the European convention or anything else
+const semi = jsonToCsv(data, { delimiter: ';' });
+assert.equal(semi.split(/\r?\n/)[0], 'firstName;lvl');
 
 // renameMap rewrites the header row
 const renamed = jsonToCsv(data, {
