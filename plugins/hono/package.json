@@ -28,7 +28,7 @@
   },
   "peerDependencies": {
     "hono": "^4.0.0",
-    "jtcsv": "^3.2.3"
+    "jtcsv": "^4.0.0"
   },
   "publishConfig": {
     "access": "public",
