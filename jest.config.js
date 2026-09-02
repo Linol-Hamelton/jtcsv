@@ -8,7 +8,7 @@
 //
 // The strict numbers used to be a flat 85/85/85/85 — the roadmap's target,
 // not a measurement. The suite has never been near it: entry scope sits at
-// ~75 and full scope at ~67. Nobody noticed because the gate never ran;
+// ~72 and full scope at ~66. Nobody noticed because the gate never ran;
 // every CI job on main failed earlier in the pipeline from 12 June onward.
 // A gate that cannot pass carries no information, so these are now floors
 // taken from real runs. Raise them as coverage improves — that is the whole
@@ -26,12 +26,18 @@ const COVERAGE_SCOPE = process.env.JTCSV_COVERAGE_SCOPE || 'full';
 // measurement turns the gate into a coin flip. One point of slack still
 // catches any real regression.
 //
-// Entry scope: the seven root entry modules only (measured 75.5 / 66.5 /
-// 75.6 / 75.1). This is the gate ci.yml and coverage.yml run.
-const ENTRY_THRESHOLDS  = { branches: 65, functions: 74, lines: 74, statements: 74 };
-// Full scope: entry modules plus everything under src/ (measured 64.4 /
-// 58.4 / 67.2 / 66.8).
-const FULL_THRESHOLDS   = { branches: 63, functions: 57, lines: 66, statements: 65 };
+// Re-baselined for 4.0. repairRowShifts and normalizeQuotes are off by
+// default now, so the compensating layers they drove no longer run and took
+// about three points with them. That code is still reachable through the
+// options, so it is not dead — just off the default path. Deleting it
+// outright would lift these numbers again.
+//
+// Entry scope: the seven root entry modules only (measured 71.9 / 64.5 /
+// 72.6 / 71.4). This is the gate ci.yml and coverage.yml run.
+const ENTRY_THRESHOLDS  = { branches: 63, functions: 71, lines: 70, statements: 70 };
+// Full scope: entry modules plus everything under src/ (measured 63.9 /
+// 58.9 / 66.3 / 66.1).
+const FULL_THRESHOLDS   = { branches: 62, functions: 57, lines: 65, statements: 65 };
 const SOFT_THRESHOLDS   = { branches: 65, functions: 70, lines: 70, statements: 70 };
 const ACTIVE_THRESHOLDS = ENFORCE_COVERAGE
   ? (COVERAGE_SCOPE === 'entry' ? ENTRY_THRESHOLDS : FULL_THRESHOLDS)

@@ -14,13 +14,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Built before the tests: the CLI suite drives dist/bin/jtcsv.js through
+      # argv, and tsc:build only emits declarations. release.yml builds first
+      # for the same reason.
+      - run: npm run build
       - run: npm run tsc:check
       - run: npm run tsc:types
       - run: npm run test:types
       - run: npm run test:ci
       - run: npm run test:coverage:entry
       - run: npm run lint
-      - run: npm run build
       - run: npm run verify:browser
 
   macos-test:
@@ -32,6 +35,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run test:ci
 
   examples-smoke:
