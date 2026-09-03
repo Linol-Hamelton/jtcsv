@@ -1,6 +1,4 @@
 # Plugin Authoring Guide
-Current version: 3.1.0
-
 
 This guide explains how to build custom JTCSV plugins for `jtcsv/plugins`.
 

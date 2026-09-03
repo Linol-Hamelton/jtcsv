@@ -1,6 +1,4 @@
 # Инструкции по сборке и развертыванию jtcsv Browser Edition
-Current version: 3.1.0
-
 
 ## Установка зависимостей
 
@@ -48,7 +46,7 @@ jtcsv/
 │       └── csv-parser.worker.js # Worker скрипт
 ├── dist/                    # Собранные файлы
 │   ├── jtcsv.umd.js        # UMD версия (для браузера)
-│   ├── jtcsv.esm.js        # ESM версия (для модулей)
+│   ├── jtcsv.mjs           # ESM версия (для модулей)
 │   └── jtcsv.cjs.js        # CJS версия (для Node.js)
 ├── demo/                    # Демо приложение
 │   └── index.html          # HTML демо
@@ -143,21 +141,23 @@ npm publish
 ### В браузере (ES модули)
 ```html
 <script type="module">
-  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsvst/jtcsv.esm.js';
+  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.mjs';
   const csv = jsonToCsv([{id: 1, name: 'John'}]);
 </script>
 ```
 
 ### В Node.js
 ```javascript
-const { jsonToCsv, csvToJson } = require('jtcsv
+const { jsonToCsv, csvToJson } = require('jtcsv');
 // или для браузерной версии
-const { downloadAsCsv } = require('jtcsv;
+const { downloadAsCsv } = require('jtcsv/browser');
 ```
 
 ### В современных бандлерах (Webpack, Vite, Rollup)
 ```javascript
-import { jsonToCsv, parseCsvFile } from 'jtcsv
+import { jsonToCsv } from 'jtcsv';
+// parseCsvFile работает с File/Blob и живёт в браузерной точке входа
+import { parseCsvFile } from 'jtcsv/browser';
 ```
 
 ## Оптимизация

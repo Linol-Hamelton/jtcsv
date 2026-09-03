@@ -1,6 +1,4 @@
 # ОТЧЕТ О РАЗРАБОТКЕ: УЛУЧШЕННАЯ ВЕРСИЯ JTCSV С БРАУЗЕРНОЙ ПОДДЕРЖКОЙ И WEB WORKERS
-Current version: 3.1.0
-
 
 ## 📅 Дата: 22 января 2026
 ## 🎯 Статус: ЗАВЕРШЕНО ✅
@@ -90,7 +88,7 @@ jtcsv/
 │       └── csv-parser.worker.js
 ├── dist/                    # Собранные файлы
 │   ├── jtcsv.umd.js        # UMD bundle
-│   ├── jtcsv.esm.js        # ESM bundle
+│   ├── jtcsv.mjs           # ESM bundle
 │   └── jtcsv.cjs.js        # CJS bundle
 ├── demo/                    # Демо приложение
 │   └── index.html          # HTML демо

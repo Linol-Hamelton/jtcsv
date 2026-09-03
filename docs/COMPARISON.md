@@ -249,7 +249,8 @@ JTCSV включает больше функций из коробки:
 - CLI tool
 - Plugin system
 
-Для минимального bundle используйте `jtcsv/dist/jtcsv-core.min.js`.
+Для минимального bundle импортируйте нужный subpath — `jtcsv/csv` тянет
+18.1 KB gzipped вместо 52.4 KB полного barrel.
 
 ### Совместим ли JTCSV с Papa Parse API?
 

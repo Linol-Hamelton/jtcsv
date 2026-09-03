@@ -1,5 +1,9 @@
 # 📋 ТЕХНИЧЕСКОЕ ЗАДАНИЕ: БРАУЗЕРНАЯ ПОДДЕРЖКА JTCSV
-Current version: 3.1.0
+
+> **Исторический документ.** Это техническое задание от января 2026 года;
+> описанная работа выполнена. Имена файлов сборки внутри (`jtcsv.esm.js`)
+> относятся к схеме именования до 4.0 — с 4.0 ESM-бандлы называются `.mjs`.
+> Актуальное состояние браузерного API — в [BROWSER.md](BROWSER.md).
 
 
 **Документ**: Объединённое техническое задание для разработчика  
@@ -602,7 +606,7 @@ const data = [
 ];
 
 // With npm
-import { downloadAsCsv } from 'jtcsv';
+import { downloadAsCsv } from 'jtcsv/browser';
 downloadAsCsv(data, 'data.csv');
 
 // With CDN (global jtcsv)

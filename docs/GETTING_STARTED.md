@@ -1,5 +1,4 @@
 # Getting Started (5 mins)
-Current version: 3.1.0
 
 This guide gives you copy-paste examples for the most common JTCSV use cases.
 

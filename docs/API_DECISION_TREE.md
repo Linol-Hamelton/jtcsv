@@ -1,6 +1,4 @@
 # API Decision Tree
-Current version: 3.1.0
-
 
 Use this guide to pick the right CSV -> JSON API depending on where your data lives and how big it is.
 

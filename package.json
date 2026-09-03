@@ -120,6 +120,7 @@
     "clean": "rimraf dist",
     "dev": "cross-env NODE_ENV=development rollup -c rollup.config.mjs -w",
     "verify:browser": "node scripts/verify-browser-build.js",
+    "verify:esm": "node scripts/verify-esm-bundles.js",
     "demo": "npm run build && node dist/run-demo.js",
     "demo:web": "cd demo && npm run dev",
     "demo:serve": "cd demo && npm run serve",

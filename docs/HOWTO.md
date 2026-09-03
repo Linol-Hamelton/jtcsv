@@ -1,6 +1,4 @@
 # How-to Guides for jtcsv
-Current version: 3.1.0
-
 
 ## Interactive basic usage
 <iframe

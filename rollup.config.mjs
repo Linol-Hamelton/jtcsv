@@ -5,6 +5,20 @@ import typescript from '@rollup/plugin-typescript';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Optional Node built-ins — worker_threads, os, glob — are loaded lazily via
+// require() so they can be probed where they may be absent. Rollup emits those
+// calls unchanged, and `require` does not exist in an ES module: every file
+// API threw "require is not defined" for ESM consumers while working fine
+// under CommonJS. The worker-script resolver reached for __dirname the same
+// way. Node-targeted ESM bundles get both back. The browser bundles
+// must NOT receive this — they never call require and cannot import node:module.
+const NODE_ESM_BANNER = `import { createRequire as __jtcsvCreateRequire } from 'node:module';
+import { fileURLToPath as __jtcsvFileURLToPath } from 'node:url';
+import { dirname as __jtcsvDirname } from 'node:path';
+const require = __jtcsvCreateRequire(import.meta.url);
+const __filename = __jtcsvFileURLToPath(import.meta.url);
+const __dirname = __jtcsvDirname(__filename);`;
+
 // engines.node >=18.17 + browserslist "supports es6-module" → TS target ES2022
 // is good enough; no Babel transpile needed. Removes ~30 babel devDeps.
 // `target` arg kept only to switch resolve.browser flag.
@@ -149,6 +163,7 @@ export default [
       {
         file: 'dist/index.mjs',
         format: 'es',
+        banner: NODE_ESM_BANNER,
         sourcemap: !isProduction,
         exports: 'named'
       }
@@ -170,6 +185,7 @@ export default [
       {
         file: 'dist/plugins.mjs',
         format: 'es',
+        banner: NODE_ESM_BANNER,
         sourcemap: !isProduction,
         exports: 'named'
       }
@@ -206,6 +222,7 @@ export default [
       {
         file: 'dist/schema.mjs',
         format: 'es',
+        banner: NODE_ESM_BANNER,
         sourcemap: !isProduction,
         exports: 'named'
       }
@@ -231,6 +248,7 @@ export default [
       {
         dir: 'dist',
         format: 'es',
+        banner: NODE_ESM_BANNER,
         entryFileNames: '[name].mjs',
         chunkFileNames: '_shared/[name]-[hash].mjs',
         sourcemap: !isProduction,

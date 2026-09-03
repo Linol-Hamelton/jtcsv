@@ -1,6 +1,4 @@
 # jtcsv Browser API
-Current version: 3.1.0
-
 
 This document describes the browser bundle and helpers exported from `src/browser`.
 
@@ -19,7 +17,7 @@ If you publish a browser-only package, the name used in this repo is `jtcsv-brow
 
 <!-- ESM -->
 <script type="module">
-  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.esm.js';
+  import { jsonToCsv } from 'https://cdn.jsdelivr.net/npm/jtcsv/dist/jtcsv.mjs';
 </script>
 ```
 

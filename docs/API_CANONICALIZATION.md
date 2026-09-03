@@ -1,5 +1,4 @@
 # API Canonicalization Guide
-Current version: 3.1.0
 
 This guide standardizes which function names to prefer in docs and examples.
 Aliases remain supported for compatibility, but the canonical names below are the ones

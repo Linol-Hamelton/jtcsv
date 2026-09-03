@@ -213,3 +213,7 @@ docs/.typedoc/
 docs/api/**
 !docs/api/
 !docs/api/*.md
+
+# QA harness writes these on every run; qa/last-run.txt is the kept snapshot.
+qa/report.txt
+qa/report.json

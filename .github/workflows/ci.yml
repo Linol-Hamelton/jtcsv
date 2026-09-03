@@ -25,6 +25,7 @@ jobs:
       - run: npm run test:coverage:entry
       - run: npm run lint
       - run: npm run verify:browser
+      - run: npm run verify:esm
 
   macos-test:
     runs-on: macos-latest

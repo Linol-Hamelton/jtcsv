@@ -1,6 +1,4 @@
 # Streaming Guide for jtcsv
-Current version: 3.1.0
-
 
 ## Overview
 
@@ -38,7 +36,7 @@ If you are parsing large CSV/JSON payloads in memory, prefer streaming APIs:
 Creates a transform stream that converts CSV chunks to JSON objects.
 
 ```javascript
-const { createCsvToJsonStream } = require('jtcsv/stream-csv-to-json');
+const { createCsvToJsonStream } = require('jtcsv/streams');
 const fs = require('fs');
 const { pipeline } = require('stream/promises');
 
@@ -94,7 +92,7 @@ async function processWithIterator() {
 Creates a transform stream that converts JSON objects to CSV rows.
 
 ```javascript
-const { createJsonToCsvStream } = require('jtcsv/stream-json-to-csv');
+const { createJsonToCsvStream } = require('jtcsv/streams');
 const fs = require('fs');
 
 async function exportLargeDataset() {
@@ -141,7 +139,7 @@ async function streamFromDatabase() {
 ### Example 1: Processing 10GB CSV File
 
 ```javascript
-const { createCsvToJsonStream } = require('jtcsv/stream-csv-to-json');
+const { createCsvToJsonStream } = require('jtcsv/streams');
 const fs = require('fs');
 const { pipeline } = require('stream/promises');
 
@@ -231,7 +229,7 @@ async function realTimePipeline() {
 ### Example 3: Error Handling in Streams
 
 ```javascript
-const { createCsvToJsonStream } = require('jtcsv/stream-csv-to-json');
+const { createCsvToJsonStream } = require('jtcsv/streams');
 
 async function robustStreamProcessing() {
   const errorLog = fs.createWriteStream('./errors.log');
@@ -302,7 +300,7 @@ const optimizations = {
 ### 2. Memory Monitoring
 
 ```javascript
-const { createCsvToJsonStream } = require('jtcsv/stream-csv-to-json');
+const { createCsvToJsonStream } = require('jtcsv/streams');
 
 function createMemoryAwareStream() {
   let memoryWarning = false;
@@ -326,7 +324,7 @@ function createMemoryAwareStream() {
 ### 3. Parallel Processing
 
 ```javascript
-const { createCsvToJsonStream } = require('jtcsv/stream-csv-to-json');
+const { createCsvToJsonStream } = require('jtcsv/streams');
 const { Transform } = require('stream');
 const { Worker } = require('worker_threads');
 
@@ -373,19 +371,22 @@ fs.createReadStream('./large.csv')
 ### Web Streams API Support
 
 ```javascript
-import { createCsvToJsonStream } from 'jtcsv/browser';
+import { csvToJsonStream } from 'jtcsv/browser';
 
 async function processInBrowser() {
   const response = await fetch('/api/large-csv');
-  const csvStream = response.body;
-  
-  const jsonStream = createCsvToJsonStream({
+
+  // The source is the first argument: csvToJsonStream accepts a string,
+  // a File/Blob, or a ReadableStream such as response.body, and returns a
+  // ReadableStream of parsed rows.
+  const jsonStream = csvToJsonStream(response.body, {
     delimiter: ',',
     hasHeaders: true
   });
-  
+
   const reader = jsonStream.getReader();
-  
+  let lastYield = performance.now();
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;

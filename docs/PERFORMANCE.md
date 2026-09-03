@@ -1,4 +1,3 @@
-Current version: 3.1.0
 
 ﻿# JTCSV Performance
 
@@ -29,7 +28,7 @@ JSON -> CSV (10K records)
 | 10,000 | 14.68 ms | 8.23 ms | 2.11 MB | 4.14 MB |
 | 100,000 | 164.18 ms | 90.93 ms | 44.93 MB | 34.79 MB |
 
-## Performance Optimizations (v2.2.9+)
+## Performance Optimizations
 
 JTCSV includes several performance optimizations to ensure maximum speed and minimal memory footprint:
 

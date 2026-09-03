@@ -1,6 +1,4 @@
 # ⚡ КРАТКОЕ РЕЗЮМЕ ДЛЯ ПРОГРАММИСТА
-Current version: 3.1.0
-
 
 **Читай это первым!** (5 минут)
 
@@ -75,8 +73,8 @@ npm publish
 
 ### После выполнения:
 ```
-dist/jtcsv.umd.js      (~4KB gzipped) - для браузера
-dist/jtcsv.esm.js      (~3KB) - для современных модулей
+dist/jtcsv.umd.js      (~16.7 KB gzipped) - для браузера
+dist/jtcsv.mjs         (~16.0 KB gzipped) - для современных модулей
 ```
 
 ### Использование в браузере:

@@ -1,6 +1,4 @@
 # Community Plugin Registry
-Current version: 3.1.0
-
 
 This page lists community-maintained plugins and integrations for JTCSV.
 

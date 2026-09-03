@@ -1,6 +1,4 @@
 # JTCSV Command Line Interface
-Current version: 3.1.0
-
 
 ## Install
 ```bash

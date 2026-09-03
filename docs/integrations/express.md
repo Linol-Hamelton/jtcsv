@@ -9,7 +9,7 @@ Accept CSV uploads in an Express API and return JSON or NDJSON with solid error 
 const express = require('express');
 const Busboy = require('busboy');
 const { Transform } = require('stream');
-const { createCsvToJsonStream } = require('jtcsv/stream-csv-to-json');
+const { createCsvToJsonStream } = require('jtcsv/streams');
 
 const app = express();
 

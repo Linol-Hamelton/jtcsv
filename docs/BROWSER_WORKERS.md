@@ -1,6 +1,4 @@
 # Browser API: Web Workers
-Current version: 3.1.0
-
 
 JTCSV includes a browser worker pool for CSV parsing to keep large workloads off the main thread.
 

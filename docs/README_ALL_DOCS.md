@@ -1,6 +1,4 @@
 # Documentation index
-Current version: 3.1.0
-
 
 This folder contains supporting docs for the JTCSV project.
 Start with `README.md` for the unified docs hub.

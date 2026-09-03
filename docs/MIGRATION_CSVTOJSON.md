@@ -1,6 +1,4 @@
 # Migration Guide: csvtojson to jtcsv
-Current version: 3.1.0
-
 
 This guide helps you migrate from [csvtojson](https://github.com/Keyang/node-csvtojson) to jtcsv. Both libraries handle CSV parsing, but jtcsv offers bidirectional conversion, better performance, and enhanced security features.
 

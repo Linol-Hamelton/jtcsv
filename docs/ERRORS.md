@@ -1,6 +1,4 @@
 # JTCSV Error Codes and Recovery
-Current version: 3.1.0
-
 
 This page lists machine-readable error codes, error shapes, and recovery steps.
 For practical fixes and examples, see `TROUBLESHOOTING.md`.

@@ -1,6 +1,4 @@
 # jtcsv Testing Guide
-Current version: 3.1.0
-
 
 Complete guide to running tests and performance benchmarks for jtcsv.
 
@@ -369,7 +367,9 @@ node --inspect-brk node_modules/jest/bin/jest --runInBand
 
 ## Performance Baseline
 
-Current performance (as of v2.2.0):
+Current performance. Reproduce with `npm run benchmark:vs`; CI publishes
+the live table to each run summary, so these figures date rather than the
+version label pinning them:
 
 | Operation | Throughput |
 |-----------|------------|

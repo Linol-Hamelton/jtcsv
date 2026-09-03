@@ -9,7 +9,7 @@ Accept CSV uploads in Fastify and return parsed JSON or NDJSON.
 const fastify = require('fastify')({ logger: true });
 const multipart = require('@fastify/multipart');
 const { Transform } = require('stream');
-const { createCsvToJsonStream } = require('jtcsv/stream-csv-to-json');
+const { createCsvToJsonStream } = require('jtcsv/streams');
 
 fastify.register(multipart);
 

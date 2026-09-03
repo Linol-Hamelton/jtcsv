@@ -1,6 +1,4 @@
 # Public Benchmarks
-Current version: 3.1.0
-
 
 This page summarizes how JTCSV benchmarks are generated and where to find artifacts.
 

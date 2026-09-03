@@ -1,6 +1,4 @@
 # JTCSV Documentation
-Current version: 3.1.0
-
 
 Welcome to the JTCSV docs hub. Start here, then dive into the topic pages.
 

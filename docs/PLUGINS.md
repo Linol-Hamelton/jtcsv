@@ -1,6 +1,4 @@
 # JTCSV plugin system
-Current version: 3.1.0
-
 
 The plugin-enabled API is exported from `jtcsv/plugins` (see `src/index-with-plugins.js`).
 It wraps the core JSON/CSV functions with hook and middleware support.

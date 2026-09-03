@@ -1,6 +1,4 @@
 # Schema Validator Format
-Current version: 3.1.0
-
 
 JTCSV supports a lightweight schema format for validating and normalizing rows.
 You can pass it via the `schema` option or `--schema` in the CLI.

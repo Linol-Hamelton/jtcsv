@@ -1,6 +1,4 @@
 # JTCSV Performance Benchmark Results
-Current version: 3.1.0
-
 
 ## 📊 Test Environment
 

@@ -1,5 +1,4 @@
 # Troubleshooting
-Current version: 3.1.0
 
 This guide lists common JTCSV issues and practical fixes.
 
