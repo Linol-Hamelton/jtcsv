@@ -10,6 +10,7 @@ import {
 } from './errors-browser';
 
 import type { CsvToJsonOptions } from '../types';
+import { createValueNormalizer } from '../core/value-normalizer';
 
 /**
  * Валидация опций парсинга
@@ -183,22 +184,17 @@ function tokenizeCsv(text: string, delimiter: string): string[][] {
  * полностью игнорируя `parseNumbers`, — один и тот же CSV давал разные
  * типы в Node и в браузере.
  */
-function coerceField(raw: string, parseNumbers: boolean): any {
-  const value = raw.trim();
-  if (value === '') {
-    return null;
-  }
-  if (parseNumbers && /^-?\d+(\.\d+)?$/.test(value)) {
-    return parseFloat(value);
-  }
-  return value;
-}
+// Field coercion lives in src/core/value-normalizer so that both runtimes
+// apply the same rule. The local version here ignored `trim`, never
+// implemented `parseBooleans`, matched a narrower set of numbers, and left the
+// preventCsvInjection apostrophe in place, so the browser disagreed with Node
+// on six kinds of value.
 
 /**
  * Собирает объекты строк из токенизированных записей по тем же правилам
  * формы, что и Node: поля сверх количества заголовков отбрасываются, а
- * заголовки, которым в короткой записи не хватило поля, в объект не
- * попадают вовсе.
+ * заголовки, которым в короткой записи не хватило поля, попадают в объект
+ * со значением undefined.
  */
 function recordsToRows(
   records: string[][],
@@ -220,14 +216,22 @@ function recordsToRows(
     );
   }
 
+  const normalizeValue = createValueNormalizer(
+    options.trim !== false,
+    parseNumbers,
+    options.parseBooleans === true
+  );
+
   const rows: Record<string, any>[] = [];
   for (const record of dataRecords) {
     const row: Record<string, any> = {};
     for (let i = 0; i < headers.length; i++) {
-      if (i >= record.length) {
-        continue;
-      }
-      row[headers[i]] = coerceField(record[i], parseNumbers);
+      // A header with no field in this record still gets its key, holding
+      // undefined — the shape Node produces. Omitting the key instead made the
+      // two runtimes return different shapes for the same short row, and
+      // Jest's toEqual ignores undefined properties, so the parity suite could
+      // not see the difference.
+      row[headers[i]] = normalizeValue(record[i]);
     }
     rows.push(row);
   }

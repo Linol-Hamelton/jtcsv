@@ -24,6 +24,8 @@ import { CsvToJsonStreamOptions, AnyObject, AnyArray } from './src/types';
 import { createSchemaValidators } from './src/utils/schema-validator';
 import { createBomStripStream } from './src/utils/bom-utils';
 import { parallelCsvToJson } from './src/workers/parallelize';
+import { parseCsvLine } from './src/core/csv-tokenizer';
+import { createValueNormalizer } from './src/core/value-normalizer';
 
 /**
  * Creates a transform stream that converts CSV chunks to JSON objects
@@ -80,6 +82,7 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
       hasHeaders = true,
       renameMap = {},
       trim = true,
+      rfc4180Compliant = true,
       parseNumbers = false,
       parseBooleans = false,
       maxRows = Infinity,
@@ -151,35 +154,7 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
     let pendingRowLineNumber: number | null = null;
     let pendingRowLine: string | null = null;
 
-    const normalizeValue = (value: any): any => {
-      let normalized = value;
-      if (trim && typeof normalized === 'string') {
-        normalized = normalized.trim();
-      }
-      if (typeof normalized === 'string') {
-        if (normalized === '') {
-          return null;
-        }
-        if (normalized[0] === "'" && normalized.length > 1) {
-          const candidate = normalized.slice(1);
-          const leading = trim ? candidate.trimStart() : candidate;
-          const firstChar = leading[0];
-          if (firstChar === '=' || firstChar === '+' || firstChar === '-' || firstChar === '@') {
-            normalized = candidate;
-          }
-        }
-      }
-      if (parseNumbers && typeof normalized === 'string' && normalized.trim() !== '' && !isNaN(Number(normalized))) {
-        normalized = Number(normalized);
-      }
-      if (parseBooleans && normalized !== null && normalized !== undefined) {
-        const lowerValue = String(normalized).toLowerCase();
-        if (lowerValue === 'true' || lowerValue === 'false') {
-          normalized = lowerValue === 'true';
-        }
-      }
-      return normalized;
-    };
+    const normalizeValue = createValueNormalizer(trim, parseNumbers, parseBooleans);
 
     const isEmptyValue = (value: any): boolean =>
       value === undefined || value === null || value === '';
@@ -450,7 +425,7 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
               }
               
               // Parse CSV line
-              const values = parseCsvLine(line, finalDelimiter, trim, inputLineNumber);
+              const values = parseCsvLine(line, finalDelimiter, trim, inputLineNumber, { rfc4180Compliant });
               
               // Process headers
               if (!headersProcessed) {
@@ -557,7 +532,7 @@ export function createCsvToJsonStream(options: CsvToJsonStreamOptions = {}): Tra
                 finalDelimiter = ';';
               }
               
-              const values = parseCsvLine(buffer, finalDelimiter, trim, inputLineNumber);
+              const values = parseCsvLine(buffer, finalDelimiter, trim, inputLineNumber, { rfc4180Compliant });
               
               if (!headersProcessed) {
                 if (hasHeaders) {
@@ -916,70 +891,4 @@ function autoDetectDelimiterFromLine(
   }
   
   return bestDelimiter;
-}
-
-/**
- * Parses a single CSV line
- */
-function parseCsvLine(
-  line: string,
-  delimiter: string,
-  trim: boolean,
-  lineNumber?: number
-): string[] {
-  const result: string[] = [];
-  let currentField = '';
-  let inQuotes = false;
-  let quoteChar = '"';
-  let escapeNext = false;
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = i < line.length - 1 ? line[i + 1] : '';
-
-    if (escapeNext) {
-      currentField += char;
-      escapeNext = false;
-      continue;
-    }
-
-    if (char === '\\') {
-      escapeNext = true;
-      continue;
-    }
-    
-    if (!inQuotes && char === delimiter) {
-      result.push(trim ? currentField.trim() : currentField);
-      currentField = '';
-    } else if (!inQuotes && (char === '"' || char === "'")) {
-      inQuotes = true;
-      quoteChar = char;
-    } else if (inQuotes && char === quoteChar && nextChar === quoteChar) {
-      currentField += char;
-      if (i + 2 === line.length) {
-        inQuotes = false;
-      }
-      i++;
-    } else if (inQuotes && char === quoteChar) {
-      inQuotes = false;
-    } else {
-      currentField += char;
-    }
-  }
-
-  if (escapeNext) {
-    currentField += '\\';
-  }
-  
-  result.push(trim ? currentField.trim() : currentField);
-  
-  if (inQuotes) {
-    throw ParsingError.unclosedQuotes(
-      lineNumber ?? null,
-      null,
-      line.substring(0, 100)
-    );
-  }
-  
-  return result;
 }

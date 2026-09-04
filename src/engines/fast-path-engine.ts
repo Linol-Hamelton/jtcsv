@@ -66,7 +66,12 @@ class FastPathEngine {
     const sampleSize = Math.min(1000, csv.length);
     const sample = csv.substring(0, sampleSize);
     const structure = this.analyzeStructure(sample, options);
-    const hasBackslashes = this._hasBackslashes(csv);
+    // RFC 4180 has no escape character, so under the default dialect a
+    // backslash is ordinary data and must not route to the escape-aware
+    // emitters: they collapse it, and a Windows path lost its separators
+    // silently. Only the legacy dialect still gets them.
+    const hasBackslashes = options?.rfc4180Compliant === false
+      && this._hasBackslashes(csv);
     const hasQuotes = structure.hasQuotes ? true : this._hasQuotes(csv);
     const hasEscapedQuotes = structure.hasEscapedQuotes
       ? true

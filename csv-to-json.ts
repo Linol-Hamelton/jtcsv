@@ -21,6 +21,8 @@ import { DelimiterCache } from './src/core/delimiter-cache';
 import { parallelCsvToJson } from './src/workers/parallelize';
 import FastPathEngine from './src/engines/fast-path-engine';
 import { normalizeCsvInput } from './src/utils/bom-utils';
+import { parseCsvLine } from './src/core/csv-tokenizer';
+import { createValueNormalizer } from './src/core/value-normalizer';
 import { CsvToJsonOptions, AsyncCsvToJsonOptions, AnyObject, AnyArray } from './src/types';
 
 // Глобальный экземпляр кэша для авто-детектирования разделителя
@@ -288,69 +290,6 @@ function refineDelimiterFromHeaderLine(
 /* ------------------------------------------------------------------------- */
 
 /**
- * Builds the function that turns one raw CSV field into its JSON value.
- *
- * A factory rather than a plain function because this runs once per field of
- * every row: the option lookups are hoisted out of the hot loop, which is what
- * the hand-written copies were also doing.
- *
- * Those copies are why this exists. Three were byte-identical closures — two
- * nested inside csvToJson, one inside csvToJsonAsync — and a fourth, inline in
- * the synchronous standard path, quietly disagreed with them on two points: it
- * coerced anything `Number()` accepted (so "Infinity", and with `trim: false`
- * also "  12", became numbers) and it never stripped the apostrophe that
- * `preventCsvInjection` writes in front of a formula, so `jsonToCsv` ->
- * `csvToJson` did not round-trip. The same input therefore parsed differently
- * depending on whether the fast path happened to be taken — and the fast path
- * turns itself off whenever the input contains an escaped quote, which is to
- * say on exactly the RFC 4180 files where it matters.
- */
-function createValueNormalizer(
-  trim: boolean,
-  parseNumbers: boolean,
-  parseBooleans: boolean
-): (_value: any) => any {
-  return (value: any): any => {
-    let normalized = value;
-    if (trim && typeof normalized === 'string') {
-      normalized = normalized.trim();
-    }
-    if (typeof normalized === 'string') {
-      if (normalized === '') {
-        return null;
-      }
-      if (normalized[0] === "'" && normalized.length > 1) {
-        const candidate = normalized.slice(1);
-        const leading = trim ? candidate.trimStart() : candidate;
-        const firstChar = leading[0];
-        if (firstChar === '=' || firstChar === '+' || firstChar === '-' || firstChar === '@') {
-          normalized = candidate;
-        }
-      }
-    }
-    if (parseNumbers && typeof normalized === 'string') {
-      const firstChar = normalized[0];
-      if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '+' || firstChar === '.') {
-        const numValue = Number(normalized);
-        if (!Number.isNaN(numValue)) {
-          normalized = numValue;
-        }
-      }
-    }
-    if (parseBooleans && typeof normalized === 'string') {
-      const firstChar = normalized[0];
-      if (firstChar === 't' || firstChar === 'T' || firstChar === 'f' || firstChar === 'F') {
-        const lowerValue = normalized.toLowerCase();
-        if (lowerValue === 'true' || lowerValue === 'false') {
-          normalized = lowerValue === 'true';
-        }
-      }
-    }
-    return normalized;
-  };
-}
-
-/**
  * Makes a row's field count match the header count.
  *
  * Extra fields are dropped; missing ones are filled with `undefined`, which
@@ -425,6 +364,7 @@ export function csvToJson(
       parseNumbers = false,
       parseBooleans = false,
       warnExtraFields = false,
+      rfc4180Compliant = true,
       maxRows,
       useFastPath = true,
       fastPathMode = 'objects',
@@ -548,7 +488,8 @@ export function csvToJson(
           parseNumbers,
           parseBooleans,
           maxRows,
-          mode: fastPathMode
+          mode: fastPathMode,
+          rfc4180Compliant
         };
 
         if (typeof (globalFastPathEngine as any).parse === 'function') {
@@ -759,11 +700,11 @@ export function csvToJson(
     
     if (hasHeaders) {
       const headerLine = lines[0];
-      headers = parseCsvLine(headerLine, finalDelimiter, trim, 1);
+      headers = parseCsvLine(headerLine, finalDelimiter, trim, 1, { rfc4180Compliant });
       dataRows = lines.slice(1);
     } else {
       // Generate default headers (col0, col1, ...)
-      const firstRow = parseCsvLine(lines[0], finalDelimiter, trim, 1);
+      const firstRow = parseCsvLine(lines[0], finalDelimiter, trim, 1, { rfc4180Compliant });
       headers = firstRow.map((_, index) => `column${index + 1}`);
     }
 
@@ -798,7 +739,7 @@ export function csvToJson(
         const line = dataRows[i];
         const lineNumber = hasHeaders ? i + 2 : i + 1;
         const values = reconcileFieldCount(
-          parseCsvLine(line, finalDelimiter, trim, lineNumber),
+          parseCsvLine(line, finalDelimiter, trim, lineNumber, { rfc4180Compliant }),
           finalHeaders.length,
           lineNumber,
           warnExtraFields
@@ -834,7 +775,7 @@ export function csvToJson(
       const lineNumber = hasHeaders ? i + 2 : i + 1;
       try {
         const values = reconcileFieldCount(
-          parseCsvLine(line, finalDelimiter, trim, lineNumber),
+          parseCsvLine(line, finalDelimiter, trim, lineNumber, { rfc4180Compliant }),
           finalHeaders.length,
           lineNumber,
           warnExtraFields
@@ -910,69 +851,6 @@ function splitCsvRecords(text: string): string[] {
 
   records.push(current);
   return records.filter(record => record.trim().length > 0);
-}
-
-function parseCsvLine(
-  line: string,
-  delimiter: string,
-  trim: boolean,
-  lineNumber?: number
-): string[] {
-  const result: string[] = [];
-  let currentField = '';
-  let inQuotes = false;
-  let quoteChar = '"';
-  let escapeNext = false;
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = i < line.length - 1 ? line[i + 1] : '';
-
-    if (escapeNext) {
-      currentField += char;
-      escapeNext = false;
-      continue;
-    }
-
-    if (char === '\\') {
-      escapeNext = true;
-      continue;
-    }
-    
-    if (!inQuotes && char === delimiter) {
-      result.push(trim ? currentField.trim() : currentField);
-      currentField = '';
-    } else if (!inQuotes && (char === '"' || char === "'")) {
-      inQuotes = true;
-      quoteChar = char;
-    } else if (inQuotes && char === quoteChar && nextChar === quoteChar) {
-      currentField += char;
-      // A doubled quote is always an escaped quote. Closing the field when
-      // it happened to end the line mis-parsed every record whose quoted
-      // value ended with an escaped quote before a newline.
-      i++;
-    } else if (inQuotes && char === quoteChar) {
-      inQuotes = false;
-    } else {
-      currentField += char;
-    }
-  }
-
-  if (escapeNext) {
-    currentField += '\\';
-  }
-  
-  result.push(trim ? currentField.trim() : currentField);
-  
-  if (inQuotes) {
-    throw ParsingError.unclosedQuotes(
-      lineNumber ?? null,
-      null,
-      line.substring(0, 100)
-    );
-  }
-  
-  return result;
 }
 
 function isEmptyValue(value: any): boolean {
@@ -1227,6 +1105,7 @@ export function* csvToJsonIterator(
     parseNumbers = false,
     parseBooleans = false,
     warnExtraFields = false,
+    rfc4180Compliant = true,
     maxRows,
     useFastPath = true,
     fastPathMode = 'objects',
@@ -1471,11 +1350,11 @@ export function* csvToJsonIterator(
   
   if (hasHeaders) {
     const headerLine = lines[0];
-    headers = parseCsvLine(headerLine, finalDelimiter, trim, 1);
+    headers = parseCsvLine(headerLine, finalDelimiter, trim, 1, { rfc4180Compliant });
     dataRows = lines.slice(1);
   } else {
     // Generate default headers
-    const firstRow = parseCsvLine(lines[0], finalDelimiter, trim, 1);
+    const firstRow = parseCsvLine(lines[0], finalDelimiter, trim, 1, { rfc4180Compliant });
     headers = firstRow.map((_, index) => `column${index + 1}`);
   }
   
@@ -1516,7 +1395,7 @@ export function* csvToJsonIterator(
     }
     try {
       const values = reconcileFieldCount(
-        parseCsvLine(line, finalDelimiter, trim, lineNumber),
+        parseCsvLine(line, finalDelimiter, trim, lineNumber, { rfc4180Compliant }),
         finalHeaders.length,
         lineNumber,
         warnExtraFields

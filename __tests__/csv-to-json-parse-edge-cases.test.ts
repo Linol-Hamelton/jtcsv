@@ -31,12 +31,17 @@ describe('CSV to JSON Parse Edge Cases - Uncovered Lines', () => {
       }
     });
 
-    test('should throw ParsingError for unclosed quotes with escaped backslash before', () => {
-      // Unclosed quote after escaped backslash
+    test('should throw ParsingError for unclosed quotes after a backslash', () => {
+      // The default dialect has no escape character: the backslash is data and
+      // the quote after it opens a field that never closes.
       const csv = 'id;text\n1;\\"unclosed';
-      // \" should be treated as escaped quote, not as start of quoted field
-      // So no error should be thrown
-      const result = csvToJson(csv, { delimiter: ';' });
+      expect(() => csvToJson(csv, { delimiter: ';' }))
+        .toThrow(ParsingError);
+    });
+
+    test('reads a backslash-escaped quote as text with rfc4180Compliant: false', () => {
+      const csv = 'id;text\n1;\\"unclosed';
+      const result = csvToJson(csv, { delimiter: ';', rfc4180Compliant: false });
       expect(result[0].text).toBe('"unclosed');
     });
 
@@ -130,22 +135,27 @@ describe('CSV to JSON Parse Edge Cases - Uncovered Lines', () => {
   });
 
   describe('Complex edge cases for parseCsvLine', () => {
-    test('should handle multiple escaped backslashes before quote', () => {
-      // Double backslash before quote
+    test('keeps both backslashes before a quoted section by default', () => {
       const csv = 'id;text\n1;\\\\"quoted"';
       const result = csvToJson(csv, { delimiter: ';' });
-      // \\" becomes \" (backslash + quote)
-      // Inside quotes, "quoted" becomes quoted
-      // So result should be \quoted
+      expect(result[0].text).toBe('\\\\quoted');
+    });
+
+    test('collapses a double backslash before a quote with rfc4180Compliant: false', () => {
+      const csv = 'id;text\n1;\\\\"quoted"';
+      const result = csvToJson(csv, { delimiter: ';', rfc4180Compliant: false });
       expect(result[0].text).toBe('\\quoted');
     });
 
-    test('should handle quote after escaped backslash - backslash escapes quote', () => {
-      // Backslash before quote means quote is escaped
+    test('reads a backslash then a quoted section as data by default', () => {
       const csv = 'id;text\n1;\\"quoted"';
-      // \" becomes " (escaped quote), creating field starting with quote
-      // Then "quoted" has unmatched quote - should throw error
-      expect(() => csvToJson(csv, { delimiter: ';' }))
+      const result = csvToJson(csv, { delimiter: ';' });
+      expect(result[0].text).toBe('\\quoted');
+    });
+
+    test('escapes the quote with rfc4180Compliant: false, leaving it unclosed', () => {
+      const csv = 'id;text\n1;\\"quoted"';
+      expect(() => csvToJson(csv, { delimiter: ';', rfc4180Compliant: false }))
         .toThrow(ParsingError);
     });
 

@@ -95,9 +95,20 @@ describe('CSV to JSON Edge Cases Coverage', () => {
   });
 
   describe('parseCsvLine edge cases', () => {
-    test('should handle escaped backslashes', () => {
+    // RFC 4180 defines no escape character, so the default dialect leaves a
+    // backslash alone — as the browser build always has, and as Excel, Papa
+    // Parse and csv-parse do. Collapsing it silently turned C:\Users\Dmitry
+    // into C:UsersDmitry. The old behaviour is still available for files
+    // written with the MySQL/Postgres convention.
+    test('leaves backslashes alone by default', () => {
       const csv = 'id;text\n1;test\\\\backslash';
       const result = csvToJson(csv, { delimiter: ';' });
+      expect(result[0].text).toBe('test\\\\backslash');
+    });
+
+    test('collapses escaped backslashes with rfc4180Compliant: false', () => {
+      const csv = 'id;text\n1;test\\\\backslash';
+      const result = csvToJson(csv, { delimiter: ';', rfc4180Compliant: false });
       expect(result[0].text).toBe('test\\backslash');
     });
 

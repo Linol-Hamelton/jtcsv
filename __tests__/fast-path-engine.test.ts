@@ -238,11 +238,15 @@ describe('FastPathEngine', () => {
       console.log(`  Разница: ${((quotedTime - simpleTime) / simpleTime * 100).toFixed(1)}%`);
       
       // Quote-aware parser should be slower, but not by much.
-      // Guard against the local-dev case where simpleTime rounded to
-      // 0 ms — `0 * 10 === 0`, so any positive quotedTime fails the
-      // ratio. Skip the ratio check whenever the baseline is too
-      // small to be meaningful (< 1 ms or in CI).
-      if (!IS_CI && simpleTime >= 1) {
+      //
+      // Date.now() resolves to a millisecond and this parse takes a couple of
+      // them, so a 1 ms baseline made the ratio pure noise: under jest's
+      // parallel workers it produced 1 ms against 12 ms and failed a run that
+      // had regressed nothing. A ratio only means something once the baseline
+      // is well clear of timer granularity and scheduler jitter, so require
+      // 10 ms before comparing at all — and never in CI, where wall-clock
+      // assertions belong to benchmark.yml.
+      if (!IS_CI && simpleTime >= 10) {
         expect(quotedTime).toBeLessThan(simpleTime * 10);
       } else {
         expect(simpleTime).toBeGreaterThanOrEqual(0);

@@ -20,7 +20,7 @@ describe('FastPathEngine additional coverage', () => {
       '3,trail\\',
       ''
     ].join('\n');
-    const rows = engine.parse(csv);
+    const rows = engine.parse(csv, { rfc4180Compliant: false });
 
     expect(rows[1]).toEqual(['1', 'hello,world']);
     expect(rows[2]).toEqual(['2', 'slash\\test']);
@@ -29,7 +29,7 @@ describe('FastPathEngine additional coverage', () => {
 
   test('iterates rows with escaped quotes and backslashes', () => {
     const csv = 'id,text\n1,"Hello\\\\world"\n2,"He said ""hi"""\n';
-    const rows = Array.from(engine.iterateRows(csv));
+    const rows = Array.from(engine.iterateRows(csv, { rfc4180Compliant: false }));
 
     expect(rows).toEqual([
       ['id', 'text'],

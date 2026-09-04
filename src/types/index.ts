@@ -20,7 +20,15 @@ export interface JsonToCsvOptions {
   maxRecords?: number;
   /** Prevent CSV injection attacks by escaping formulas (default: true) */
   preventCsvInjection?: boolean;
-  /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
+  /**
+   * Ensure RFC 4180 compliance (default: true).
+   *
+   * On the way out this picks CRLF line endings. On the way in it selects the
+   * tokenizer dialect: the default treats a backslash as ordinary data, the
+   * way RFC 4180, Excel, Papa Parse and this library's own browser build do.
+   * Set it to false for files written with the MySQL/Postgres convention,
+   * where a backslash escapes the character after it.
+   */
   rfc4180Compliant?: boolean;
   /** Normalize excessive quotes in JSON string values before CSV export (default: true) */
   normalizeQuotes?: boolean;
@@ -87,7 +95,15 @@ export interface CsvToJsonOptions {
   };
   /** Prevent CSV injection attacks by escaping formulas (default: true) */
   preventCsvInjection?: boolean;
-  /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
+  /**
+   * Ensure RFC 4180 compliance (default: true).
+   *
+   * On the way out this picks CRLF line endings. On the way in it selects the
+   * tokenizer dialect: the default treats a backslash as ordinary data, the
+   * way RFC 4180, Excel, Papa Parse and this library's own browser build do.
+   * Set it to false for files written with the MySQL/Postgres convention,
+   * where a backslash escapes the character after it.
+   */
   rfc4180Compliant?: boolean;
   /** Warn about extra fields not in headers (default: false) */
   warnExtraFields?: boolean;
@@ -159,7 +175,15 @@ export interface NdjsonToCsvStreamOptions {
   maxRecords?: number;
   /** Prevent CSV injection attacks by escaping formulas (default: true) */
   preventCsvInjection?: boolean;
-  /** Ensure RFC 4180 compliance (proper quoting, line endings) (default: true) */
+  /**
+   * Ensure RFC 4180 compliance (default: true).
+   *
+   * On the way out this picks CRLF line endings. On the way in it selects the
+   * tokenizer dialect: the default treats a backslash as ordinary data, the
+   * way RFC 4180, Excel, Papa Parse and this library's own browser build do.
+   * Set it to false for files written with the MySQL/Postgres convention,
+   * where a backslash escapes the character after it.
+   */
   rfc4180Compliant?: boolean;
   /** JSON schema for validation and formatting */
   schema?: Record<string, any>;
