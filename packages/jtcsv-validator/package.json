@@ -35,7 +35,7 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-validator#readme",
   "peerDependencies": {
-    "jtcsv": "^4.0.0"
+    "jtcsv": "^5.0.0"
   },
   "publishConfig": {
     "access": "public",

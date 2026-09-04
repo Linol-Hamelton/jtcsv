@@ -1,6 +1,6 @@
 {
   "name": "jtcsv-vue",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Vue 3 plugin, composables, and v-csv-upload directive for jtcsv.",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -36,7 +36,7 @@
     "node": ">=18.17"
   },
   "peerDependencies": {
-    "jtcsv": "^3.2.0 || ^4.0.0",
+    "jtcsv": "^5.0.0",
     "vue": "^3.3.0"
   },
   "devDependencies": {

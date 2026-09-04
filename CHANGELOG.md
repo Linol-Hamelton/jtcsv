@@ -1,5 +1,122 @@
 # Changelog
 
+## 5.0.0
+
+### Major Changes
+
+- 30ce16a: One parsing dialect across every engine
+
+  jtcsv reaches the same bytes through five code paths — the synchronous fast
+  path, the synchronous standard path, `csvToJsonAsync`, the streaming transform
+  and the browser build — and which one runs is mostly invisible to the caller.
+  The fast path in particular disables itself as soon as the input contains an
+  escaped quote, so a file gains or loses an engine because of its content. Those
+  engines had drifted apart. They now share one tokenizer and one value
+  normaliser, and a differential suite pins them together.
+
+  **Fixed — an apostrophe in ordinary data no longer throws.** `'` was treated as
+  a quote character alongside `"`, which no CSV dialect does, so `O'Brien` opened
+  a quoted field that never closed and raised `Unclosed quotes`. The fast path
+  has its own tokenizer and was unaffected, which hid it — but combine an
+  apostrophe with an escaped quote anywhere in the file, as in
+  `O'Brien,"he said ""hi"""`, and the fast path steps aside and default options
+  throw. This affected `csvToJson`, `csvToJsonAsync` and `createCsvToJsonStream`.
+
+  **Fixed — backslashes are no longer deleted.** The Node tokenizer treated a
+  backslash as an escape character. RFC 4180 defines none, and neither did this
+  library's own browser build, so `C:\Users\Dmitry` arrived as `C:UsersDmitry` in
+  Node and intact in the browser: silent data loss, and the two halves of the
+  library disagreeing about what a CSV is. **This is the breaking change.** The
+  old behaviour is still available per call with `rfc4180Compliant: false`, for
+  files written with the MySQL/Postgres convention.
+
+  `rfc4180Compliant` was already declared in the option types and documented as
+  defaulting to true, but the parser never read it — it only ever affected line
+  endings when writing. It now selects the input dialect as well.
+
+  **Fixed — the browser build agrees with Node.** Its field coercion was a
+  separate implementation that ignored `trim`, never implemented `parseBooleans`
+  at all, matched a narrower set of numbers (`1e5`, `+5` and `.5` stayed
+  strings), left the apostrophe that `preventCsvInjection` writes in front of a
+  formula in place — so `jsonToCsv` -> `csvToJson` round-tripped in Node and
+  silently did not in the browser — and omitted keys for missing fields where
+  Node emits them holding `undefined`. Six differences, none of which the
+  existing parity suite could see, because Jest's `toEqual` ignores `undefined`
+  properties.
+
+  **Fixed — the streaming parser matched neither.** It carried its own copy of
+  the normaliser with a looser numeric rule, so `Infinity` became a number there
+  and stayed a string everywhere else, and with `trim: false` so did `"  12"`. It
+  also still carried the pre-4.0 tokenizer, including the `i + 2 === line.length`
+  special case that the RFC 4180 repair removed from the batch parser and never
+  carried across; fuzzing quote patterns across the two found 41 disagreements in
+  120 inputs.
+
+  **Fixed — `warnExtraFields` does something.** It was declared and documented as
+  the switch for the extra-field warning, but every copy of that code keyed off
+  `NODE_ENV === 'development'` instead, so the option did nothing in any
+  environment.
+
+  `__tests__/engine-parity.test.ts` now runs every case through all five engines
+  and compares key order, key presence and values, including `undefined`. It
+  found two of the divergences above on its first run.
+
+  **Known difference, unchanged:** `createCsvToJsonStream` rejects a row whose
+  field count differs from the header, while `csvToJson` reconciles it against
+  the header. That asymmetry is recorded in the parity suite rather than altered
+  here.
+
+### Patch Changes
+
+- fca1f99: `--no-rfc4180` now selects the dialect when reading, not only when writing
+
+  The CLI flag reached `jsonToCsv` but neither of the two `csvToJson` call sites,
+  so once `rfc4180Compliant` started selecting the tokenizer dialect there was no
+  way to ask the CLI to read a backslash-escaped file. It is passed on both paths
+  now; the streaming commands already forwarded the parsed options.
+
+  Documentation caught up with the parser at the same time:
+
+  - `docs/api/csv.md` gained the `rfc4180Compliant` row, and two defaults there
+    were still describing the pre-4.0 behaviour — `repairRowShifts` and
+    `normalizeQuotes` have been `false` since 4.0, not `true`.
+  - That table also listed `preventCsvInjection` as a parser option. The parser
+    never reads it; it is a serialiser option. Reading always removes a leading
+    `'` from in front of `=`, `+`, `-` or `@`, which is the inverse of what
+    `jsonToCsv` writes and is what makes a formula survive a round trip.
+  - The FAQ's "Is jtcsv RFC 4180 compliant?" answer now says what that means for
+    a backslash, and points at the escape hatch.
+  - `docs/api/streams.md` and the Papa Parse migration table describe the option
+    in both directions; `escapeChar` maps to `rfc4180Compliant: false` rather
+    than to nothing.
+
+- cc9d779: Fix the file APIs and worker parsing under ESM
+
+  The ESM bundles shipped in 4.0.0 carried CommonJS globals that do not exist in
+  an ES module, so anything reaching them threw for `import` users while working
+  normally for `require` users:
+
+  - `readCsvAsJson`, `readCsvAsJsonSync`, `saveAsCsv` and the other file helpers
+    failed with `File system error: require is not defined`. The optional Node
+    built-ins (`worker_threads`, `os`, `glob`) are loaded lazily through
+    `require()` so they can be probed where they may be absent, and Rollup emits
+    those calls unchanged.
+  - `csvToJsonAsync(..., { useWorkers: true })` failed with
+    `__dirname is not defined`, but only past the parallelism threshold
+    (1 MB of CSV or 20 000 rows) — that is, exactly when workers are worth
+    turning on. Below it the call stays synchronous and never reaches the
+    worker-script resolver.
+
+  Node-targeted ESM output now restores `require`, `__dirname` and `__filename`
+  from `import.meta.url`. The browser bundles are untouched: they use none of
+  these and must not import a `node:` builtin.
+
+  `npm run verify:esm` was added and runs in CI. Jest runs under CommonJS and the
+  examples run through tsx, so neither suite loaded `dist/*.mjs` at all — which
+  is why this shipped. The check inspects every built ESM bundle for unshimmed
+  CJS globals and then exercises both broken paths for real: a file round-trip,
+  and a parse large enough to actually spawn workers.
+
 ## 4.0.0
 
 ### Major Changes

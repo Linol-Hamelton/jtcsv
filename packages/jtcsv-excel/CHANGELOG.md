@@ -1,18 +1,30 @@
 # jtcsv-excel
 
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [fca1f99]
+- Updated dependencies [cc9d779]
+- Updated dependencies [30ce16a]
+  - jtcsv@5.0.0
+
 ## 2.1.0 (2026-06-13)
 
 ### Renamed
+
 - Package renamed from `@jtcsv/excel` to `jtcsv-excel` (the `@jtcsv` scope is squatted on npm; siblings ship unscoped). Update install instructions:
   ```bash
   npm install jtcsv-excel exceljs
   ```
 
 ### Fixed
+
 - Removed broken `require('../../../dist/index.js')` and `require('../../../src/workers/...')` paths that escaped the package; the source now imports `jtcsv` as a real peer dependency.
 - Loosened `peerDependencies.jtcsv` from `^3.2.3` to `^3.2.0 || ^4.0.0`.
 
 ### Deferred to 2.2.0
+
 - Worker-thread acceleration for `fromExcelAsync` / `toExcelAsync` (the previous version had broken require paths; the async variants now alias to sync for 2.1.0).
 
 ## 2.0.0

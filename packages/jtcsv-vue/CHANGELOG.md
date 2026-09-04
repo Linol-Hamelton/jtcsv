@@ -1,5 +1,14 @@
 # jtcsv-vue
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [fca1f99]
+- Updated dependencies [cc9d779]
+- Updated dependencies [30ce16a]
+  - jtcsv@5.0.0
+
 ## 0.1.0 (2026-06-15)
 
 ### Initial release
