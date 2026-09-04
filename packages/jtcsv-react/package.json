@@ -1,6 +1,6 @@
 {
   "name": "jtcsv-react",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "React hooks and components for jtcsv. useCsvUpload, useCsvParse, <CsvDropZone> over the jtcsv/browser surface.",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -37,7 +37,7 @@
     "node": ">=18.17"
   },
   "peerDependencies": {
-    "jtcsv": "^3.2.0 || ^4.0.0",
+    "jtcsv": "^5.0.0",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   },

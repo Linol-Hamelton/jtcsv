@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/Linol-Hamelton/jtcsv/tree/main/packages/jtcsv-tui#readme",
   "peerDependencies": {
-    "jtcsv": "^4.0.0",
+    "jtcsv": "^5.0.0",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0"
   },
