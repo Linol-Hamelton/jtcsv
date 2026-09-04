@@ -283,6 +283,128 @@ function refineDelimiterFromHeaderLine(
 /**
  * Parses a CSV string into JSON objects
  */
+/* ------------------------------------------------------------------------- */
+/* Shared row assembly                                                       */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * Builds the function that turns one raw CSV field into its JSON value.
+ *
+ * A factory rather than a plain function because this runs once per field of
+ * every row: the option lookups are hoisted out of the hot loop, which is what
+ * the hand-written copies were also doing.
+ *
+ * Those copies are why this exists. Three were byte-identical closures — two
+ * nested inside csvToJson, one inside csvToJsonAsync — and a fourth, inline in
+ * the synchronous standard path, quietly disagreed with them on two points: it
+ * coerced anything `Number()` accepted (so "Infinity", and with `trim: false`
+ * also "  12", became numbers) and it never stripped the apostrophe that
+ * `preventCsvInjection` writes in front of a formula, so `jsonToCsv` ->
+ * `csvToJson` did not round-trip. The same input therefore parsed differently
+ * depending on whether the fast path happened to be taken — and the fast path
+ * turns itself off whenever the input contains an escaped quote, which is to
+ * say on exactly the RFC 4180 files where it matters.
+ */
+function createValueNormalizer(
+  trim: boolean,
+  parseNumbers: boolean,
+  parseBooleans: boolean
+): (_value: any) => any {
+  return (value: any): any => {
+    let normalized = value;
+    if (trim && typeof normalized === 'string') {
+      normalized = normalized.trim();
+    }
+    if (typeof normalized === 'string') {
+      if (normalized === '') {
+        return null;
+      }
+      if (normalized[0] === "'" && normalized.length > 1) {
+        const candidate = normalized.slice(1);
+        const leading = trim ? candidate.trimStart() : candidate;
+        const firstChar = leading[0];
+        if (firstChar === '=' || firstChar === '+' || firstChar === '-' || firstChar === '@') {
+          normalized = candidate;
+        }
+      }
+    }
+    if (parseNumbers && typeof normalized === 'string') {
+      const firstChar = normalized[0];
+      if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '+' || firstChar === '.') {
+        const numValue = Number(normalized);
+        if (!Number.isNaN(numValue)) {
+          normalized = numValue;
+        }
+      }
+    }
+    if (parseBooleans && typeof normalized === 'string') {
+      const firstChar = normalized[0];
+      if (firstChar === 't' || firstChar === 'T' || firstChar === 'f' || firstChar === 'F') {
+        const lowerValue = normalized.toLowerCase();
+        if (lowerValue === 'true' || lowerValue === 'false') {
+          normalized = lowerValue === 'true';
+        }
+      }
+    }
+    return normalized;
+  };
+}
+
+/**
+ * Makes a row's field count match the header count.
+ *
+ * Extra fields are dropped; missing ones are filled with `undefined`, which
+ * keeps the key present on the row object while `JSON.stringify` omits it.
+ * That shape is deliberate and asserted by the suite, so it is preserved here.
+ *
+ * `warnExtraFields` is declared in `CsvToJsonOptions` and documented as the
+ * switch for this warning, but none of the copies of this block read it — each
+ * keyed off `NODE_ENV === 'development'` instead, so the option did nothing in
+ * any environment. It is honoured now, and the NODE_ENV check stays so that
+ * existing development output does not disappear.
+ *
+ * The array is returned rather than padded in place: the streaming path passes
+ * a row the iterator still owns, and mutating it reached back into data the
+ * caller was holding.
+ */
+function reconcileFieldCount(
+  values: any[],
+  headerCount: number,
+  lineNumber: number,
+  warnExtraFields: boolean
+): any[] {
+  if (values.length === headerCount) {
+    return values;
+  }
+  if (values.length > headerCount) {
+    if (warnExtraFields || process.env['NODE_ENV'] === 'development') {
+      const extraCount = values.length - headerCount;
+      console.warn(`[jtcsv] Line ${lineNumber}: ${extraCount} extra fields ignored`);
+    }
+    return values.slice(0, headerCount);
+  }
+  const padded = values.slice();
+  while (padded.length < headerCount) {
+    padded.push(undefined as any);
+  }
+  return padded;
+}
+
+/**
+ * Assembles one row object from values already reconciled against `headers`.
+ */
+function buildRowObject(
+  values: any[],
+  headers: string[],
+  normalize: (_value: any) => any
+): AnyObject {
+  const row: AnyObject = {};
+  for (let j = 0; j < headers.length; j++) {
+    row[headers[j]] = normalize(values[j]);
+  }
+  return row;
+}
+
 export function csvToJson(
   csv: string,
   options: CsvToJsonOptions = {}
@@ -302,6 +424,7 @@ export function csvToJson(
       trim = true,
       parseNumbers = false,
       parseBooleans = false,
+      warnExtraFields = false,
       maxRows,
       useFastPath = true,
       fastPathMode = 'objects',
@@ -401,44 +524,7 @@ export function csvToJson(
       return result;
     };
 
-    const normalizeValue = (value: any): any => {
-      let normalized = value;
-      if (trim && typeof normalized === 'string') {
-        normalized = normalized.trim();
-      }
-      if (typeof normalized === 'string') {
-        if (normalized === '') {
-          return null;
-        }
-        if (normalized[0] === "'" && normalized.length > 1) {
-          const candidate = normalized.slice(1);
-          const leading = trim ? candidate.trimStart() : candidate;
-          const firstChar = leading[0];
-          if (firstChar === '=' || firstChar === '+' || firstChar === '-' || firstChar === '@') {
-            normalized = candidate;
-          }
-        }
-      }
-      if (parseNumbers && typeof normalized === 'string') {
-        const firstChar = normalized[0];
-        if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '+' || firstChar === '.') {
-          const numValue = Number(normalized);
-          if (!Number.isNaN(numValue)) {
-            normalized = numValue;
-          }
-        }
-      }
-      if (parseBooleans && typeof normalized === 'string') {
-        const firstChar = normalized[0];
-        if (firstChar === 't' || firstChar === 'T' || firstChar === 'f' || firstChar === 'F') {
-          const lowerValue = normalized.toLowerCase();
-          if (lowerValue === 'true' || lowerValue === 'false') {
-            normalized = lowerValue === 'true';
-          }
-        }
-      }
-      return normalized;
-    };
+    const normalizeValue = createValueNormalizer(trim, parseNumbers, parseBooleans);
 
     const applyAfterConvertHooks = (rows: AnyArray): AnyArray => {
       let result: AnyArray = rows;
@@ -481,45 +567,6 @@ export function csvToJson(
         if (!Array.isArray(fastPathRows)) {
           throw new Error('Fast-path parser returned invalid result');
         }
-
-        const normalizeValue = (value: any): any => {
-          let normalized = value;
-          if (trim && typeof normalized === 'string') {
-            normalized = normalized.trim();
-          }
-          if (typeof normalized === 'string') {
-            if (normalized === '') {
-              return null;
-            }
-            if (normalized[0] === "'" && normalized.length > 1) {
-              const candidate = normalized.slice(1);
-              const leading = trim ? candidate.trimStart() : candidate;
-              const firstChar = leading[0];
-              if (firstChar === '=' || firstChar === '+' || firstChar === '-' || firstChar === '@') {
-                normalized = candidate;
-              }
-            }
-          }
-          if (parseNumbers && typeof normalized === 'string') {
-            const firstChar = normalized[0];
-            if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '+' || firstChar === '.') {
-              const numValue = Number(normalized);
-              if (!Number.isNaN(numValue)) {
-                normalized = numValue;
-              }
-            }
-          }
-          if (parseBooleans && typeof normalized === 'string') {
-            const firstChar = normalized[0];
-            if (firstChar === 't' || firstChar === 'T' || firstChar === 'f' || firstChar === 'F') {
-              const lowerValue = normalized.toLowerCase();
-              if (lowerValue === 'true' || lowerValue === 'false') {
-                normalized = lowerValue === 'true';
-              }
-            }
-          }
-          return normalized;
-        };
 
         const _handleFastPathError = (error: Error, rowIndex: number, row: AnyArray) => {
           if (errorHandler) {
@@ -647,29 +694,13 @@ export function csvToJson(
           if (!Array.isArray(row) || row.length === 0) {
             continue;
           }
-          let rowValues = row;
-          if (rowValues.length !== baseHeaders.length) {
-            if (rowValues.length > baseHeaders.length) {
-              if (process.env['NODE_ENV'] === 'development') {
-                const lineNumber = hasHeaders ? rowIndex + 2 : rowIndex + 1;
-                const extraCount = rowValues.length - baseHeaders.length;
-                console.warn(`[jtcsv] Line ${lineNumber}: ${extraCount} extra fields ignored`);
-              }
-              rowValues = rowValues.slice(0, baseHeaders.length);
-            } else {
-              while (rowValues.length < baseHeaders.length) {
-                rowValues.push(undefined as any);
-              }
-            }
-          }
-
-          const obj: AnyObject = {};
-          for (let j = 0; j < finalHeaders.length; j++) {
-            let value: any = rowValues[j];
-            value = normalizeValue(value);
-            obj[finalHeaders[j]] = value;
-          }
-          rawRows.push(obj);
+          const rowValues = reconcileFieldCount(
+            row,
+            baseHeaders.length,
+            hasHeaders ? rowIndex + 2 : rowIndex + 1,
+            warnExtraFields
+          );
+          rawRows.push(buildRowObject(rowValues, finalHeaders, normalizeValue));
         }
 
         const repairedRows = repairRowShifts
@@ -766,20 +797,12 @@ export function csvToJson(
         }
         const line = dataRows[i];
         const lineNumber = hasHeaders ? i + 2 : i + 1;
-        let values = parseCsvLine(line, finalDelimiter, trim, lineNumber);
-        if (values.length !== finalHeaders.length) {
-          if (values.length > finalHeaders.length) {
-            if (process.env['NODE_ENV'] === 'development') {
-              const extraCount = values.length - finalHeaders.length;
-              console.warn(`[jtcsv] Line ${lineNumber}: ${extraCount} extra fields ignored`);
-            }
-            values = values.slice(0, finalHeaders.length);
-          } else {
-            while (values.length < finalHeaders.length) {
-              values.push(undefined as any);
-            }
-          }
-        }
+        const values = reconcileFieldCount(
+          parseCsvLine(line, finalDelimiter, trim, lineNumber),
+          finalHeaders.length,
+          lineNumber,
+          warnExtraFields
+        );
         compactResult.push(values.map((value) => normalizeValue(value)));
       }
       return applyAfterConvertHooks(compactResult);
@@ -810,50 +833,14 @@ export function csvToJson(
       const line = dataRows[i];
       const lineNumber = hasHeaders ? i + 2 : i + 1;
       try {
-        let values = parseCsvLine(line, finalDelimiter, trim, lineNumber);
+        const values = reconcileFieldCount(
+          parseCsvLine(line, finalDelimiter, trim, lineNumber),
+          finalHeaders.length,
+          lineNumber,
+          warnExtraFields
+        );
         
-        // Handle field count mismatch
-        if (values.length !== finalHeaders.length) {
-          if (values.length > finalHeaders.length) {
-            if (process.env['NODE_ENV'] === 'development') {
-              const extraCount = values.length - finalHeaders.length;
-              console.warn(`[jtcsv] Line ${lineNumber}: ${extraCount} extra fields ignored`);
-            }
-            values = values.slice(0, finalHeaders.length);
-          } else {
-            while (values.length < finalHeaders.length) {
-              values.push(undefined as any);
-            }
-          }
-        }
-        
-        // Create object
-        const row: AnyObject = {};
-        for (let j = 0; j < finalHeaders.length; j++) {
-          // A header with no field in this row reads as null, the same way an
-          // empty field does. It used to be undefined, which is neither a value
-          // nor an absent key: Object.keys listed it but JSON.stringify dropped
-          // it, so saveAsJson and the in-memory row disagreed on the shape.
-          let value: any = j < values.length ? values[j] : null;
-          
-          // Parse numbers if enabled
-          if (parseNumbers && !isNaN(Number(value)) && value.trim() !== '') {
-            value = Number(value);
-          }
-          
-          // Parse booleans if enabled
-          if (parseBooleans) {
-            const lowerValue = String(value).toLowerCase();
-            if (lowerValue === 'true' || lowerValue === 'false') {
-              value = lowerValue === 'true';
-            }
-          }
-          
-          // An empty field reads as null whether or not it was quoted: CSV draws no
-          // distinction between the two, and the browser parser agrees. Leaving the
-          // quoted form as an empty string split the two parsers apart.
-          row[finalHeaders[j]] = value === '' ? null : value;
-        }
+        const row: AnyObject = buildRowObject(values, finalHeaders, normalizeValue);
         
         // Apply transform function if provided
         rawRows.push(row);
@@ -1239,6 +1226,7 @@ export function* csvToJsonIterator(
     trim = true,
     parseNumbers = false,
     parseBooleans = false,
+    warnExtraFields = false,
     maxRows,
     useFastPath = true,
     fastPathMode = 'objects',
@@ -1316,44 +1304,7 @@ export function* csvToJsonIterator(
     return result;
   };
 
-  const normalizeValue = (value: any): any => {
-    let normalized = value;
-    if (trim && typeof normalized === 'string') {
-      normalized = normalized.trim();
-    }
-    if (typeof normalized === 'string') {
-      if (normalized === '') {
-        return null;
-      }
-      if (normalized[0] === "'" && normalized.length > 1) {
-        const candidate = normalized.slice(1);
-        const leading = trim ? candidate.trimStart() : candidate;
-        const firstChar = leading[0];
-        if (firstChar === '=' || firstChar === '+' || firstChar === '-' || firstChar === '@') {
-          normalized = candidate;
-        }
-      }
-    }
-    if (parseNumbers && typeof normalized === 'string') {
-      const firstChar = normalized[0];
-      if ((firstChar >= '0' && firstChar <= '9') || firstChar === '-' || firstChar === '+' || firstChar === '.') {
-        const numValue = Number(normalized);
-        if (!Number.isNaN(numValue)) {
-          normalized = numValue;
-        }
-      }
-    }
-    if (parseBooleans && typeof normalized === 'string') {
-      const firstChar = normalized[0];
-      if (firstChar === 't' || firstChar === 'T' || firstChar === 'f' || firstChar === 'F') {
-        const lowerValue = normalized.toLowerCase();
-        if (lowerValue === 'true' || lowerValue === 'false') {
-          normalized = lowerValue === 'true';
-        }
-      }
-    }
-    return normalized;
-  };
+  const normalizeValue = createValueNormalizer(trim, parseNumbers, parseBooleans);
   
   const handleRowError = (error: Error, line: string, lineNumber: number): boolean => {
     if (error instanceof LimitError) {
@@ -1446,21 +1397,12 @@ export function* csvToJsonIterator(
           );
         }
 
-        let values = row;
-        if (values.length !== headers.length) {
-          if (values.length > headers.length) {
-            if (process.env['NODE_ENV'] === 'development') {
-              const lineNumber = hasHeaders ? rowCount + 2 : rowCount + 1;
-              const extraCount = values.length - finalHeaders.length;
-              console.warn(`[jtcsv] Line ${lineNumber}: ${extraCount} extra fields ignored`);
-            }
-            values = values.slice(0, headers.length);
-          } else {
-            while (values.length < headers.length) {
-              values.push(undefined as any);
-            }
-          }
-        }
+        const values = reconcileFieldCount(
+          row,
+          headers.length,
+          hasHeaders ? rowCount + 2 : rowCount + 1,
+          warnExtraFields
+        );
 
         if (fastPathMode === 'compact') {
           yield values.map((value) => normalizeValue(value));
@@ -1468,10 +1410,7 @@ export function* csvToJsonIterator(
           continue;
         }
 
-        const rowObj: AnyObject = {};
-        for (let j = 0; j < finalHeaders.length; j++) {
-          rowObj[finalHeaders[j]] = normalizeValue(values[j]);
-        }
+        const rowObj: AnyObject = buildRowObject(values, finalHeaders, normalizeValue);
 
         if (repairRowShifts) {
           if (!pendingRow) {
@@ -1576,22 +1515,12 @@ export function* csvToJsonIterator(
       );
     }
     try {
-      let values = parseCsvLine(line, finalDelimiter, trim, lineNumber);
-      
-      // Handle field count mismatch
-        if (values.length !== finalHeaders.length) {
-          if (values.length > finalHeaders.length) {
-            if (process.env['NODE_ENV'] === 'development') {
-              const extraCount = values.length - finalHeaders.length;
-              console.warn(`[jtcsv] Line ${lineNumber}: ${extraCount} extra fields ignored`);
-            }
-            values = values.slice(0, finalHeaders.length);
-          } else {
-            while (values.length < finalHeaders.length) {
-              values.push(undefined as any);
-            }
-          }
-        }
+      const values = reconcileFieldCount(
+        parseCsvLine(line, finalDelimiter, trim, lineNumber),
+        finalHeaders.length,
+        lineNumber,
+        warnExtraFields
+      );
       
       if (fastPathMode === 'compact') {
         yield values.map((value) => normalizeValue(value));
@@ -1599,12 +1528,7 @@ export function* csvToJsonIterator(
         continue;
       }
 
-      // Create object
-      const row: AnyObject = {};
-      for (let j = 0; j < finalHeaders.length; j++) {
-        const value = normalizeValue(values[j]);
-        row[finalHeaders[j]] = value;
-      }
+      const row: AnyObject = buildRowObject(values, finalHeaders, normalizeValue);
 
       if (repairRowShifts) {
         if (!pendingRow) {
