@@ -392,6 +392,9 @@ async function convertCsvToJson(inputFile, outputFile, options: any): Promise<Co
       fastPathMode: options.fastPathMode,
       repairRowShifts: options.repairRowShifts,
       normalizeQuotes: options.normalizeQuotes,
+      // --no-rfc4180 selects the input dialect too, not just the output: it
+      // makes a backslash escape the next character when reading.
+      rfc4180Compliant: options.rfc4180Compliant,
       schema: options.schema // Add schema option if supported
     };
 
@@ -509,7 +512,8 @@ async function saveAsCsv(inputFile, outputFile, options: any): Promise<Conversio
           parseNumbers: options.parseNumbers,
           parseBooleans: options.parseBooleans,
           repairRowShifts: options.repairRowShifts,
-          normalizeQuotes: options.normalizeQuotes
+          normalizeQuotes: options.normalizeQuotes,
+          rfc4180Compliant: options.rfc4180Compliant
         });
 
         const transformedJson = transformLoader.applyTransform(

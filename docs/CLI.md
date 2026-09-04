@@ -81,7 +81,7 @@ jtcsv --version
 - --rename=JSON
 - --template=JSON
 - --no-injection-protection
-- --no-rfc4180
+- --no-rfc4180 (writing: LF instead of CRLF; reading: a backslash escapes the next character)
 - --max-records=N
 - --max-rows=N
 - --pretty

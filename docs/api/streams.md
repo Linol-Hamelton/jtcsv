@@ -49,7 +49,7 @@ Options worth highlighting:
 | `template`            | `{}`         | Locks header order; extra row keys append after template keys.         |
 | `addBOM`              | **`false`**  | See note below — different default than `saveJsonStreamAsCsv`.         |
 | `preventCsvInjection` | `true`       | Prefixes `=`, `+`, `-`, `@` with `'` per OWASP CSV-injection guidance. |
-| `rfc4180Compliant`    | `true`       | Quotes fields containing `"`, the delimiter, `\n`, or `\r`.            |
+| `rfc4180Compliant`    | `true`       | Writing: quotes fields containing `"`, the delimiter, `\n` or `\r`. Reading: picks the tokenizer dialect — `false` makes a backslash escape the next character. |
 | `normalizeQuotes`     | `true`       | Collapses runs of `"` and unwraps wrapped JSON-like strings.           |
 | `flatten`             | `false`      | Walks nested objects up to `flattenMaxDepth` (default `5`).            |
 | `arrayHandling`       | `'stringify'`| `'stringify' | 'join' | 'expand'`.                                     |

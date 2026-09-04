@@ -300,6 +300,17 @@ Yes, by default. jtcsv properly handles:
 - Multiline values
 - CRLF line endings
 
+RFC 4180 defines no escape character, so a backslash is ordinary data: a path
+like `C:\Users\Ada` survives parsing intact. If your files come from a tool
+using the MySQL/Postgres convention, where a backslash escapes the character
+after it, pass `rfc4180Compliant: false` (or `--no-rfc4180` on the CLI) to read
+them that way. The same option picks CRLF versus LF when writing.
+
+Every engine applies the same rules — the fast path, the standard path,
+`csvToJsonAsync`, the streaming transform and the browser build — and
+`__tests__/engine-parity.test.ts` compares all five on every case to keep it
+that way.
+
 ---
 
 ## Performance

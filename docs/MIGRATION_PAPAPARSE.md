@@ -295,7 +295,7 @@ await streamJsonToCsv(inputStream, outputStream, { delimiter: ',' });
 | `error` | try/catch | Error classes: `ParsingError`, etc. |
 | `quotes` | `rfc4180Compliant` | Auto-quoting with RFC 4180 |
 | `quoteChar` | N/A | Always uses standard `"` |
-| `escapeChar` | N/A | RFC 4180 standard escaping |
+| `escapeChar` | `rfc4180Compliant: false` | Default is RFC 4180: `""` escapes a quote and a backslash is data. Set `rfc4180Compliant: false` to read backslash-escaped files. |
 | `columns` | `template` | Object defines order |
 | `newline` | N/A | Auto-detected on parse, CRLF on generate |
 

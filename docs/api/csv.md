@@ -45,9 +45,10 @@ header row.
 | `trim` | `boolean` | `true` | Trim whitespace from each field. |
 | `parseNumbers` | `boolean` | `false` | Convert numeric-looking values to `number`. |
 | `parseBooleans` | `boolean` | `false` | Convert `"true"`/`"false"` (case-insensitive) to `boolean`. |
-| `preventCsvInjection` | `boolean` | `true` | Escape leading `=`, `+`, `-`, `@` to defuse spreadsheet formulas. |
-| `repairRowShifts` | `boolean` | `true` | Drop trailing empty fields rather than throwing on a shifted row. |
-| `normalizeQuotes` | `boolean` | `true` | Collapse excessive embedded quote runs. |
+| `rfc4180Compliant` | `boolean` | `true` | Tokenizer dialect. The default treats a backslash as ordinary data, the way RFC 4180, Excel and Papa Parse do. Set it to `false` for files written with the MySQL/Postgres convention, where a backslash escapes the character after it. |
+| `preventCsvInjection` | `boolean` | `true` | Serialiser option; the parser does not read it. Reading always removes a leading `'` placed in front of `=`, `+`, `-` or `@`, which is the inverse of what `jsonToCsv` writes, so a formula survives a round trip. |
+| `repairRowShifts` | `boolean` | `false` | Re-join rows the old newline split tore apart mid-quote. Off since 4.0: the parser keeps records whole, so the heuristic now fires on correctly parsed data and corrupts any value holding a quote. |
+| `normalizeQuotes` | `boolean` | `false` | Collapse excessive embedded quote runs. Off since 4.0: the parser is quote-aware and has nothing left for it to repair. |
 | `maxRows` | `number` | unlimited | Hard cap on rows returned. |
 | `memoryLimit` | `number` | `5_000_000` | Row-count safety stop; set `Infinity` to disable. |
 | `onError` | `'throw' \| 'skip' \| 'warn'` | `'throw'` | Per-row error recovery strategy. |
