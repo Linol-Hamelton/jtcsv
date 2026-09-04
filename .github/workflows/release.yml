@@ -4,12 +4,28 @@ name: Release
 #
 #  - On every push to main: open / update a "Version Packages" PR that
 #    consumes pending .changeset/*.md files and bumps versions.
-#  - On merge of that PR: publish each updated workspace package to npm
-#    with --provenance (Sigstore attestation, free in GitHub Actions).
+#  - On merge of that PR: publish each updated workspace package to npm.
 #
-# Required repo secrets:
-#   NPM_TOKEN   — automation token for npmjs (publish access).
-# Built-in token GITHUB_TOKEN is provided automatically.
+# Authentication: npm Trusted Publishing (OIDC), with an automation token as
+# fallback. Trusted Publishing needs no secret at all — npm verifies the
+# workflow's OIDC identity — and it attaches a provenance attestation
+# automatically, which is what puts the "Built and signed on GitHub Actions"
+# badge on the npm page.
+#
+# Setting it up is done once per package, on npmjs.com:
+#   Package -> Settings -> Trusted Publisher -> GitHub Actions
+#     Organization or user: Linol-Hamelton
+#     Repository:           jtcsv
+#     Workflow filename:    release.yml
+#     Environment:          (leave empty)
+# Repeat for: jtcsv, jtcsv-codemod, jtcsv-excel, jtcsv-react, jtcsv-vue.
+#
+# Until that is configured, publishing falls back to NODE_AUTH_TOKEN and no
+# provenance is produced. NPM_TOKEN was already a repo secret but was never
+# exposed under the name the generated .npmrc reads (NODE_AUTH_TOKEN), so the
+# workflow could not authenticate at all and releases were being published by
+# hand from a laptop — which is also why no version ever carried an
+# attestation, and why the provenance badge in the README had to be removed.
 
 on:
   push:
@@ -20,7 +36,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write       # write CHANGELOG, push the Version Packages PR
   pull-requests: write  # open the Version Packages PR
-  id-token: write       # required for npm provenance via OIDC
+  id-token: write       # required for Trusted Publishing / provenance via OIDC
 
 jobs:
   release:
@@ -39,6 +55,14 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
+      # Node 20 ships npm 10, which has no Trusted Publishing support. The
+      # major is pinned rather than tracking latest so a new npm major cannot
+      # change publish behaviour without a commit here.
+      - name: Use an npm that supports Trusted Publishing
+        run: |
+          npm install -g npm@11
+          npm --version
+
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
@@ -47,6 +71,12 @@ jobs:
 
       - name: Test (skip benchmarks/load/memory)
         run: npm run test:ci
+
+      - name: Verify browser bundles
+        run: npm run verify:browser
+
+      - name: Verify ESM bundles
+        run: npm run verify:esm
 
       - name: Bundle size gate
         run: npm run size
@@ -64,5 +94,7 @@ jobs:
           title: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Read by the .npmrc that setup-node generates. Ignored once a
+          # trusted publisher is configured, since npm prefers OIDC.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
